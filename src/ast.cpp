@@ -4,11 +4,16 @@
 
 namespace kubvc::algorithm
 {
+    Node::~Node()
+    {
+        //DEBUG("Node destructor");
+    }
+    
     ASTree::ASTree() 
     {
 
     }   
-    
+
     void ASTree::clear()
     {
         m_root.reset();
