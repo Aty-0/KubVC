@@ -6,6 +6,11 @@ namespace kubvc::algorithm
     class AlgorithmHelpers
     {
         public:
+            [[nodiscard]] static inline bool isLetter(char chr)
+            {
+                return std::isalpha(chr);
+            }
+
             [[nodiscard]] static inline bool isNumber(const std::string& text)
             {
                 return !text.empty() && std::find_if(text.begin(), text.end(), 
@@ -33,6 +38,7 @@ namespace kubvc::algorithm
                     case '-':
                     case '*':
                     case '/':
+                    case '=':
                     case '^':
                         return true;
                 }
@@ -40,14 +46,24 @@ namespace kubvc::algorithm
             }
     
             // TODO: Support for other brackets 
-            [[nodiscard]] static inline bool isBracket(char chr)
+            [[nodiscard]] static inline bool isBracketStart(char chr)
             {
-                return chr == ')' || chr == '(';
+                return chr == '(';
+            }
+
+            [[nodiscard]] static inline bool isBracketEnd(char chr)
+            {
+                return chr == ')';
             }
 
             [[nodiscard]] static inline bool isEqualsSign(char chr)
             {
                 return chr == '=';
+            }
+
+            [[nodiscard]] static inline bool isWhiteSpace(char chr)
+            {
+                return chr == ' ';
             }
     };
 }
