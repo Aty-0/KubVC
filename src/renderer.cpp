@@ -5,7 +5,7 @@
 
 namespace kubvc::render
 {
-    static constexpr glm::vec4 CLEAR_COLOR = { 0.16f, 0.08f, 0.2f, 1.0f };
+    static constexpr glm::vec4 CLEAR_COLOR = { 0.0f, 0.0f, 0.0f, 1.0f };
 
     void Renderer::init()
     {
