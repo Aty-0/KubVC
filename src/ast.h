@@ -12,7 +12,8 @@ namespace kubvc::algorithm
         Number, 
         Variable,
         Function,
-        Operator           
+        Operator,           
+        Invalid,           
     };
 
     struct Node 
@@ -47,6 +48,12 @@ namespace kubvc::algorithm
     struct NumberNode : public NodeWithValue<double>
     {
         inline virtual auto getType() -> NodeTypes const final { return NodeTypes::Number; }
+    };
+
+    struct InvalidNode : public Node
+    {
+        inline virtual auto getType() -> NodeTypes const final { return NodeTypes::Invalid; }
+        std::string name;
     };
 
     // Operator can store left and right node links

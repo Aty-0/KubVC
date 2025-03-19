@@ -169,8 +169,22 @@ static void showTree(std::shared_ptr<kubvc::algorithm::Node> start, ImVec2 offse
             ImGui::Text(nodeName.c_str());
             break;
         }
+        case kubvc::algorithm::NodeTypes::Function:
+        {
+            auto node = static_cast<kubvc::algorithm::FunctionNode*>(start.get());         
+            nodeName = node->name + " #" + std::to_string(node->id); 
+            ImGui::Text(nodeName.c_str());
+            break;
+        }
+        case kubvc::algorithm::NodeTypes::Invalid:
+        {
+            auto node = static_cast<kubvc::algorithm::InvalidNode*>(start.get());         
+            nodeName = node->name + " #" + std::to_string(node->id); 
+            ImGui::TextColored(ImVec4(255, 0, 0, 255), nodeName.c_str());
+            break;
+        }
         default:
-            ImGui::Text("UNK");
+            ImGui::TextColored(ImVec4(255, 0, 0, 255), "UNK");
             ERROR("Unknown type or not implemented");
             break;
     }
@@ -222,6 +236,22 @@ static auto createExpression(const kubvc::algorithm::ASTree& tree, std::shared_p
     return opNode;
 }
 
+static auto createInvalid(const kubvc::algorithm::ASTree& tree, const std::string& name)
+{
+    auto invalidNode = tree.createNode<kubvc::algorithm::InvalidNode>();
+    invalidNode->name = name;
+    return invalidNode;
+}
+
+static auto createFunction(const kubvc::algorithm::ASTree& tree, const std::string& name)
+{
+    auto funcNode = tree.createNode<kubvc::algorithm::FunctionNode>();
+    funcNode->name = name;
+    // TODO: Args
+
+    return funcNode;
+}
+
 static inline auto getCurrentChar(const std::size_t& cursor, const std::string& text) 
 {
     if (cursor > text.size())
@@ -261,13 +291,52 @@ static auto parseLetters(std::size_t& cursor, const std::string& text)
     return output;
 }
 
+static std::shared_ptr<kubvc::algorithm::Node> parseFunction(const kubvc::algorithm::ASTree& tree, const std::size_t& cursor_pos, const std::string& text)
+{
+    std::size_t cursor = cursor_pos;
+    char character = getCurrentChar(cursor, text);
+    std::string funcName = std::string();
+    while(kubvc::algorithm::AlgorithmHelpers::isLetter(character))
+    {
+        funcName += character;
+        cursor++;
+        character = getCurrentChar(cursor, text);        
+    } 
+    
+    if (cursor >= text.size())
+        return createInvalid(tree, text);
+  
+    character = getCurrentChar(cursor, text);        
+  
+    if (kubvc::algorithm::AlgorithmHelpers::isBracketStart(character))
+    {
+        while(!kubvc::algorithm::AlgorithmHelpers::isBracketEnd(character))
+        {
+            cursor++;
+            if (cursor >= text.size())
+            {
+                return createInvalid(tree, text);
+            }
+
+            character = getCurrentChar(cursor, text);        
+            // TODO: Add args
+        } 
+    }
+    else 
+    {
+        return createInvalid(tree, text);
+    }
+
+    return createFunction(tree, funcName);
+}
+
 static std::shared_ptr<kubvc::algorithm::Node> parseExpression(const kubvc::algorithm::ASTree& tree, const std::string& text, std::size_t& cursor);
 
 static std::shared_ptr<kubvc::algorithm::Node> parseElement(const kubvc::algorithm::ASTree& tree, const std::string& text, std::size_t& cursor, char currentChar)
 {
     DEBUG("try to find something usefull for %c", currentChar); 
 
-    // Another check on white space 
+    // Skip white space if we are find it  
     if (kubvc::algorithm::AlgorithmHelpers::isWhiteSpace(currentChar))
     {
         DEBUG("Ignore white space in parse element stage"); 
@@ -307,8 +376,8 @@ static std::shared_ptr<kubvc::algorithm::Node> parseElement(const kubvc::algorit
         } 
         else if (outSize > 1)
         {
-            DEBUG("Function is not implemented");
-            // TODO: Is function or something like that
+            DEBUG("Parse function...");
+            return parseFunction(tree, cursor - outSize, text);
         }
         else 
         {
@@ -326,7 +395,7 @@ static std::shared_ptr<kubvc::algorithm::Node> parseElement(const kubvc::algorit
 
     DEBUG("Nothing found");
 
-    return nullptr;
+    return createInvalid(tree, "INV_NODE");
 }
 
 static std::shared_ptr<kubvc::algorithm::Node> parseExpression(const kubvc::algorithm::ASTree& tree, const std::string& text, std::size_t& cursor)
@@ -338,30 +407,23 @@ static std::shared_ptr<kubvc::algorithm::Node> parseExpression(const kubvc::algo
     {
         auto character = getCurrentChar(cursor, text);  
         DEBUG("Current character in expression cycle: %c", character); 
-        // Last character might be a white space, so to avoid a inf cycle, we are add that check
-        //if ((cursor + 1) >= text.size()) 
-        //{
-        //    break;   
-        //}
+
         // Ignore white spaces
         if (kubvc::algorithm::AlgorithmHelpers::isWhiteSpace(character))
         {
             DEBUG("Ignore white space in expression parse"); 
             cursor++;
             continue;
-        } 
-        
-
+        }  
         // We are want to continue cycle 
-        if (kubvc::algorithm::AlgorithmHelpers::isBracketEnd(character))
+        else if (kubvc::algorithm::AlgorithmHelpers::isBracketEnd(character))
         {
             DEBUG("End of bracket");
             cursor++;
             continue;
         }
-
         // If current character is not operator we are leave from cycle 
-        if (!kubvc::algorithm::AlgorithmHelpers::isOperator(character))
+        else if (!kubvc::algorithm::AlgorithmHelpers::isOperator(character))
         {
             DEBUG("Leave from cycle");
             break;
