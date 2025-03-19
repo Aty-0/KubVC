@@ -5,23 +5,11 @@
 #include "Libs/imgui/imgui_impl_opengl3.h"
 #include "Libs/imgui/imgui_impl_glfw.h"
 #include "Libs/imgui/imgui_internal.h"
-
-#include "Libs/imgui/implot.h"
 #include "Libs/imgui/implot_internal.h"
 
 namespace kubvc::render
 {
 	static constexpr int test_data[] = { 0,1,2,3 };
-	void GUIPlot::body()
-	{
-        if (ImPlot::BeginPlot(m_name.c_str())) {
-			inBody();
-
-			ImPlot::PlotLine("My Line Plot", test_data, test_data, 4);
-            ImPlot::EndPlot();
-        }
-    } 
-
     void GUI::init()
     {
 		DEBUG("Initialize Imgui...");
@@ -46,9 +34,6 @@ namespace kubvc::render
 		{
 			FATAL("ImGui OpenGL3 init failed!");
 		}
-
-		// TODO: 
-		m_elements.push_back(new GUIPlot());
     }
 
     void GUI::begin()
@@ -58,14 +43,6 @@ namespace kubvc::render
 		ImGui::NewFrame();
     }
 	
-	void GUI::draw()
-	{		
-		for (auto element : m_elements)
-		{
-			element->body();
-		}
-	}
-
     void GUI::end()
     {
         ImGui::Render();

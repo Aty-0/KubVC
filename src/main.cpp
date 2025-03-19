@@ -493,11 +493,6 @@ int main()
                 parse(tree, buf);
             }
 
-            if (ImGui::Button("Parse"))
-            {
-                parse(tree, buf);
-            }
-
             ImGui::Separator();
             ImGui::Text("AST:");   
 
@@ -515,10 +510,18 @@ int main()
         ImGui::End();
 
         if (ImGui::Begin("Viewer"))
-        {
-            gui->draw();
+        {           
+            auto size = ImGui::GetContentRegionAvail();
+            if (ImPlot::BeginPlot("PlotTitle", size)) 
+            {	
+                static constexpr int test_data[] = {1,2,3,4,5};
+
+                ImPlot::PlotLine("PlotName", test_data, test_data, 4);
+
+                ImPlot::EndPlot();
+            }
         }
-        ImGui::End();        
+        ImGui::End();       
 
         gui->end();
         window->swapAndPool();
