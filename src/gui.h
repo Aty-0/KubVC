@@ -11,6 +11,9 @@ namespace kubvc::render
             void init();
             void destroy();
 
+            void beginDockspace();
+            void endDockspace();
+
             void begin();
             void end();
     };
