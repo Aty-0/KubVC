@@ -9,24 +9,24 @@ static inline std::string getTypeName(const kubvc::algorithm::NodeTypes& type)
 {
     switch (type)
     {
-    case kubvc::algorithm::NodeTypes::None:
-        return "None";           
-    case kubvc::algorithm::NodeTypes::Root:
-        return "Root";           
-    case kubvc::algorithm::NodeTypes::Number: 
-        return "Number";           
-    case kubvc::algorithm::NodeTypes::Variable:
-        return "Variable";           
-    case kubvc::algorithm::NodeTypes::Function:
-        return "Function";           
-    case kubvc::algorithm::NodeTypes::Operator:
-        return "Operator";               
+        case kubvc::algorithm::NodeTypes::None:
+            return "None";           
+        case kubvc::algorithm::NodeTypes::Root:
+            return "Root";           
+        case kubvc::algorithm::NodeTypes::Number: 
+            return "Number";           
+        case kubvc::algorithm::NodeTypes::Variable:
+            return "Variable";           
+        case kubvc::algorithm::NodeTypes::Function:
+            return "Function";           
+        case kubvc::algorithm::NodeTypes::Operator:
+            return "Operator";               
     }
 
     return "Unknown";
 }
 
-static void showTreeLegacy(std::shared_ptr<kubvc::algorithm::Node> start)
+static void showTreeList(std::shared_ptr<kubvc::algorithm::Node> start)
 {
     // We are reached the end of tree 
     if (start == nullptr)
@@ -35,16 +35,16 @@ static void showTreeLegacy(std::shared_ptr<kubvc::algorithm::Node> start)
     auto type = start->getType();
     static const auto flag = ImGuiTreeNodeFlags_DefaultOpen;
     auto nodeName = std::string();
-
+    
     switch (type)
     {
         case kubvc::algorithm::NodeTypes::Root:
         {
             auto node = static_cast<kubvc::algorithm::RootNode*>(start.get());
-            nodeName = "##" + std::to_string(node->id);
+            nodeName = "Root id:" + std::to_string(node->id);
             if (ImGui::TreeNodeEx(nodeName.c_str(), flag))
             {
-                showTreeLegacy(node->child);
+                showTreeList(node->child);
                 ImGui::TreePop();  
             }  
             break;
@@ -52,7 +52,7 @@ static void showTreeLegacy(std::shared_ptr<kubvc::algorithm::Node> start)
         case kubvc::algorithm::NodeTypes::Number:
         {
             auto node = static_cast<kubvc::algorithm::NumberNode*>(start.get());         
-            nodeName = std::to_string(node->value) + "##" + std::to_string(node->id);
+            nodeName = std::to_string(node->value) + " id:" + std::to_string(node->id);
 
             if (ImGui::TreeNodeEx(nodeName.c_str(), flag))
             {
@@ -63,13 +63,13 @@ static void showTreeLegacy(std::shared_ptr<kubvc::algorithm::Node> start)
         case kubvc::algorithm::NodeTypes::Operator:
         {
             auto node = static_cast<kubvc::algorithm::OperatorNode*>(start.get());         
-            nodeName = std::string(1, node->operation) +  "##" + std::to_string(node->id); 
+            nodeName = std::string(1, node->operation) + " id:" + std::to_string(node->id); 
             if (ImGui::TreeNodeEx(nodeName.c_str(), flag))
             {
                 ImGui::Text("Left");
-                showTreeLegacy(node->left);            
+                showTreeList(node->left);            
                 ImGui::Text("Right");
-                showTreeLegacy(node->right);
+                showTreeList(node->right);
                 ImGui::TreePop();  
             }  
             break;    
@@ -77,11 +77,28 @@ static void showTreeLegacy(std::shared_ptr<kubvc::algorithm::Node> start)
         case kubvc::algorithm::NodeTypes::Variable:
         {
             auto node = static_cast<kubvc::algorithm::VariableNode*>(start.get());         
-            nodeName = node->value + "##" + std::to_string(node->id); 
+            nodeName = node->value + " id:" +std::to_string(node->id); 
             if (ImGui::TreeNodeEx(nodeName.c_str(), flag))
             {
                 ImGui::TreePop();  
             }  
+            break;
+        }
+        case kubvc::algorithm::NodeTypes::Function:
+        {
+            auto node = static_cast<kubvc::algorithm::FunctionNode*>(start.get());         
+            nodeName = node->name + " id:" +std::to_string(node->id); 
+            if (ImGui::TreeNodeEx(nodeName.c_str(), flag))
+            {
+                ImGui::TreePop();  
+            }  
+            break;
+        }
+        case kubvc::algorithm::NodeTypes::Invalid:
+        {
+            auto node = static_cast<kubvc::algorithm::InvalidNode*>(start.get());         
+            nodeName = node->name + " id:" + std::to_string(node->id);   
+            ImGui::TextColored(ImVec4(255, 0, 0, 255), "Invalid");
             break;
         }
         default:
@@ -90,64 +107,37 @@ static void showTreeLegacy(std::shared_ptr<kubvc::algorithm::Node> start)
     }
 }
 
-enum IndentMode 
-{
-    None,
-    Right,
-    Left
-};
+static const auto MOVE = 100.0f;
 
-static constexpr auto IndentAugment = 60.0f; 
-
-static void showTree(std::shared_ptr<kubvc::algorithm::Node> start, ImVec2 offset, IndentMode mode = IndentMode::None)
+static void showTree(std::shared_ptr<kubvc::algorithm::Node> start, ImVec2 offset, ImVec2 pos = ImVec2(0,0), ImVec2 prev_pos = ImVec2(0,0))
 {
-    static float indent = 0.0f;
     // We are reached the end of tree 
     if (start == nullptr)
     {
         return;
     }
 
-
     auto type = start->getType();
-    
-    if (type == kubvc::algorithm::NodeTypes::Operator)
-        mode = IndentMode::None;
-
-    switch (mode)
-    {
-        case IndentMode::Left:
-            ImGui::SetCursorPos(ImVec2((indent / 2) + offset.x, indent + offset.y));
-            indent += IndentAugment;
-            break;
-        case IndentMode::Right:
-            ImGui::SetCursorPos(ImVec2((indent / 2) + offset.x + 100.0f, (indent - IndentAugment) + offset.y));
-            break;        
-        default:
-            indent += IndentAugment;
-            if (type == kubvc::algorithm::NodeTypes::Operator)
-                ImGui::SetCursorPos(ImVec2(offset.x, indent + offset.y));
-            else
-                ImGui::SetCursorPos(ImVec2(offset.x, offset.y));
-            break;
-    }
-
     auto nodeName = std::string();
+    
     switch (type)
     {
         case kubvc::algorithm::NodeTypes::Root:
         {
             auto node = static_cast<kubvc::algorithm::RootNode*>(start.get());
             nodeName = ". #" + std::to_string(node->id);
+            
+            ImGui::SetCursorPos(ImVec2(offset.x, offset.y));
             ImGui::Text(nodeName.c_str());
-            indent = 0.0f;
-            showTree(node->child, ImVec2(offset.x, offset.y + IndentAugment));
+            showTree(node->child, ImVec2(offset.x, offset.y), ImVec2(0, MOVE));
             break;
         }
         case kubvc::algorithm::NodeTypes::Number:
         {
             auto node = static_cast<kubvc::algorithm::NumberNode*>(start.get());         
             nodeName = std::to_string(node->value) + " #" + std::to_string(node->id);
+            const auto size = nodeName.size();
+            ImGui::SetCursorPos(ImVec2(offset.x + pos.x - size, offset.y + pos.y));
             ImGui::Text(nodeName.c_str());
             break;            
         }
@@ -155,17 +145,30 @@ static void showTree(std::shared_ptr<kubvc::algorithm::Node> start, ImVec2 offse
         {
             auto node = static_cast<kubvc::algorithm::OperatorNode*>(start.get());         
             nodeName = std::string(1, node->operation) +  " #" + std::to_string(node->id);
-            ImGui::Text(nodeName.c_str());
 
-            showTree(node->left, offset, IndentMode::Left);                                    
-            showTree(node->right, offset, IndentMode::Right);
-            
+            const auto size = nodeName.size();
+            ImGui::SetCursorPos(ImVec2(offset.x + pos.x - size, offset.y + pos.y));
+            ImGui::Text(nodeName.c_str());
+            if (node->left != nullptr)
+            {
+                showTree(node->left, offset, node->left->getType() == kubvc::algorithm::NodeTypes::Operator 
+                    ? ImVec2(pos.x + -MOVE * 2, pos.y + MOVE) : ImVec2(pos.x + -MOVE, pos.y + MOVE), pos);                                    
+            }
+
+            if (node->right != nullptr)
+            {
+                showTree(node->right, offset, node->right->getType() == kubvc::algorithm::NodeTypes::Operator 
+                    ? ImVec2(pos.x + MOVE * 2, pos.y + MOVE) : ImVec2(pos.x + MOVE, pos.y + MOVE), pos);                                 
+            }
+
             break;    
         }
         case kubvc::algorithm::NodeTypes::Variable:
         {
             auto node = static_cast<kubvc::algorithm::VariableNode*>(start.get());         
             nodeName = node->value + " #" + std::to_string(node->id); 
+            const auto size = nodeName.size();
+            ImGui::SetCursorPos(ImVec2(offset.x + pos.x - size, offset.y + pos.y));
             ImGui::Text(nodeName.c_str());
             break;
         }
@@ -173,33 +176,74 @@ static void showTree(std::shared_ptr<kubvc::algorithm::Node> start, ImVec2 offse
         {
             auto node = static_cast<kubvc::algorithm::FunctionNode*>(start.get());         
             nodeName = node->name + " #" + std::to_string(node->id); 
+            const auto size = nodeName.size();
+            ImGui::SetCursorPos(ImVec2(offset.x + pos.x - size, offset.y + pos.y));
             ImGui::Text(nodeName.c_str());
+            ImGui::SameLine();
+            if (node->argument != nullptr)
+            {
+                switch (node->argument->getType())
+                {
+                    case kubvc::algorithm::NodeTypes::Number:
+                    {
+                        auto numberArg = std::dynamic_pointer_cast<kubvc::algorithm::NumberNode>(node->argument);        
+                        // FIXME: why %f is showing 0 need investigate and remove std::to_string            
+                        ImGui::Text("(%s)", std::to_string(numberArg->value).c_str());
+                        break;
+                    }   
+                    case kubvc::algorithm::NodeTypes::Variable:
+                    {
+                        auto numberArg = std::dynamic_pointer_cast<kubvc::algorithm::VariableNode>(node->argument);                    
+                        ImGui::Text("(%s)", numberArg->value.c_str());
+                        break;
+                    }   
+                }
+            }
+            else 
+            {
+                ImGui::Text("(INV_ARG)");
+            }
+
+
             break;
         }
         case kubvc::algorithm::NodeTypes::Invalid:
         {
             auto node = static_cast<kubvc::algorithm::InvalidNode*>(start.get());         
             nodeName = node->name + " #" + std::to_string(node->id); 
+            const auto size = nodeName.size();
+            ImGui::SetCursorPos(ImVec2(offset.x + pos.x - size, offset.y + pos.y));
             ImGui::TextColored(ImVec4(255, 0, 0, 255), nodeName.c_str());
             break;
         }
         default:
+            ImGui::SetCursorPos(ImVec2(offset.x + pos.x, offset.y + pos.y));
             ImGui::TextColored(ImVec4(255, 0, 0, 255), "UNK");
             ERROR("Unknown type or not implemented");
             break;
     }
+
+    auto regAvail = ImGui::GetWindowWidth() / ImGui::GetWindowHeight(); 
+    auto drawList = ImGui::GetWindowDrawList();
+    drawList->AddLine(ImVec2((offset.x + prev_pos.x) - regAvail, (offset.y + prev_pos.y + MOVE * 2) - regAvail), 
+        ImVec2((offset.x + pos.x) - regAvail, (offset.y + pos.y + MOVE * 2) - regAvail), IM_COL32(255,255,255,150), 2.0f);
+    
 }
 
-static void drawTreeChild(const kubvc::algorithm::ASTree& tree)
+static void showTreeVisual(const kubvc::algorithm::ASTree& tree)
 {            
     static constexpr auto childFlags = ImGuiChildFlags_::ImGuiChildFlags_Borders; 
     static auto pos = ImVec2(0,0);
+    static auto width = 0.65f;
+    
+    // TODO: Soo, how we can implement zoom
+    //ImGui::SliderFloat("Width##TreeChildWindow", &width, 0.1f, 2.0f);
+
     if (ImGui::BeginChild("TreeChildWindow", ImVec2(0,0), childFlags, ImGuiWindowFlags_NoInputs))
     { 
-        //auto root = std::dynamic_pointer_cast<kubvc::algorithm::RootNode>(tree.getRoot());        
-        //ImGui::Text("root child element info | id: %d | type: %s", root->child->id, getTypeName(root->child->getType()).c_str());
-
+        //ImGui::PushItemWidth(ImGui::GetWindowWidth() * width);
         showTree(tree.getRoot(), pos);
+        //ImGui::PopItemWidth();
     }   
     
     auto io = ImGui::GetIO();
@@ -211,7 +255,6 @@ static void drawTreeChild(const kubvc::algorithm::ASTree& tree)
     ImGui::EndChild();
 }
 
-// TODO: Actually variables can be named with much bigger names instade one char
 static auto createVariableNode(const kubvc::algorithm::ASTree& tree, char value)
 {
     auto varNode = tree.createNode<kubvc::algorithm::VariableNode>();
@@ -247,30 +290,29 @@ static auto createFunction(const kubvc::algorithm::ASTree& tree, const std::stri
 {
     auto funcNode = tree.createNode<kubvc::algorithm::FunctionNode>();
     funcNode->name = name;
-    // TODO: Args
 
     return funcNode;
 }
 
-static inline auto getCurrentChar(const std::size_t& cursor, const std::string& text) 
+static inline unsigned char getCurrentChar(const std::size_t& cursor, const std::string& text) 
 {
     if (cursor > text.size())
     {
         FATAL("Cursor is out of bounds");
         return '\0';
     }
-    
-    return text[cursor];
+    auto character = text[cursor];
+
+    return static_cast<unsigned char>(character);
 }
 
 static auto parseNumbers(std::size_t& cursor, const std::string& text)
 {
     char character = getCurrentChar(cursor, text);
     std::string output = std::string();
-    while(kubvc::algorithm::AlgorithmHelpers::isDigit(character) 
-        || kubvc::algorithm::AlgorithmHelpers::isDot(character))
+    while(kubvc::algorithm::Helpers::isDigit(character) 
+        || kubvc::algorithm::Helpers::isDot(character))
     {
-        //DEBUG("%s %c", output.c_str(), character);
         output += character;
         cursor++;
         character = getCurrentChar(cursor, text);
@@ -282,7 +324,7 @@ static auto parseLetters(std::size_t& cursor, const std::string& text)
 {
     char character = getCurrentChar(cursor, text);
     std::string output = std::string();
-    while(kubvc::algorithm::AlgorithmHelpers::isLetter(character))
+    while(kubvc::algorithm::Helpers::isLetter(character))
     {
         output += character;
         cursor++;
@@ -291,60 +333,58 @@ static auto parseLetters(std::size_t& cursor, const std::string& text)
     return output;
 }
 
-static std::shared_ptr<kubvc::algorithm::Node> parseFunction(const kubvc::algorithm::ASTree& tree, const std::size_t& cursor_pos, const std::string& text)
+static std::shared_ptr<kubvc::algorithm::Node> parseExpression(const kubvc::algorithm::ASTree& tree, const std::string& text, std::size_t& cursor, bool isSubExpression);
+static std::shared_ptr<kubvc::algorithm::Node> parseFunction(const kubvc::algorithm::ASTree& tree, const std::size_t& cursor_pos, std::size_t& cursor, const std::string& text)
 {
-    std::size_t cursor = cursor_pos;
-    char character = getCurrentChar(cursor, text);
+    std::size_t funcCursor = cursor_pos;
+    char character = getCurrentChar(funcCursor, text);
     std::string funcName = std::string();
-    while(kubvc::algorithm::AlgorithmHelpers::isLetter(character))
+    while(kubvc::algorithm::Helpers::isLetter(character))
     {
         funcName += character;
-        cursor++;
-        character = getCurrentChar(cursor, text);        
+        funcCursor++;
+        character = getCurrentChar(funcCursor, text);        
     } 
     
-    if (cursor >= text.size())
+    if (funcCursor >= text.size())
         return createInvalid(tree, text);
   
-    character = getCurrentChar(cursor, text);        
-  
-    if (kubvc::algorithm::AlgorithmHelpers::isBracketStart(character))
+    character = getCurrentChar(funcCursor, text);        
+
+    // TODO: It's kinda wrong implementation, but it's fine for now...
+    if (kubvc::algorithm::Helpers::isBracketStart(character))
     {
-        while(!kubvc::algorithm::AlgorithmHelpers::isBracketEnd(character))
+        cursor++;
+        auto argsNode = parseExpression(tree, text, cursor, true);
+        switch (argsNode->getType())
         {
-            cursor++;
-            if (cursor >= text.size())
+            case kubvc::algorithm::NodeTypes::Number:
+            case kubvc::algorithm::NodeTypes::Variable:
             {
-                return createInvalid(tree, text);
+                auto funcNode = createFunction(tree, funcName);
+                funcNode->argument = argsNode;
+                return funcNode;
             }
-
-            character = getCurrentChar(cursor, text);        
-            // TODO: Add args
-        } 
-    }
-    else 
-    {
-        return createInvalid(tree, text);
+        }
     }
 
-    return createFunction(tree, funcName);
+    return createInvalid(tree, text);
 }
 
-static std::shared_ptr<kubvc::algorithm::Node> parseExpression(const kubvc::algorithm::ASTree& tree, const std::string& text, std::size_t& cursor);
 
 static std::shared_ptr<kubvc::algorithm::Node> parseElement(const kubvc::algorithm::ASTree& tree, const std::string& text, std::size_t& cursor, char currentChar)
 {
     DEBUG("try to find something usefull for %c", currentChar); 
 
     // Skip white space if we are find it  
-    if (kubvc::algorithm::AlgorithmHelpers::isWhiteSpace(currentChar))
+    if (kubvc::algorithm::Helpers::isWhiteSpace(currentChar))
     {
         DEBUG("Ignore white space in parse element stage"); 
         cursor++;
         currentChar = getCurrentChar(cursor, text);
     } 
 
-    if (kubvc::algorithm::AlgorithmHelpers::isDigit(currentChar))
+    if (kubvc::algorithm::Helpers::isDigit(currentChar))
     {
         auto out = parseNumbers(cursor, text);
 
@@ -355,7 +395,7 @@ static std::shared_ptr<kubvc::algorithm::Node> parseElement(const kubvc::algorit
         }
         else
         {
-            if (kubvc::algorithm::AlgorithmHelpers::isNumber(out))
+            if (kubvc::algorithm::Helpers::isNumber(out))
             {
                 return createNumberNode(tree, std::atof(out.c_str()));                
             }
@@ -365,7 +405,7 @@ static std::shared_ptr<kubvc::algorithm::Node> parseElement(const kubvc::algorit
             }
         }
     }    
-    else if (kubvc::algorithm::AlgorithmHelpers::isLetter(currentChar))
+    else if (kubvc::algorithm::Helpers::isLetter(currentChar))
     {
         auto out = parseLetters(cursor, text);
         DEBUG("Is letter | parsed %s", out.c_str());
@@ -377,7 +417,7 @@ static std::shared_ptr<kubvc::algorithm::Node> parseElement(const kubvc::algorit
         else if (outSize > 1)
         {
             DEBUG("Parse function...");
-            return parseFunction(tree, cursor - outSize, text);
+            return parseFunction(tree, cursor - outSize, cursor, text);
         }
         else 
         {
@@ -385,11 +425,11 @@ static std::shared_ptr<kubvc::algorithm::Node> parseElement(const kubvc::algorit
             return createVariableNode(tree, currentChar);
         }
     }
-    else if (kubvc::algorithm::AlgorithmHelpers::isBracketStart(currentChar))
+    else if (kubvc::algorithm::Helpers::isBracketStart(currentChar)) 
     {
         cursor++;
         DEBUG("Bracket start");
-        auto node = parseExpression(tree, text, cursor);
+        auto node = parseExpression(tree, text, cursor, true);
         return node;
     }
 
@@ -398,32 +438,40 @@ static std::shared_ptr<kubvc::algorithm::Node> parseElement(const kubvc::algorit
     return createInvalid(tree, "INV_NODE");
 }
 
-static std::shared_ptr<kubvc::algorithm::Node> parseExpression(const kubvc::algorithm::ASTree& tree, const std::string& text, std::size_t& cursor)
+static std::shared_ptr<kubvc::algorithm::Node> parseExpression(const kubvc::algorithm::ASTree& tree, const std::string& text, std::size_t& cursor, bool isSubExpression)
 {
+    // Don't do anything if text is empty 
+    if (text.size() == 0)
+        return nullptr;
+
     DEBUG("parseExpression | cursor: %d", cursor);
-    std::shared_ptr<kubvc::algorithm::Node> right = parseElement(tree, text, cursor, getCurrentChar(cursor, text));
-    
+    std::shared_ptr<kubvc::algorithm::Node> left = parseElement(tree, text, cursor, getCurrentChar(cursor, text));
+
     while (true)
     {
         auto character = getCurrentChar(cursor, text);  
         DEBUG("Current character in expression cycle: %c", character); 
 
         // Ignore white spaces
-        if (kubvc::algorithm::AlgorithmHelpers::isWhiteSpace(character))
+        if (kubvc::algorithm::Helpers::isWhiteSpace(character))
         {
             DEBUG("Ignore white space in expression parse"); 
             cursor++;
             continue;
         }  
-        // We are want to continue cycle 
-        else if (kubvc::algorithm::AlgorithmHelpers::isBracketEnd(character))
+        // We are want to continue cycle or want to break it if it's a subexpression
+        else if (kubvc::algorithm::Helpers::isBracketEnd(character))
         {
             DEBUG("End of bracket");
             cursor++;
+
+            if (isSubExpression)
+                return left;
+
             continue;
         }
         // If current character is not operator we are leave from cycle 
-        else if (!kubvc::algorithm::AlgorithmHelpers::isOperator(character))
+        else if (!kubvc::algorithm::Helpers::isOperator(character))
         {
             DEBUG("Leave from cycle");
             break;
@@ -432,32 +480,65 @@ static std::shared_ptr<kubvc::algorithm::Node> parseExpression(const kubvc::algo
         // Augment cursor position 
         cursor++;  
         // Try to find something 
-        auto left = parseElement(tree, text, cursor, getCurrentChar(cursor, text));
-        if (left == nullptr)
+        auto right = parseElement(tree, text, cursor, getCurrentChar(cursor, text));
+        if (right == nullptr)
         {
             ERROR("parseElement is returned nullptr, maybe syntax error or not implemented element");
             return nullptr;
         }
 
-        right = createExpression(tree, left, right, character);
+        left = createExpression(tree, left, right, character);
     }   
 
-    return right;
+    // If we are actually leave from cycle and if isSubExpression is true, 
+    // it means we are not found end brecket symbol, so it's a invalid expression   
+    if (isSubExpression)
+    {
+        return createInvalid(tree, "InvalidBrecket");
+    }
+
+    return left;
 }
 
 static void parse(const kubvc::algorithm::ASTree& tree, const std::string& text, const std::size_t cursor_pos = 0)
 {
     std::size_t cursor = cursor_pos;
     auto root = static_cast<kubvc::algorithm::RootNode*>(tree.getRoot().get());
-    root->child = parseExpression(tree, text, cursor);
+    root->child = parseExpression(tree, text, cursor, false);
 }
 
-static void testTree(kubvc::algorithm::ASTree& tree)
+static void createTree(kubvc::algorithm::ASTree& tree)
 { 
     tree.clear();
     tree.makeRoot();
     //parse(tree, "((1 + 4) * 2) + 3 + 4");
     //parse(tree, "((1+4)*2)+3+4");
+}
+
+static std::int32_t testExprAdd = 1;
+
+static void drawAddFunction(kubvc::algorithm::ASTree& tree, char* buf, const std::size_t& size, const std::int32_t& id)
+{
+    auto idStr = std::to_string(id);
+    
+    ImGui::Text(idStr.c_str());
+    
+    ImGui::SameLine();
+    if (ImGui::InputText(("##" + idStr + "_ExprInputText").c_str(), buf, size))
+    {
+        parse(tree, buf);
+    }
+    
+    ImGui::SameLine();
+    
+    ImGui::PushID(("##" + idStr + "_ExprButton").c_str());
+    if (ImGui::Button("-"))
+    {
+        // TODO: Remove current expression
+        testExprAdd--;
+    }
+
+    ImGui::PopID();
 }
 
 int main()
@@ -473,56 +554,68 @@ int main()
     gui->init();
 
     kubvc::algorithm::ASTree tree;
-    testTree(tree);    
+    createTree(tree);    
+
     constexpr auto MAX_BUFFER_SIZE = 1024;
     char buf[MAX_BUFFER_SIZE] = { '\0' };
-        
+
     // Run main loop 
     while (!window->shouldClose())
     {
-        render->render();
+        render->clear();
         gui->begin();
-        
-        // TODO: Convert function into gui class  
-        if (ImGui::Begin("Toolbox"))
+        gui->beginDockspace();
         {
-            ImGui::Text("TODO: Add functions");
-
-            if (ImGui::InputText("Parse Text", buf, IM_ARRAYSIZE(buf)))
+            // TODO: Convert function into gui class  
+            if (ImGui::Begin("Toolbox"))
             {
-                parse(tree, buf);
-            }
+                if (ImGui::Button("+"))
+                {
+                    testExprAdd++;
+                }
 
-            ImGui::Separator();
-            ImGui::Text("AST:");   
+                ImGui::Separator();
 
-            static bool useLegacyTree = false;
-            ImGui::Checkbox("use legacy tree", &useLegacyTree);
-            if (useLegacyTree)
-            {
-                showTreeLegacy(tree.getRoot());
+                for (std::int32_t i = 0; i < testExprAdd; i++)
+                {
+                    drawAddFunction(tree, buf, IM_ARRAYSIZE(buf), i);
+                }
+               
+
+                ImGui::Separator();
+
+                ImGui::Text("AST:");   
+                static bool listStyleTree = false;
+                ImGui::Checkbox("List style for tree", &listStyleTree);
+                if (listStyleTree)
+                {
+                    showTreeList(tree.getRoot());
+                }
+                else
+                {
+                    showTreeVisual(tree);
+                }
             }
-            else
-            {
-                drawTreeChild(tree);
+            ImGui::End();
+
+            if (ImGui::Begin("Viewer"))
+            {           
+                auto size = ImGui::GetContentRegionAvail();
+                if (ImPlot::BeginPlot("PlotTitle", size)) 
+                {	
+                    static constexpr int test_data[] = {1,2,3,4,5};
+
+                    ImPlot::PlotLine("PlotName", test_data, test_data, 4);
+
+                    ImPlot::EndPlot();
+                }
             }
+            
+            ImGui::End();       
         }
-        ImGui::End();
+        
 
-        if (ImGui::Begin("Viewer"))
-        {           
-            auto size = ImGui::GetContentRegionAvail();
-            if (ImPlot::BeginPlot("PlotTitle", size)) 
-            {	
-                static constexpr int test_data[] = {1,2,3,4,5};
-
-                ImPlot::PlotLine("PlotName", test_data, test_data, 4);
-
-                ImPlot::EndPlot();
-            }
-        }
-        ImGui::End();       
-
+        gui->endDockspace();
         gui->end();
         window->swapAndPool();
     }

@@ -11,7 +11,7 @@ namespace kubvc::render
     {
         public:
             void init();
-            void render();            
+            void clear();            
         private:
             static void onGetError(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, GLchar const* message, void const* user_param);
     };

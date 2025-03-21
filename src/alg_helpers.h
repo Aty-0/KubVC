@@ -3,10 +3,12 @@
 
 namespace kubvc::algorithm
 {
-    class AlgorithmHelpers
+    class Helpers
     {
         public:
-            [[nodiscard]] static inline bool isLetter(char chr)
+            using uchar = unsigned char;
+
+            [[nodiscard]] static inline bool isLetter(uchar chr)
             {
                 return std::isalpha(chr);
             }
@@ -20,17 +22,17 @@ namespace kubvc::algorithm
                 }) != text.end();
             }
 
-            [[nodiscard]] static inline bool isDigit(char chr)
+            [[nodiscard]] static inline bool isDigit(uchar chr)
             {
                 return std::isdigit(chr);
             }
             
-            [[nodiscard]] static inline bool isDot(char chr)
+            [[nodiscard]] static inline bool isDot(uchar chr)
             {
                 return chr == '.';
             }
 
-            [[nodiscard]] static inline bool isOperator(char chr)
+            [[nodiscard]] static inline bool isOperator(uchar chr)
             {
                 switch (chr)
                 {
@@ -46,24 +48,24 @@ namespace kubvc::algorithm
             }
     
             // TODO: Support for other brackets 
-            [[nodiscard]] static inline bool isBracketStart(char chr)
+            [[nodiscard]] static inline bool isBracketStart(uchar chr)
             {
                 return chr == '(';
             }
 
-            [[nodiscard]] static inline bool isBracketEnd(char chr)
+            [[nodiscard]] static inline bool isBracketEnd(uchar chr)
             {
                 return chr == ')';
             }
 
-            [[nodiscard]] static inline bool isEqualsSign(char chr)
+            [[nodiscard]] static inline bool isEqualsSign(uchar chr)
             {
                 return chr == '=';
             }
 
-            [[nodiscard]] static inline bool isWhiteSpace(char chr)
+            [[nodiscard]] static inline bool isWhiteSpace(uchar chr)
             {
-                return chr == ' ';
+                return std::isspace(chr);
             }
     };
 }
