@@ -524,7 +524,7 @@ struct Expression
 
     ~Expression()
     {
-        DEBUG("Clear expression id %d ...", id);
+        DEBUG("Destroy expression id %d ...", id);
 
         show = false;
 
@@ -649,10 +649,6 @@ int main()
     const auto gui = kubvc::render::GUI::getInstance();
     gui->init();
 
-    //kubvc::algorithm::ASTree tree;
-    //createTree(tree);    
-  
-    
     // Run main loop 
     while (!window->shouldClose())
     {
@@ -744,7 +740,10 @@ int main()
         gui->end();
         window->swapAndPool();
     }
-
+    
+    expressions.clear();
+    expressions.shrink_to_fit();
+    
     // Destroy application components
     gui->destroy();
     window->destroy();
