@@ -16,5 +16,8 @@ namespace kubvc::render
 
             void begin();
             void end();
+
+        private:
+            void applyColorTheme();
     };
 }
