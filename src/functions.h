@@ -26,7 +26,7 @@ namespace kubvc::algorithm::functions
         { "arctan",  DISAMBIGUATE_MATH_F(std::atan) },
         // TODO: Arcctg
      
-        { "abs",  DISAMBIGUATE_MATH_F(std::abs) },
+        { "abs",  DISAMBIGUATE_MATH_F(std::fabs) },
         { "exp",  DISAMBIGUATE_MATH_F(std::exp) },
         { "sqrt",  DISAMBIGUATE_MATH_F(std::sqrt) },
         { "ln",  DISAMBIGUATE_MATH_F(std::log) },
