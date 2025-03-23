@@ -448,8 +448,8 @@ static std::shared_ptr<kubvc::algorithm::Node> parseElement(const kubvc::algorit
     else if (kubvc::algorithm::Helpers::isUnaryOperator(currentChar))
     {
         DEBUG("Possible unary operator");
-        cursor++;
-        auto node = parseExpression(tree, text, cursor, isSubExpression);
+        auto cursorUn = cursor + 1;
+        auto node = parseExpression(tree, text,cursorUn, isSubExpression);
         return createUnaryOperator(tree, node, currentChar);
     }
 
@@ -516,10 +516,14 @@ static std::shared_ptr<kubvc::algorithm::Node> parseExpression(const kubvc::algo
     if (isSubExpression)
     {
         // In some cases we are reached from text range by one character, so it can be end of bracket. 
-        auto preLastChar = getCurrentChar(cursor - 1, text);
-        if (kubvc::algorithm::Helpers::isBracketEnd(preLastChar))
+        if (cursor > text.size())
         {
-            return left;    
+            WARN("Edgy case found");
+            auto preLastChar = getCurrentChar(cursor - 1, text);
+            if (kubvc::algorithm::Helpers::isBracketEnd(preLastChar))
+            {
+                return left;    
+            }
         }
 
         return createInvalid(tree, "InvalidBrecket");
