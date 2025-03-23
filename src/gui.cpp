@@ -9,7 +9,7 @@
 
 namespace kubvc::render
 {
-	static const auto DEFAULT_FONT_SIZE = 18.0f; 
+	static const auto DEFAULT_FONT_SIZE = 16.0f; 
 
     void GUI::init()
     {

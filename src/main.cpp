@@ -587,8 +587,6 @@ static void calculatePlotPoints(std::shared_ptr<Expression> expr, double max = M
         expr->plotBufferX[i] = x;
         expr->plotBufferY[i] = result;
     }
-
-
 }
 
 static void drawAddFunction(std::shared_ptr<Expression> expr, const std::int32_t& id, const std::int32_t& index)
@@ -626,6 +624,11 @@ static void drawAddFunction(std::shared_ptr<Expression> expr, const std::int32_t
     }
     ImGui::PopID();
 
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+    {
+        ImGui::SetTooltip("Remove this graph from graph list");
+    }
+
     ImGui::SameLine();
 
     ImGui::PushID(("##" + idStr + "_ExprRadioButton").c_str());    
@@ -634,7 +637,11 @@ static void drawAddFunction(std::shared_ptr<Expression> expr, const std::int32_t
         expr->show = !expr->show;
     }
     ImGui::PopID();
-
+    
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+    {
+        ImGui::SetTooltip("Change visibility for this graph.");
+    }
 }
 
 int main()
@@ -670,6 +677,11 @@ int main()
                     expr->id = id;
 
                     expressions.push_back(expr);
+                }
+
+                if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+                {
+                    ImGui::SetTooltip("A button which you can add new graph.");
                 }
 
                 ImGui::Separator();
@@ -709,6 +721,13 @@ int main()
                         ImGui::Text("No currently selected tree");
                     }
                 }
+                else 
+                {
+                    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+                    {
+                        ImGui::SetTooltip("Show a abstract syntax tree for current graph. Only for debug purposes");
+                    }
+                }
 
             }
             ImGui::End();
@@ -716,7 +735,7 @@ int main()
             if (ImGui::Begin("Viewer"))
             {           
                 auto size = ImGui::GetContentRegionAvail();
-                if (ImPlot::BeginPlot("PlotTitle", size)) 
+                if (ImPlot::BeginPlot("Graph ##PlotViewer", size)) 
                 {	
                     for (auto expr : expressions)
                     {                    
@@ -743,7 +762,7 @@ int main()
     
     expressions.clear();
     expressions.shrink_to_fit();
-    
+
     // Destroy application components
     gui->destroy();
     window->destroy();
