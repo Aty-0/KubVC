@@ -521,6 +521,26 @@ struct Expression
     std::vector<char> textBuffer = std::vector<char>(MAX_BUFFER_SIZE);  
     std::vector<double> plotBufferX = std::vector<double>(MAX_PLOT_BUFFER_SIZE);
     std::vector<double> plotBufferY = std::vector<double>(MAX_PLOT_BUFFER_SIZE);
+
+    ~Expression()
+    {
+        DEBUG("Clear expression id %d ...", id);
+
+        show = false;
+
+        tree.clear();
+
+        id = -1;
+
+        textBuffer.clear();
+        textBuffer.shrink_to_fit();
+
+        plotBufferX.clear();
+        plotBufferX.shrink_to_fit();
+
+        plotBufferY.clear();
+        plotBufferY.shrink_to_fit();
+    }
 };
 
 static std::vector<std::shared_ptr<Expression>> expressions = { };  
