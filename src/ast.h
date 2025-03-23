@@ -15,6 +15,7 @@ namespace kubvc::algorithm
         Variable,
         Function,
         Operator,           
+        UnaryOperator,           
         Invalid,           
     };
 
@@ -69,41 +70,68 @@ namespace kubvc::algorithm
         std::string name;
     };
 
+    enum class Operators 
+    {
+        Plus, 
+        Minus,
+        Multiplication,
+        Division,
+        Power,
+        Equal,
+        Unknown,
+    };
+
+    [[nodiscard]] static inline Operators getOperatorFrom(unsigned char chr)
+    {   
+        switch (chr)
+        {
+            case '+':
+                return Operators::Plus;
+            case '-':
+                return Operators::Minus;
+            case '*':
+                return Operators::Multiplication;
+            case '/':
+                return Operators::Division;
+            case '=':
+                return Operators::Equal;
+            case '^':
+                return Operators::Power;
+        }
+        return Operators::Unknown;
+    } 
+
+    struct UnaryOperatorNode : public Node
+    {
+        inline virtual auto getType() -> NodeTypes const final { return NodeTypes::UnaryOperator; }
+
+        char operation;
+        std::shared_ptr<Node> child; 
+        
+        inline virtual void calculate(const double& n, double& result) final
+        {
+            if (child == nullptr || child->getType() == NodeTypes::Invalid)
+                return;
+
+            child->calculate(n, result);
+            
+            auto op = getOperatorFrom(operation);
+            switch(op)
+            {
+                case Operators::Plus:
+                    result = std::fabs(result);
+                    break;
+                case Operators::Minus:
+                    result = -result;
+                    break;
+            }
+        }
+    };
+
     // Operator can store left and right node links
     struct OperatorNode : public Node
     {
-        inline virtual auto getType() -> NodeTypes const final { return NodeTypes::Operator; }
-        
-        enum class Operators 
-        {
-            Plus, 
-            Minus,
-            Multiplication,
-            Division,
-            Power,
-            Equal,
-            Unknown,
-        };
-        
-        [[nodiscard]] static inline Operators getOperatorFrom(unsigned char chr)
-        {   
-            switch (chr)
-            {
-                case '+':
-                    return Operators::Plus;
-                case '-':
-                    return Operators::Minus;
-                case '*':
-                    return Operators::Multiplication;
-                case '/':
-                    return Operators::Division;
-                case '=':
-                    return Operators::Equal;
-                case '^':
-                    return Operators::Power;
-            }
-            return Operators::Unknown;
-        } 
+        inline virtual auto getType() -> NodeTypes const final { return NodeTypes::Operator; }        
 
         char operation;
         std::shared_ptr<Node> right; 
@@ -169,6 +197,7 @@ namespace kubvc::algorithm
             {
                 case NodeTypes::Operator:
                 case NodeTypes::Function:
+                case NodeTypes::UnaryOperator:
                 case NodeTypes::Number:
                 {
                     double argumentResult = 0;

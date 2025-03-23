@@ -45,6 +45,17 @@ namespace kubvc::algorithm
                 return chr == '.';
             }
 
+            [[nodiscard]] static inline bool isUnaryOperator(uchar chr)
+            {
+                switch (chr)
+                {
+                    case '+':
+                    case '-':
+                        return true;
+                }
+                return false;
+            }
+
             [[nodiscard]] static inline bool isOperator(uchar chr)
             {
                 switch (chr)

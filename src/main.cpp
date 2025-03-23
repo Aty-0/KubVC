@@ -84,6 +84,17 @@ static void showTreeList(std::shared_ptr<kubvc::algorithm::Node> start)
             }  
             break;
         }
+        case kubvc::algorithm::NodeTypes::UnaryOperator:
+        {
+            auto node = static_cast<kubvc::algorithm::UnaryOperatorNode*>(start.get());         
+            nodeName = std::string(1, node->operation) + " id:" + std::to_string(node->id); 
+            if (ImGui::TreeNodeEx(nodeName.c_str(), flag))
+            {
+                showTreeList(node->child);     
+                ImGui::TreePop();  
+            }  
+            break;
+        }
         case kubvc::algorithm::NodeTypes::Function:
         {
             auto node = static_cast<kubvc::algorithm::FunctionNode*>(start.get());         
@@ -102,7 +113,7 @@ static void showTreeList(std::shared_ptr<kubvc::algorithm::Node> start)
             break;
         }
         default:
-            ERROR("Unknown type or not implemented");
+            ImGui::TextColored(ImVec4(255, 0, 0, 255), "UNK");
             break;
     }
 }
@@ -172,6 +183,17 @@ static void showTree(std::shared_ptr<kubvc::algorithm::Node> start, ImVec2 offse
             ImGui::Text(nodeName.c_str());
             break;
         }
+        case kubvc::algorithm::NodeTypes::UnaryOperator:
+        {
+            auto node = static_cast<kubvc::algorithm::UnaryOperatorNode*>(start.get());         
+            nodeName = std::string(1, node->operation) + " id:" + std::to_string(node->id); 
+            const auto size = nodeName.size();
+            ImGui::SetCursorPos(ImVec2(offset.x + pos.x - size, offset.y + pos.y));
+            ImGui::Text(nodeName.c_str());
+
+            showTree(node->child, offset, ImVec2(pos.x, pos.y + MOVE), pos);     
+            break;
+        }
         case kubvc::algorithm::NodeTypes::Function:
         {
             auto node = static_cast<kubvc::algorithm::FunctionNode*>(start.get());         
@@ -182,22 +204,8 @@ static void showTree(std::shared_ptr<kubvc::algorithm::Node> start, ImVec2 offse
             ImGui::SameLine();
             if (node->argument != nullptr)
             {
-                switch (node->argument->getType())
-                {
-                    case kubvc::algorithm::NodeTypes::Number:
-                    {
-                        auto numberArg = std::dynamic_pointer_cast<kubvc::algorithm::NumberNode>(node->argument);        
-                        // FIXME: why %f is showing 0 need investigate and remove std::to_string            
-                        ImGui::Text("(%s)", std::to_string(numberArg->value).c_str());
-                        break;
-                    }   
-                    case kubvc::algorithm::NodeTypes::Variable:
-                    {
-                        auto numberArg = std::dynamic_pointer_cast<kubvc::algorithm::VariableNode>(node->argument);                    
-                        ImGui::Text("(%s)", numberArg->value.c_str());
-                        break;
-                    }   
-                }
+                ImGui::Text("Args tree:");
+                showTree(node->argument, offset, ImVec2(pos.x, pos.y + MOVE), pos);     
             }
             else 
             {
@@ -219,7 +227,7 @@ static void showTree(std::shared_ptr<kubvc::algorithm::Node> start, ImVec2 offse
         default:
             ImGui::SetCursorPos(ImVec2(offset.x + pos.x, offset.y + pos.y));
             ImGui::TextColored(ImVec4(255, 0, 0, 255), "UNK");
-            ERROR("Unknown type or not implemented");
+            //ERROR("Unknown type or not implemented");
             break;
     }
 
@@ -269,7 +277,7 @@ static auto createNumberNode(const kubvc::algorithm::ASTree& tree, double value)
     return numNode;
 }
 
-static auto createExpression(const kubvc::algorithm::ASTree& tree, std::shared_ptr<kubvc::algorithm::Node> x, 
+static auto createOperator(const kubvc::algorithm::ASTree& tree, std::shared_ptr<kubvc::algorithm::Node> x, 
     std::shared_ptr<kubvc::algorithm::Node> y, char op)
 {
     auto opNode = tree.createNode<kubvc::algorithm::OperatorNode>();
@@ -278,6 +286,15 @@ static auto createExpression(const kubvc::algorithm::ASTree& tree, std::shared_p
     opNode->right = std::move(y);
     return opNode;
 }
+
+static auto createUnaryOperator(const kubvc::algorithm::ASTree& tree, std::shared_ptr<kubvc::algorithm::Node> x, char op)
+{
+    auto opNode = tree.createNode<kubvc::algorithm::UnaryOperatorNode>();
+    opNode->operation = op;
+    opNode->child = std::move(x);
+    return opNode;
+}
+
 
 static auto createInvalid(const kubvc::algorithm::ASTree& tree, const std::string& name)
 {
@@ -368,7 +385,7 @@ static std::shared_ptr<kubvc::algorithm::Node> parseFunction(const kubvc::algori
 }
 
 
-static std::shared_ptr<kubvc::algorithm::Node> parseElement(const kubvc::algorithm::ASTree& tree, const std::string& text, std::size_t& cursor, char currentChar)
+static std::shared_ptr<kubvc::algorithm::Node> parseElement(const kubvc::algorithm::ASTree& tree, const std::string& text, std::size_t& cursor, char currentChar, bool isSubExpression)
 {
     DEBUG("try to find something usefull for %c", currentChar); 
 
@@ -427,6 +444,13 @@ static std::shared_ptr<kubvc::algorithm::Node> parseElement(const kubvc::algorit
         DEBUG("Bracket start");
         auto node = parseExpression(tree, text, cursor, true);
         return node;
+    } 
+    else if (kubvc::algorithm::Helpers::isUnaryOperator(currentChar))
+    {
+        DEBUG("Possible unary operator");
+        cursor++;
+        auto node = parseExpression(tree, text, cursor, isSubExpression);
+        return createUnaryOperator(tree, node, currentChar);
     }
 
     DEBUG("Nothing found");
@@ -441,22 +465,22 @@ static std::shared_ptr<kubvc::algorithm::Node> parseExpression(const kubvc::algo
         return nullptr;
 
     DEBUG("parseExpression | cursor: %d", cursor);
-    std::shared_ptr<kubvc::algorithm::Node> left = parseElement(tree, text, cursor, getCurrentChar(cursor, text));
+    std::shared_ptr<kubvc::algorithm::Node> left = parseElement(tree, text, cursor, getCurrentChar(cursor, text), isSubExpression);
 
     while (true)
     {
-        auto character = getCurrentChar(cursor, text);  
-        DEBUG("Current character in expression cycle: %c", character); 
+        auto currentChar = getCurrentChar(cursor, text);  
+        DEBUG("Current character in expression cycle: %c", currentChar); 
 
         // Ignore white spaces
-        if (kubvc::algorithm::Helpers::isWhiteSpace(character))
+        if (kubvc::algorithm::Helpers::isWhiteSpace(currentChar))
         {
             DEBUG("Ignore white space in expression parse"); 
             cursor++;
             continue;
         }  
         // We are want to continue cycle or want to break it if it's a subexpression
-        else if (kubvc::algorithm::Helpers::isBracketEnd(character))
+        else if (kubvc::algorithm::Helpers::isBracketEnd(currentChar))
         {
             DEBUG("End of bracket");
             cursor++;
@@ -467,29 +491,37 @@ static std::shared_ptr<kubvc::algorithm::Node> parseExpression(const kubvc::algo
             continue;
         }
         // If current character is not operator we are leave from cycle 
-        else if (!kubvc::algorithm::Helpers::isOperator(character))
+        else if (!kubvc::algorithm::Helpers::isOperator(currentChar))
         {
             DEBUG("Leave from cycle");
+            DEBUG("----------------------------------------");
             break;
         }
 
         // Augment cursor position 
         cursor++;  
         // Try to find something 
-        auto right = parseElement(tree, text, cursor, getCurrentChar(cursor, text));
+        auto right = parseElement(tree, text, cursor, getCurrentChar(cursor, text), isSubExpression);
         if (right == nullptr)
         {
             ERROR("parseElement is returned nullptr, maybe syntax error or not implemented element");
             return nullptr;
         }
 
-        left = createExpression(tree, left, right, character);
+        left = createOperator(tree, left, right, currentChar);
     }   
 
     // If we are actually leave from cycle and if isSubExpression is true, 
     // it means we are not found end brecket symbol, so it's a invalid expression   
     if (isSubExpression)
     {
+        // In some cases we are reached from text range by one character, so it can be end of bracket. 
+        auto preLastChar = getCurrentChar(cursor - 1, text);
+        if (kubvc::algorithm::Helpers::isBracketEnd(preLastChar))
+        {
+            return left;    
+        }
+
         return createInvalid(tree, "InvalidBrecket");
     }
 
@@ -735,12 +767,15 @@ int main()
             if (ImGui::Begin("Viewer"))
             {           
                 auto size = ImGui::GetContentRegionAvail();
-                if (ImPlot::BeginPlot("Graph ##PlotViewer", size)) 
+                const auto plotFlags = ImPlotFlags_::ImPlotFlags_NoTitle | ImPlotFlags_::ImPlotFlags_Crosshairs;
+
+                if (ImPlot::BeginPlot("##PlotViewer", size, plotFlags)) 
                 {	
                     for (auto expr : expressions)
                     {                    
                         if (expr != nullptr)
                         {
+                            // TODO: Legend can change visibility too 
                             if (expr->show == true)
                             {
                                 ImPlot::PlotLine(expr->textBuffer.data(), expr->plotBufferX.data(), expr->plotBufferY.data(), MAX_PLOT_BUFFER_SIZE);
