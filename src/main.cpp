@@ -507,34 +507,114 @@ static void createTree(kubvc::algorithm::ASTree& tree)
 { 
     tree.clear();
     tree.makeRoot();
-    //parse(tree, "((1 + 4) * 2) + 3 + 4");
-    //parse(tree, "((1+4)*2)+3+4");
 }
 
-static std::int32_t testExprAdd = 1;
+static const auto MAX_FUNC_RANGE = 100;
+static const auto MAX_BUFFER_SIZE = 1024;
+static const auto MAX_PLOT_BUFFER_SIZE = 2048;
 
-static void drawAddFunction(kubvc::algorithm::ASTree& tree, char* buf, const std::size_t& size, const std::int32_t& id)
+struct Expression
+{
+    bool show = true;
+    kubvc::algorithm::ASTree tree = { };
+    std::int32_t id = -1;
+    std::vector<char> textBuffer = std::vector<char>(MAX_BUFFER_SIZE);  
+    std::vector<double> plotBufferX = std::vector<double>(MAX_PLOT_BUFFER_SIZE);
+    std::vector<double> plotBufferY = std::vector<double>(MAX_PLOT_BUFFER_SIZE);
+};
+
+static std::vector<std::shared_ptr<Expression>> expressions = { };  
+static std::shared_ptr<Expression> selectedExpression = nullptr;
+
+static void calculatePlotPoints(std::shared_ptr<Expression> expr, double max = MAX_FUNC_RANGE, double min = -MAX_FUNC_RANGE)
+{    
+    auto getRanges = [](const kubvc::algorithm::ASTree& tree, double& xMax, double& xMin)
+    {
+        double yMin = INFINITY;
+        double yMax = -INFINITY;
+        
+        for (std::int32_t i = 0; i < MAX_PLOT_BUFFER_SIZE; ++i)
+        {
+            double result = 0.0;
+            double x = yMin + (yMax - yMin) * static_cast<double>(i) / (MAX_PLOT_BUFFER_SIZE - 1);
+            tree.getRoot()->calculate(x, result);
+            yMin = std::min(yMin, result);
+            yMax = std::max(yMax, result);
+        }
+
+        if (yMin < - 1e6 || yMax > 1e6)
+        {
+            xMin *= 0.5;
+            xMax *= 0.5;
+        } 
+        else if (std::abs(yMin) < 1e-6 
+            && std::abs(yMax) < 1e-6)
+        {
+            xMin *= 2.0;
+            xMax *= 2.0;
+        }
+    };
+
+    double xMax = max;
+    double xMin = min;
+    //getRanges(expr->tree, xMax, xMin);
+
+    for (std::int32_t i = 0; i < MAX_PLOT_BUFFER_SIZE; ++i)
+    {
+        double result = 0.0;
+        double x = xMin + (xMax - xMin) * static_cast<double>(i) / (MAX_PLOT_BUFFER_SIZE - 1);
+        expr->tree.getRoot()->calculate(x, result);
+        expr->plotBufferX[i] = x;
+        expr->plotBufferY[i] = result;
+    }
+
+
+}
+
+static void drawAddFunction(std::shared_ptr<Expression> expr, const std::int32_t& id, const std::int32_t& index)
 {
     auto idStr = std::to_string(id);
     
-    ImGui::Text(idStr.c_str());
-    
+    ImGui::Text("%d:", index);
     ImGui::SameLine();
-    if (ImGui::InputText(("##" + idStr + "_ExprInputText").c_str(), buf, size))
+
+    if (ImGui::InputText(("##" + idStr + "_ExprInputText").c_str(), expr->textBuffer.data(), expr->textBuffer.size()))
     {
-        parse(tree, buf);
+        parse(expr->tree, expr->textBuffer.data());
+        calculatePlotPoints(expr);
     }
-    
+
+    if (ImGui::IsItemActive() && ImGui::IsItemClicked())
+    {
+        selectedExpression = expr;
+    }
+
     ImGui::SameLine();
     
     ImGui::PushID(("##" + idStr + "_ExprButton").c_str());
     if (ImGui::Button("-"))
     {
-        // TODO: Remove current expression
-        testExprAdd--;
+        auto it = std::find_if(expressions.begin(), expressions.end(), [expr](auto it) { return it->id == expr->id; });
+        if (it == expressions.end())
+        {
+            ERROR("WTF: it == expressions.end()");
+        }
+        else
+        {
+            expressions.erase(it);
+        }
     }
-
     ImGui::PopID();
+
+    ImGui::SameLine();
+
+    ImGui::PushID(("##" + idStr + "_ExprRadioButton").c_str());    
+    if (ImGui::RadioButton("V", expr->show))
+    {
+        expr->show = !expr->show;
+    }
+    ImGui::PopID();
+
 }
 
 int main()
@@ -549,12 +629,10 @@ int main()
     const auto gui = kubvc::render::GUI::getInstance();
     gui->init();
 
-    kubvc::algorithm::ASTree tree;
-    createTree(tree);    
-
-    constexpr auto MAX_BUFFER_SIZE = 1024;
-    char buf[MAX_BUFFER_SIZE] = { '\0' };
-
+    //kubvc::algorithm::ASTree tree;
+    //createTree(tree);    
+  
+    
     // Run main loop 
     while (!window->shouldClose())
     {
@@ -567,30 +645,55 @@ int main()
             {
                 if (ImGui::Button("+"))
                 {
-                    testExprAdd++;
+                    auto expr = std::make_shared<Expression>();
+                    createTree(expr->tree);
+                    
+                    // Dummy id set
+                    static std::int32_t id = 0;
+                    id++;
+                    expr->id = id;
+
+                    expressions.push_back(expr);
                 }
 
                 ImGui::Separator();
 
-                for (std::int32_t i = 0; i < testExprAdd; i++)
+                std::int32_t expressionIndex = 0;
+                for (auto expr : expressions)
                 {
-                    drawAddFunction(tree, buf, IM_ARRAYSIZE(buf), i);
+                    if (expr != nullptr)
+                    {
+                        expressionIndex++;
+                        drawAddFunction(expr, expr->id, expressionIndex);
+                    }
                 }
-               
 
                 ImGui::Separator();
 
-                ImGui::Text("AST:");   
-                static bool listStyleTree = false;
-                ImGui::Checkbox("List style for tree", &listStyleTree);
-                if (listStyleTree)
+                if (ImGui::CollapsingHeader("AST debug"))
                 {
-                    showTreeList(tree.getRoot());
+                    if (selectedExpression != nullptr)
+                    {
+                        ImGui::Text("AST:");   
+                        ImGui::Text("Current tree is %s", selectedExpression->textBuffer.data());   
+                        
+                        static bool listStyleTree = false;
+                        ImGui::Checkbox("List style for tree", &listStyleTree);
+                        if (listStyleTree)
+                        {
+                            showTreeList(selectedExpression->tree.getRoot());
+                        }
+                        else
+                        {
+                            showTreeVisual(selectedExpression->tree);
+                        }
+                    }
+                    else 
+                    {
+                        ImGui::Text("No currently selected tree");
+                    }
                 }
-                else
-                {
-                    showTreeVisual(tree);
-                }
+
             }
             ImGui::End();
 
@@ -599,10 +702,16 @@ int main()
                 auto size = ImGui::GetContentRegionAvail();
                 if (ImPlot::BeginPlot("PlotTitle", size)) 
                 {	
-                    static constexpr int test_data[] = {1,2,3,4,5};
-
-                    ImPlot::PlotLine("PlotName", test_data, test_data, 4);
-
+                    for (auto expr : expressions)
+                    {                    
+                        if (expr != nullptr)
+                        {
+                            if (expr->show == true)
+                            {
+                                ImPlot::PlotLine(expr->textBuffer.data(), expr->plotBufferX.data(), expr->plotBufferY.data(), MAX_PLOT_BUFFER_SIZE);
+                            }
+                        }    
+                    }                        
                     ImPlot::EndPlot();
                 }
             }
