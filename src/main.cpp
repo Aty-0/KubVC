@@ -356,15 +356,11 @@ static std::shared_ptr<kubvc::algorithm::Node> parseFunction(const kubvc::algori
     {
         cursor++;
         auto argsNode = parseExpression(tree, text, cursor, true);
-        switch (argsNode->getType())
+        if (argsNode->getType() != kubvc::algorithm::NodeTypes::Invalid)
         {
-            case kubvc::algorithm::NodeTypes::Number:
-            case kubvc::algorithm::NodeTypes::Variable:
-            {
-                auto funcNode = createFunction(tree, funcName);
-                funcNode->argument = argsNode;
-                return funcNode;
-            }
+            auto funcNode = createFunction(tree, funcName);
+            funcNode->argument = argsNode;
+            return funcNode;            
         }
     }
 
