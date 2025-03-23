@@ -2,6 +2,8 @@
 #include <memory>
 #include <string>
 #include <functional>
+#include "logger.h"
+#include "alg_helpers.h"
 
 namespace kubvc::algorithm
 {
@@ -20,7 +22,8 @@ namespace kubvc::algorithm
     {
         ~Node();
         inline virtual auto getType() -> NodeTypes const { return NodeTypes::None; } 
-
+        inline virtual void calculate(const double& n, double& result) { }
+        
         std::shared_ptr<Node> parent;
 
         // TODO: get set (set only if id is -1)
@@ -30,7 +33,13 @@ namespace kubvc::algorithm
     struct RootNode : Node
     {
         inline virtual auto getType() -> NodeTypes const final { return NodeTypes::Root; }
-
+        inline virtual void calculate(const double& n, double& result)
+        { 
+            if (child == nullptr)
+                return;
+            child->calculate(n, result);            
+        }
+        
         std::shared_ptr<Node> child;
     };
 
@@ -43,11 +52,15 @@ namespace kubvc::algorithm
     struct VariableNode : public NodeWithValue<std::string> 
     { 
         inline virtual auto getType() -> NodeTypes const final { return NodeTypes::Variable; }        
+        inline virtual void calculate(const double& n, double& result) final { result = n; }
     };
 
+    // TODO: Make nodes with int and float? double? 
     struct NumberNode : public NodeWithValue<double>
     {
         inline virtual auto getType() -> NodeTypes const final { return NodeTypes::Number; }
+        
+        inline virtual void calculate(const double& n, double& result) final { result = value; }
     };
 
     struct InvalidNode : public Node
@@ -61,13 +74,81 @@ namespace kubvc::algorithm
     {
         inline virtual auto getType() -> NodeTypes const final { return NodeTypes::Operator; }
         
+        enum class Operators 
+        {
+            Plus, 
+            Minus,
+            Multiplication,
+            Division,
+            Power,
+            Equal,
+            Unknown,
+        };
+        
+        [[nodiscard]] static inline Operators getOperatorFrom(unsigned char chr)
+        {   
+            switch (chr)
+            {
+                case '+':
+                    return Operators::Plus;
+                case '-':
+                    return Operators::Minus;
+                case '*':
+                    return Operators::Multiplication;
+                case '/':
+                    return Operators::Division;
+                case '=':
+                    return Operators::Equal;
+                case '^':
+                    return Operators::Power;
+            }
+            return Operators::Unknown;
+        } 
+
         char operation;
         std::shared_ptr<Node> right; 
         std::shared_ptr<Node> left;
-    };
 
-    // TODO: What's we need todo if we need to use something more complex 
-    //       Like function with n arguments 
+        inline virtual void calculate(const double& n, double& result) final
+        {
+          if ((right == nullptr || left == nullptr) 
+                || (right->getType() == NodeTypes::Invalid 
+                || left->getType() == NodeTypes::Invalid))
+                return;
+
+            double firstResult, secondResult = 0;
+            left->calculate(n, firstResult);
+            right->calculate(n, secondResult);
+
+            auto op = getOperatorFrom(operation);
+            switch(op)
+            {
+                case Operators::Plus:
+                    result = firstResult + secondResult;
+                    break;
+                case Operators::Minus:
+                    result = firstResult - secondResult;
+                    break;
+                case Operators::Multiplication:
+                    result = firstResult * secondResult;
+                    break;
+                case Operators::Division:
+                {
+                    if (secondResult == 0)
+                    {
+                        ERROR("[OperatorNode] second node is 0, we can't do division, result is NAN now!");
+                        result = NAN;
+                        break;   
+                    }
+                    result = firstResult / secondResult;
+                    break;
+                }
+                case Operators::Power:
+                    result = std::pow(firstResult, secondResult);
+                    break;
+            }              
+        }
+    };
 
     struct FunctionNode : public Node
     {
@@ -75,8 +156,31 @@ namespace kubvc::algorithm
         
         std::string name;
         std::shared_ptr<Node> argument;
-        // What's function we are represent 
-        //std::function<double()> implementation;
+
+        inline virtual void calculate(const double& n, double& result) final 
+        {
+            if (argument == nullptr)
+            {
+                ERROR("[FunctionNode] Argument is null");
+                return;
+            }
+            
+            switch (argument->getType())
+            {
+                case NodeTypes::Operator:
+                case NodeTypes::Function:
+                case NodeTypes::Number:
+                {
+                    double argumentResult = 0;
+                    argument->calculate(n, argumentResult);
+                    result = Helpers::getResultFromFunction(name, argumentResult); 
+                    break;
+                }
+                case NodeTypes::Variable:
+                    result = Helpers::getResultFromFunction(name, n); 
+                    break;
+            }
+        }
     };
     
     class ASTree

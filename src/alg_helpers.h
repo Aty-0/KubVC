@@ -1,5 +1,7 @@
 #pragma once
 #include <string>
+#include <cmath>
+#include "functions.h"
 
 namespace kubvc::algorithm
 {
@@ -7,6 +9,17 @@ namespace kubvc::algorithm
     {
         public:
             using uchar = unsigned char;
+
+            [[nodiscard]] static inline double getResultFromFunction(const std::string& name, double x)
+            { 
+                auto func = functions::getFunction(name);
+                if (func == nullptr)
+                {
+                    return 0;
+                }
+
+                return func(x);
+            }
 
             [[nodiscard]] static inline bool isLetter(uchar chr)
             {
