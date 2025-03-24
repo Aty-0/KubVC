@@ -448,8 +448,10 @@ static std::shared_ptr<kubvc::algorithm::Node> parseElement(const kubvc::algorit
     else if (kubvc::algorithm::Helpers::isUnaryOperator(currentChar))
     {
         DEBUG("Possible unary operator");
-        auto cursorUn = cursor + 1;
-        auto node = parseExpression(tree, text,cursorUn, isSubExpression);
+        cursor++;
+        auto node = parseExpression(tree, text, cursor, isSubExpression);
+
+        cursor--;
         return createUnaryOperator(tree, node, currentChar);
     }
 
