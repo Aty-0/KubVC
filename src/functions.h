@@ -13,6 +13,11 @@ namespace kubvc::algorithm::functions
         return std::cos(x) / std::sin(x);
     }
 
+    static inline auto arcctg(double x) 
+    {
+        return std::acos(x / std::sqrt(1 + std::pow(x, 2)));
+    }
+
     // List of generic math functions 
     static const std::vector<std::pair<std::string, std::function<double(double)>>> FunctionList = 
     {        
@@ -23,9 +28,9 @@ namespace kubvc::algorithm::functions
      
         { "arccos",  DISAMBIGUATE_MATH_F(std::acos) },
         { "arcsin",  DISAMBIGUATE_MATH_F(std::asin) },
-        { "arctan",  DISAMBIGUATE_MATH_F(std::atan) },
-        // TODO: Arcctg
-     
+        { "arctg",  DISAMBIGUATE_MATH_F(std::atan) },
+        { "arcctg",  DISAMBIGUATE_MATH_F(arcctg) },
+        
         { "abs",  DISAMBIGUATE_MATH_F(std::fabs) },
         { "exp",  DISAMBIGUATE_MATH_F(std::exp) },
         { "sqrt",  DISAMBIGUATE_MATH_F(std::sqrt) },
