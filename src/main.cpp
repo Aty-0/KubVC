@@ -339,11 +339,11 @@ static auto parseNumbers(std::size_t& cursor, const std::string& text)
     return output;
 }
 
-static auto parseLetters(std::size_t& cursor, const std::string& text)
+static auto parseLetters(std::size_t& cursor, const std::string& text, bool includeDigits = true)
 {
     char character = getCurrentChar(cursor, text);
     std::string output = std::string();
-    while(kubvc::algorithm::Helpers::isLetter(character))
+    while(kubvc::algorithm::Helpers::isLetter(character) || (kubvc::algorithm::Helpers::isDigit(character) && includeDigits))
     {
         output += character;
         cursor++;
@@ -356,42 +356,21 @@ static std::shared_ptr<kubvc::algorithm::Node> parseExpression(const kubvc::algo
 static std::shared_ptr<kubvc::algorithm::Node> parseFunction(const kubvc::algorithm::ASTree& tree, const std::size_t& cursor_pos, std::size_t& cursor, const std::string& text)
 {
     std::size_t funcCursor = cursor_pos;
-    char character = getCurrentChar(funcCursor, text);
     std::string funcName = std::string();
 
-    while(kubvc::algorithm::Helpers::isLetter(character) 
-        || kubvc::algorithm::Helpers::isDigit(character))
-    {
-        funcName += character;
-        funcCursor++;
-        character = getCurrentChar(funcCursor, text);        
-    } 
-    
+    funcName = parseLetters(funcCursor, text);
     if (funcCursor > text.size())
         return createInvalid(tree, text);
   
-    character = getCurrentChar(funcCursor, text);        
+    // Next should be bracket character
+    auto brChar = getCurrentChar(funcCursor, text);        
 
-    // TODO: It's kinda wrong implementation, but it's fine for now...
-    if (kubvc::algorithm::Helpers::isBracketStart(character))
+    // TODO: What if we are want support functions with more than one argument
+    if (kubvc::algorithm::Helpers::isBracketStart(brChar))
     {
         DEBUG("So, is bracket found...");
-
         cursor++;
-
-        // FIXME: I don't know why and won't to know why I need to add extra position for cursor when function have numbers in name
-        std::uint8_t extraPos = 0;
-        auto textHaveDigits = std::for_each(text.begin(), text.end(), [&](const auto& it) { 
-            if (kubvc::algorithm::Helpers::isDigit(it))
-            {
-                extraPos++;
-                return true;
-            }
-            return false;
-        });
-
-        cursor += extraPos;
-        
+    
         auto argsNode = parseExpression(tree, text, cursor, true);
         if (argsNode->getType() != kubvc::algorithm::NodeTypes::Invalid)
         {
