@@ -5,6 +5,8 @@
 #include "gui.h"
 #include "alg_helpers.h"
 
+#include <algorithm>
+
 static inline std::string getTypeName(const kubvc::algorithm::NodeTypes& type)
 {
     switch (type)
@@ -356,14 +358,16 @@ static std::shared_ptr<kubvc::algorithm::Node> parseFunction(const kubvc::algori
     std::size_t funcCursor = cursor_pos;
     char character = getCurrentChar(funcCursor, text);
     std::string funcName = std::string();
-    while(kubvc::algorithm::Helpers::isLetter(character))
+
+    while(kubvc::algorithm::Helpers::isLetter(character) 
+        || kubvc::algorithm::Helpers::isDigit(character))
     {
         funcName += character;
         funcCursor++;
         character = getCurrentChar(funcCursor, text);        
     } 
     
-    if (funcCursor >= text.size())
+    if (funcCursor > text.size())
         return createInvalid(tree, text);
   
     character = getCurrentChar(funcCursor, text);        
@@ -371,7 +375,23 @@ static std::shared_ptr<kubvc::algorithm::Node> parseFunction(const kubvc::algori
     // TODO: It's kinda wrong implementation, but it's fine for now...
     if (kubvc::algorithm::Helpers::isBracketStart(character))
     {
+        DEBUG("So, is bracket found...");
+
         cursor++;
+
+        // FIXME: I don't know why and won't to know why I need to add extra position for cursor when function have numbers in name
+        std::uint8_t extraPos = 0;
+        auto textHaveDigits = std::for_each(text.begin(), text.end(), [&](const auto& it) { 
+            if (kubvc::algorithm::Helpers::isDigit(it))
+            {
+                extraPos++;
+                return true;
+            }
+            return false;
+        });
+
+        cursor += extraPos;
+        
         auto argsNode = parseExpression(tree, text, cursor, true);
         if (argsNode->getType() != kubvc::algorithm::NodeTypes::Invalid)
         {
@@ -379,6 +399,8 @@ static std::shared_ptr<kubvc::algorithm::Node> parseFunction(const kubvc::algori
             funcNode->argument = argsNode;
             return funcNode;            
         }
+        
+        WARN("Bad node returned...");
     }
 
     return createInvalid(tree, text);
@@ -465,8 +487,10 @@ static std::shared_ptr<kubvc::algorithm::Node> parseExpression(const kubvc::algo
     // Don't do anything if text is empty 
     if (text.size() == 0)
         return nullptr;
-
-    DEBUG("parseExpression | cursor: %d", cursor);
+    
+    DEBUG("----------------------------------------");
+    DEBUG("parseExpression | Start | cursor: %d", cursor);
+    
     std::shared_ptr<kubvc::algorithm::Node> left = parseElement(tree, text, cursor, getCurrentChar(cursor, text), isSubExpression);
 
     while (true)
@@ -484,18 +508,21 @@ static std::shared_ptr<kubvc::algorithm::Node> parseExpression(const kubvc::algo
         // We are want to continue cycle or want to break it if it's a subexpression
         else if (kubvc::algorithm::Helpers::isBracketEnd(currentChar))
         {
-            DEBUG("End of bracket");
+            DEBUG("End of bracket | isSubExpression:%i", isSubExpression);
             cursor++;
 
             if (isSubExpression)
+            {
+                DEBUG("Return left node");
                 return left;
+            }
 
             continue;
         }
         // If current character is not operator we are leave from cycle 
         else if (!kubvc::algorithm::Helpers::isOperator(currentChar))
         {
-            DEBUG("Leave from cycle");
+            DEBUG("parseExpression | End | Leave from cycle");
             DEBUG("----------------------------------------");
             break;
         }
@@ -527,7 +554,8 @@ static std::shared_ptr<kubvc::algorithm::Node> parseExpression(const kubvc::algo
                 return left;    
             }
         }
-
+        
+        WARN("is invalid brecket");
         return createInvalid(tree, "InvalidBrecket");
     }
 
