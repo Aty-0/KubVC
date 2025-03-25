@@ -611,8 +611,8 @@ static void calculatePlotPoints(std::shared_ptr<Expression> expr, double max = M
         for (std::int32_t i = 0; i < MAX_PLOT_BUFFER_SIZE; ++i)
         {
             double result = 0.0;
-            double x = yMin + (yMax - yMin) * static_cast<double>(i) / (MAX_PLOT_BUFFER_SIZE - 1);
-            tree.getRoot()->calculate(x, result);
+            auto lerpAxis = std::lerp(yMin, yMax, static_cast<double>(i) / (MAX_PLOT_BUFFER_SIZE - 1));
+            tree.getRoot()->calculate(lerpAxis, result);
             yMin = std::min(yMin, result);
             yMax = std::max(yMax, result);
         }
@@ -632,14 +632,13 @@ static void calculatePlotPoints(std::shared_ptr<Expression> expr, double max = M
 
     double xMax = max;
     double xMin = min;
-    //getRanges(expr->tree, xMax, xMin);
 
     for (std::int32_t i = 0; i < MAX_PLOT_BUFFER_SIZE; ++i)
     {
         double result = 0.0;
-        double x = xMin + (xMax - xMin) * static_cast<double>(i) / (MAX_PLOT_BUFFER_SIZE - 1);
-        expr->tree.getRoot()->calculate(x, result);
-        expr->plotBufferX[i] = x;
+        auto lerpAxis = std::lerp(xMin, xMax, static_cast<double>(i) / (MAX_PLOT_BUFFER_SIZE - 1));
+        expr->tree.getRoot()->calculate(lerpAxis, result);
+        expr->plotBufferX[i] = lerpAxis;
         expr->plotBufferY[i] = result;
     }
 }
