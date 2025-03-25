@@ -7,6 +7,12 @@
 
 #include <algorithm>
 
+
+static inline void toLowerCase(std::string& text)
+{
+    std::transform(text.begin(), text.end(), text.begin(), std::tolower);
+}
+
 static inline std::string getTypeName(const kubvc::algorithm::NodeTypes& type)
 {
     switch (type)
@@ -359,6 +365,10 @@ static std::shared_ptr<kubvc::algorithm::Node> parseFunction(const kubvc::algori
     std::string funcName = std::string();
 
     funcName = parseLetters(funcCursor, text);
+
+    // Convert text to lower case to avoid mismatch 
+    toLowerCase(funcName);
+
     if (funcCursor > text.size())
         return createInvalid(tree, text);
   
