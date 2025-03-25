@@ -574,8 +574,7 @@ struct Expression
     kubvc::algorithm::ASTree tree = { };
     std::int32_t id = -1;
     std::vector<char> textBuffer = std::vector<char>(MAX_BUFFER_SIZE);  
-    std::vector<double> plotBufferX = std::vector<double>(MAX_PLOT_BUFFER_SIZE);
-    std::vector<double> plotBufferY = std::vector<double>(MAX_PLOT_BUFFER_SIZE);
+    std::vector<glm::dvec2> plotBuffer = std::vector<glm::dvec2>(MAX_PLOT_BUFFER_SIZE);
 
     ~Expression()
     {
@@ -590,11 +589,8 @@ struct Expression
         textBuffer.clear();
         textBuffer.shrink_to_fit();
 
-        plotBufferX.clear();
-        plotBufferX.shrink_to_fit();
-
-        plotBufferY.clear();
-        plotBufferY.shrink_to_fit();
+        plotBuffer.clear();
+        plotBuffer.shrink_to_fit();
     }
 };
 
@@ -638,8 +634,7 @@ static void calculatePlotPoints(std::shared_ptr<Expression> expr, double max = M
         double result = 0.0;
         auto lerpAxis = std::lerp(xMin, xMax, static_cast<double>(i) / (MAX_PLOT_BUFFER_SIZE - 1));
         expr->tree.getRoot()->calculate(lerpAxis, result);
-        expr->plotBufferX[i] = lerpAxis;
-        expr->plotBufferY[i] = result;
+        expr->plotBuffer[i] = { lerpAxis, result };
     }
 }
 
@@ -800,7 +795,7 @@ int main()
                             // TODO: Legend can change visibility too 
                             if (expr->show == true)
                             {
-                                ImPlot::PlotLine(expr->textBuffer.data(), expr->plotBufferX.data(), expr->plotBufferY.data(), MAX_PLOT_BUFFER_SIZE);
+                                ImPlot::PlotLine(expr->textBuffer.data(), &expr->plotBuffer[0].x, &expr->plotBuffer[0].y, expr->plotBuffer.size(), 0, 0, 2 * sizeof(double));
                             }
                         }    
                     }                        
