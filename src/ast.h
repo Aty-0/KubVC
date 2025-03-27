@@ -25,8 +25,6 @@ namespace kubvc::algorithm
         inline virtual auto getType() -> NodeTypes const { return NodeTypes::None; } 
         inline virtual void calculate(const double& n, double& result) { }
         
-        std::shared_ptr<Node> parent;
-
         // TODO: get set (set only if id is -1)
         std::int32_t id = -1; 
     };
@@ -220,7 +218,7 @@ namespace kubvc::algorithm
             void clear();
             void makeRoot();
             
-            inline std::shared_ptr<Node> getRoot() const { return m_root; }
+            inline std::shared_ptr<RootNode> getRoot() const { return m_root; }
 
             template <typename T, typename = std::enable_if<std::is_same<T, Node>::value 
                 || std::is_base_of<T, Node>::value>>
@@ -234,6 +232,6 @@ namespace kubvc::algorithm
             }
 
         private:
-            std::shared_ptr<Node> m_root;
+            std::shared_ptr<RootNode> m_root;
     };
 }
