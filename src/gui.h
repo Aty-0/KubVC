@@ -17,7 +17,17 @@ namespace kubvc::render
             void begin();
             void end();
 
+            inline ImFont* getMathFont() const { return m_mathFont; }
+            inline ImFont* getDefaultFont() const { return m_defaultFont; }
+
+            // Default font but with math font size 
+            inline ImFont* getDefaultFontMathSize() const { return m_defaultFontMathSize; }
+
         private:
+            ImFont* m_mathFont;
+            ImFont* m_defaultFont;
+            ImFont* m_defaultFontMathSize;
+
             void applyColorTheme();
     };
 }

@@ -580,6 +580,7 @@ struct Expression
     
     float thickness = 2.0f;
 
+    bool valid = true;
     bool changeColor;
     bool isRandomColorSetted;
 
@@ -656,25 +657,106 @@ static void calculatePlotPoints(std::shared_ptr<Expression> expr, double max = M
     }
 }
 
-static void drawFunctionInList(std::shared_ptr<Expression> expr, const std::int32_t& id, const std::int32_t& index)
+
+// This function is trying to find invalid nodes in tree, so if it's found something invalid it returns false otherwise true
+static bool checkTreeOnValid(std::shared_ptr<kubvc::algorithm::Node> start)
+{
+    // We are reached the end of tree 
+    if (start == nullptr)
+    {
+        return true;
+    }
+
+    auto type = start->getType();
+    switch (type)
+    {
+        case kubvc::algorithm::NodeTypes::Root:
+        {
+            auto node = static_cast<kubvc::algorithm::RootNode*>(start.get());
+            return checkTreeOnValid(node->child);
+        }
+        case kubvc::algorithm::NodeTypes::Number:
+        case kubvc::algorithm::NodeTypes::Variable:
+        {
+            return true;            
+        }
+        case kubvc::algorithm::NodeTypes::Operator:
+        {
+            auto node = static_cast<kubvc::algorithm::OperatorNode*>(start.get());         
+            bool resultLeft = true;
+            bool resultRight = true;
+
+            if (node->left != nullptr)
+            {
+                resultLeft = checkTreeOnValid(node->left);
+            }
+
+            if (node->right != nullptr)
+            {
+                resultRight = checkTreeOnValid(node->right);
+            }
+
+            return resultLeft && resultRight;    
+        }
+        case kubvc::algorithm::NodeTypes::UnaryOperator:
+        {
+            auto node = static_cast<kubvc::algorithm::UnaryOperatorNode*>(start.get());         
+            return checkTreeOnValid(node->child);     
+        }
+        case kubvc::algorithm::NodeTypes::Function:
+        {
+            auto node = static_cast<kubvc::algorithm::FunctionNode*>(start.get());         
+            if (node->argument != nullptr)
+            {
+                return checkTreeOnValid(node->argument);     
+            }
+            else 
+            {
+                return false;
+            }
+        }
+        case kubvc::algorithm::NodeTypes::Invalid:
+        default:
+            return false;
+    }
+
+    return false;
+}
+
+
+static const auto INVALID_COLOR = ImVec4(0.64f, 0.16f, 0.16f, 1.0f); 
+static const auto SELECTED_COLOR = ImVec4(0.16f, 0.64f, 0.16f, 1.0f); 
+static const auto THICKNESS_MIN = 0.5f;
+static const auto THICKNESS_MAX = 10.0f; 
+static const auto THICKNESS_SPEED = 0.1f; 
+
+static void drawFunctionInList(kubvc::render::GUI* gui, std::shared_ptr<Expression> expr, const std::int32_t& id, const std::int32_t& index)
 {
     auto idStr = std::to_string(id);
     
+    ImGui::PushFont(gui->getMathFont());
     ImGui::Text("%d:", index);
     ImGui::SameLine();
 
-    // Set special color for textbox border when we are selected expression
-    if (expr == selectedExpression)
-        ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Border, ImVec4(0.64f, 0.16f, 0.16f, 1.0f));
-
+    // Set special color for textbox border when we are selected expression or get invalid node somewhere kekw
+    if (!expr->valid)
+        ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Border, INVALID_COLOR);
+    else if (expr == selectedExpression)
+        ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Border, SELECTED_COLOR);
+    
     if (ImGui::InputText(("##" + idStr + "_ExprInputText").c_str(), expr->textBuffer.data(), expr->textBuffer.size()))
     {
         parse(expr->tree, expr->textBuffer.data());
         calculatePlotPoints(expr);
+        expr->valid = checkTreeOnValid(expr->tree.getRoot());
     }
-    // Revert color changes
-    ImGui::PopStyleColor(static_cast<std::int32_t>(expr == selectedExpression));
+    ImGui::PopFont();
     
+    // Revert color changes
+    ImGui::PopStyleColor(static_cast<std::int32_t>(expr == selectedExpression || !expr->valid));
+
+    static const auto fontBig = gui->getDefaultFontMathSize();
+
     // Set current expression by clicking on textbox 
     if (ImGui::IsItemActive() && ImGui::IsItemClicked())
     {
@@ -682,6 +764,8 @@ static void drawFunctionInList(std::shared_ptr<Expression> expr, const std::int3
     }
 
     ImGui::SameLine();
+
+    ImGui::PushFont(fontBig);
 
     // Do not show color editor when we are not generate random color    
     if (expr->isRandomColorSetted)
@@ -695,7 +779,20 @@ static void drawFunctionInList(std::shared_ptr<Expression> expr, const std::int3
     
     ImGui::SameLine();
     ImGui::PushItemWidth(45.0f);
-    ImGui::DragFloat(("##" + idStr + "_ExprThick").c_str(), &expr->thickness, 0.1f, 0.5f, 10.0f);
+
+    if (ImGui::DragFloat(("##" + idStr + "_ExprThick").c_str(), &expr->thickness, THICKNESS_SPEED, THICKNESS_MIN, THICKNESS_MAX, "%.1f"))
+    {
+        // Handle manualy writed value
+        if (expr->thickness > THICKNESS_MAX)
+        {
+            expr->thickness = THICKNESS_MAX;
+        } 
+        else if (expr->thickness < THICKNESS_MIN)
+        {
+            expr->thickness = THICKNESS_MIN;
+        } 
+        
+    }
     ImGui::PopItemWidth();
     ImGui::SameLine();
     
@@ -713,7 +810,9 @@ static void drawFunctionInList(std::shared_ptr<Expression> expr, const std::int3
         }
     }
     ImGui::PopID();
-
+    
+    ImGui::PopFont();
+    
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
     {
         ImGui::SetTooltip("Remove this graph from graph list");
@@ -721,12 +820,14 @@ static void drawFunctionInList(std::shared_ptr<Expression> expr, const std::int3
 
     ImGui::SameLine();
 
+    ImGui::PushFont(fontBig);
     ImGui::PushID(("##" + idStr + "_ExprRadioButton").c_str());    
     if (ImGui::RadioButton("V", expr->show))
     {
         expr->show = !expr->show;
     }
     ImGui::PopID();
+    ImGui::PopFont();
     
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
     {
@@ -753,7 +854,7 @@ static void drawAddExpressionButton()
     }
 }
 
-static void drawExpressionsList()
+static void drawExpressionsList(kubvc::render::GUI* gui)
 {
     std::int32_t expressionIndex = 0;
     for (auto expr : expressions)
@@ -761,7 +862,7 @@ static void drawExpressionsList()
         if (expr != nullptr)
         {
             expressionIndex++;
-            drawFunctionInList(expr, expr->id, expressionIndex);
+            drawFunctionInList(gui, expr, expr->id, expressionIndex);
         }
     }
 }
@@ -832,7 +933,7 @@ int main()
             {
                 drawAddExpressionButton();
                 ImGui::Separator();
-                drawExpressionsList();
+                drawExpressionsList(gui);
                 drawColorEditor();
                 ImGui::Separator();
                 drawDebugAST();
