@@ -575,6 +575,13 @@ struct Expression
     std::int32_t id = -1;
     std::vector<char> textBuffer = std::vector<char>(MAX_BUFFER_SIZE);  
     std::vector<glm::dvec2> plotBuffer = std::vector<glm::dvec2>(MAX_PLOT_BUFFER_SIZE);
+   
+    ImVec4 plotLineColor;
+    
+    float thickness = 2.0f;
+
+    bool changeColor;
+    bool isRandomColorSetted;
 
     ~Expression()
     {
@@ -599,7 +606,11 @@ static std::shared_ptr<Expression> selectedExpression = nullptr;
 
 static void calculatePlotPoints(std::shared_ptr<Expression> expr, double max = MAX_FUNC_RANGE, double min = -MAX_FUNC_RANGE)
 {    
-    auto getRanges = [](const kubvc::algorithm::ASTree& tree, double& xMax, double& xMin)
+    auto root = expr->tree.getRoot();
+    if (root->child == nullptr)
+        return;
+
+    auto getRanges = [&](const kubvc::algorithm::ASTree& tree, double& xMax, double& xMin)
     {
         double yMin = INFINITY;
         double yMax = -INFINITY;
@@ -608,7 +619,7 @@ static void calculatePlotPoints(std::shared_ptr<Expression> expr, double max = M
         {
             double result = 0.0;
             auto lerpAxis = std::lerp(yMin, yMax, static_cast<double>(i) / (MAX_PLOT_BUFFER_SIZE - 1));
-            tree.getRoot()->calculate(lerpAxis, result);
+            root->calculate(lerpAxis, result);
             yMin = std::min(yMin, result);
             yMax = std::max(yMax, result);
         }
@@ -633,29 +644,59 @@ static void calculatePlotPoints(std::shared_ptr<Expression> expr, double max = M
     {
         double result = 0.0;
         auto lerpAxis = std::lerp(xMin, xMax, static_cast<double>(i) / (MAX_PLOT_BUFFER_SIZE - 1));
-        expr->tree.getRoot()->calculate(lerpAxis, result);
+        root->calculate(lerpAxis, result);
         expr->plotBuffer[i] = { lerpAxis, result };
+    }
+    
+    if (!expr->isRandomColorSetted)
+    {
+        std::srand(std::time({}));  
+        expr->plotLineColor = { 0.01f * (std::rand() % 255), 0.01f * (std::rand() % 255), 0.01f * (std::rand() % 255), 1.0f };
+        expr->isRandomColorSetted = true;
     }
 }
 
-static void drawAddFunction(std::shared_ptr<Expression> expr, const std::int32_t& id, const std::int32_t& index)
+static void drawFunctionInList(std::shared_ptr<Expression> expr, const std::int32_t& id, const std::int32_t& index)
 {
     auto idStr = std::to_string(id);
     
     ImGui::Text("%d:", index);
     ImGui::SameLine();
 
+    // Set special color for textbox border when we are selected expression
+    if (expr == selectedExpression)
+        ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Border, ImVec4(0.64f, 0.16f, 0.16f, 1.0f));
+
     if (ImGui::InputText(("##" + idStr + "_ExprInputText").c_str(), expr->textBuffer.data(), expr->textBuffer.size()))
     {
         parse(expr->tree, expr->textBuffer.data());
         calculatePlotPoints(expr);
     }
-
+    // Revert color changes
+    ImGui::PopStyleColor(static_cast<std::int32_t>(expr == selectedExpression));
+    
+    // Set current expression by clicking on textbox 
     if (ImGui::IsItemActive() && ImGui::IsItemClicked())
     {
         selectedExpression = expr;
     }
 
+    ImGui::SameLine();
+
+    // Do not show color editor when we are not generate random color    
+    if (expr->isRandomColorSetted)
+    {
+        if (ImGui::ColorButton(("##" + idStr + "_ExprColorPicker").c_str(), expr->plotLineColor))
+        {
+            expr->changeColor = !expr->changeColor;
+            selectedExpression = expr;
+        }
+    }
+    
+    ImGui::SameLine();
+    ImGui::PushItemWidth(45.0f);
+    ImGui::DragFloat(("##" + idStr + "_ExprThick").c_str(), &expr->thickness, 0.1f, 0.5f, 10.0f);
+    ImGui::PopItemWidth();
     ImGui::SameLine();
     
     ImGui::PushID(("##" + idStr + "_ExprButton").c_str());
@@ -693,6 +734,80 @@ static void drawAddFunction(std::shared_ptr<Expression> expr, const std::int32_t
     }
 }
 
+static void drawAddExpressionButton()
+{
+    if (ImGui::Button("+"))
+    {
+        auto expr = std::make_shared<Expression>();
+        createTree(expr->tree);
+        
+        // Dummy id set
+        static std::int32_t id = 0;
+        id++;
+        expr->id = id;
+        expressions.push_back(expr);
+    }
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+    {
+        ImGui::SetTooltip("A button which you can add new graph.");
+    }
+}
+
+static void drawExpressionsList()
+{
+    std::int32_t expressionIndex = 0;
+    for (auto expr : expressions)
+    {
+        if (expr != nullptr)
+        {
+            expressionIndex++;
+            drawFunctionInList(expr, expr->id, expressionIndex);
+        }
+    }
+}
+
+static void drawDebugAST()
+{
+    if (ImGui::CollapsingHeader("AST debug"))
+    {
+        if (selectedExpression != nullptr)
+        {
+            ImGui::Text("AST:");   
+            ImGui::Text("Current tree is %s", selectedExpression->textBuffer.data());   
+            
+            static bool listStyleTree = false;
+            ImGui::Checkbox("List style for tree", &listStyleTree);
+            if (listStyleTree)
+            {
+                showTreeList(selectedExpression->tree.getRoot());
+            }
+            else
+            {
+                showTreeVisual(selectedExpression->tree);
+            }
+        }
+        else 
+        {
+            ImGui::Text("No currently selected tree");
+        }
+    }
+    else 
+    {
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+        {
+            ImGui::SetTooltip("Show a abstract syntax tree for current graph. Only for debug purposes");
+        }
+    }
+}
+
+static void drawColorEditor()
+{
+    if (selectedExpression != nullptr && selectedExpression->changeColor)
+    {
+        ImGui::ColorPicker4("##_CurrentExprColorPicker", &selectedExpression->plotLineColor.x, ImGuiColorEditFlags_::ImGuiColorEditFlags_NoLabel);
+    }
+}
+
 int main()
 {
     // Initialize main application components
@@ -715,68 +830,13 @@ int main()
             // TODO: Convert function into gui class  
             if (ImGui::Begin("Toolbox"))
             {
-                if (ImGui::Button("+"))
-                {
-                    auto expr = std::make_shared<Expression>();
-                    createTree(expr->tree);
-                    
-                    // Dummy id set
-                    static std::int32_t id = 0;
-                    id++;
-                    expr->id = id;
-
-                    expressions.push_back(expr);
-                }
-
-                if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-                {
-                    ImGui::SetTooltip("A button which you can add new graph.");
-                }
-
+                drawAddExpressionButton();
                 ImGui::Separator();
-
-                std::int32_t expressionIndex = 0;
-                for (auto expr : expressions)
-                {
-                    if (expr != nullptr)
-                    {
-                        expressionIndex++;
-                        drawAddFunction(expr, expr->id, expressionIndex);
-                    }
-                }
-
+                drawExpressionsList();
+                drawColorEditor();
                 ImGui::Separator();
-
-                if (ImGui::CollapsingHeader("AST debug"))
-                {
-                    if (selectedExpression != nullptr)
-                    {
-                        ImGui::Text("AST:");   
-                        ImGui::Text("Current tree is %s", selectedExpression->textBuffer.data());   
-                        
-                        static bool listStyleTree = false;
-                        ImGui::Checkbox("List style for tree", &listStyleTree);
-                        if (listStyleTree)
-                        {
-                            showTreeList(selectedExpression->tree.getRoot());
-                        }
-                        else
-                        {
-                            showTreeVisual(selectedExpression->tree);
-                        }
-                    }
-                    else 
-                    {
-                        ImGui::Text("No currently selected tree");
-                    }
-                }
-                else 
-                {
-                    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-                    {
-                        ImGui::SetTooltip("Show a abstract syntax tree for current graph. Only for debug purposes");
-                    }
-                }
+                drawDebugAST();
+              
 
             }
             ImGui::End();
@@ -788,14 +848,19 @@ int main()
 
                 if (ImPlot::BeginPlot("##PlotViewer", size, plotFlags)) 
                 {	
+                    ImPlot::SetupAxis(ImAxis_X1, "X-Axis", ImPlotAxisFlags_::ImPlotAxisFlags_Foreground);
+                    ImPlot::PushStyleColor(ImPlotCol_::ImPlotCol_AxisBgActive, ImVec4(255,0,0,255));
+                    ImPlot::SetupAxis(ImAxis_Y1, "Y-Axis", ImPlotAxisFlags_::ImPlotAxisFlags_Foreground);
+                    
                     for (auto expr : expressions)
                     {                    
                         if (expr != nullptr)
                         {
                             // TODO: Legend can change visibility too 
                             if (expr->show == true)
-                            {
-                                ImPlot::PlotLine(expr->textBuffer.data(), &expr->plotBuffer[0].x, &expr->plotBuffer[0].y, expr->plotBuffer.size(), 0, 0, 2 * sizeof(double));
+                            {                                                    
+                                ImPlot::SetNextLineStyle(expr->plotLineColor, expr->thickness);
+                                ImPlot::PlotLine(expr->textBuffer.data(), &expr->plotBuffer[0].x, &expr->plotBuffer[0].y, expr->plotBuffer.size(), 0, 0, 2 * sizeof(double));      
                             }
                         }    
                     }                        
