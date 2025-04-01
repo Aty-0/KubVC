@@ -607,16 +607,16 @@ struct Expression
 static std::vector<std::shared_ptr<Expression>> expressions = { };  
 static std::shared_ptr<Expression> selectedExpression = nullptr;
 
-static void calculatePlotPoints(std::shared_ptr<Expression> expr, double max = MAX_FUNC_RANGE, double min = -MAX_FUNC_RANGE)
+static void calculatePlotPoints(std::shared_ptr<Expression> expr, double max, double min, std::int32_t pointsDetail = MAX_PLOT_BUFFER_SIZE)
 {    
     auto root = expr->tree.getRoot();
     if (root->child == nullptr)
         return;
 
-    for (std::int32_t i = 0; i < MAX_PLOT_BUFFER_SIZE; ++i)
+    for (std::int32_t i = 0; i < pointsDetail; ++i)
     {
         double result = 0.0;
-        auto lerpAxis = std::lerp(min, max, static_cast<double>(i) / (MAX_PLOT_BUFFER_SIZE - 1));
+        auto lerpAxis = std::lerp(min, max, static_cast<double>(i) / (pointsDetail - 1));
         root->calculate(lerpAxis, result);
         expr->plotBuffer[i] = { lerpAxis, result };
     }
@@ -629,14 +629,13 @@ static void calculatePlotPoints(std::shared_ptr<Expression> expr, double max = M
     }
 }
 
-
 // This function is trying to find invalid nodes in tree, so if it's found something invalid it returns false otherwise true
 static bool checkTreeOnValid(std::shared_ptr<kubvc::algorithm::Node> start)
 {
     // We are reached the end of tree 
     if (start == nullptr)
     {
-        return true;
+        return false;
     }
 
     auto type = start->getType();
@@ -719,7 +718,8 @@ static void drawFunctionInList(kubvc::render::GUI* gui, std::shared_ptr<Expressi
     if (ImGui::InputText(("##" + idStr + "_ExprInputText").c_str(), expr->textBuffer.data(), expr->textBuffer.size()))
     {
         parse(expr->tree, expr->textBuffer.data());
-        calculatePlotPoints(expr);
+        calculatePlotPoints(expr, MAX_FUNC_RANGE, -MAX_FUNC_RANGE);
+        
         expr->valid = checkTreeOnValid(expr->tree.getRoot());
     }
     ImGui::PopFont();
@@ -762,10 +762,12 @@ static void drawFunctionInList(kubvc::render::GUI* gui, std::shared_ptr<Expressi
         ImGui::SetTooltip("Remove this graph from graph list");
     }
 
+    static const auto fontIcon = gui->getIconFont();
+
     ImGui::SameLine();
     ImGui::PushFont(fontBig);
-    ImGui::PushID(("##" + idStr + "_ExprOptionsButton").c_str());    
-    if (ImGui::Button("O"))
+    ImGui::PushID(("##" + idStr + "_ExprEditButton").c_str());    
+    if (ImGui::Button("E"))
     {
         if (selectedExpression == expr)
         {
@@ -779,11 +781,8 @@ static void drawFunctionInList(kubvc::render::GUI* gui, std::shared_ptr<Expressi
         }
     }
     ImGui::PopID();
-    ImGui::PopFont();
-
 
     ImGui::SameLine();
-    ImGui::PushFont(fontBig);
     ImGui::PushID(("##" + idStr + "_ExprRadioButton").c_str());    
     if (ImGui::RadioButton("V", expr->show))
     {
@@ -888,6 +887,12 @@ static void drawLineColorPicker()
     }
 }
 
+static void updateExpressionByPlotLimits(std::shared_ptr<Expression> expr)
+{
+    auto limits = ImPlot::GetPlotLimits();                 
+    calculatePlotPoints(expr, limits.X.Max, limits.X.Min);
+}
+
 static void drawPlotter()
 {
     auto size = ImGui::GetContentRegionAvail();
@@ -904,8 +909,22 @@ static void drawPlotter()
         {                    
             if (expr != nullptr)
             {
-                if (expr->show == true)
+                if (expr->show == true && expr->valid)
                 { 
+                    // TODO: I'm not sure about using hovering for this, maybe it will reduce perf 
+                    if (ImPlot::IsPlotHovered())
+                    {
+                        static auto prevPos = ImPlot::GetPlotPos();
+                        auto pos = ImVec2(0, 0);
+
+                        if (prevPos.x != pos.x && prevPos.y != pos.y)
+                        {
+                            updateExpressionByPlotLimits(expr);        
+                        }
+
+                        prevPos = ImPlot::GetPlotPos();
+                    }
+
                     // Apply plot style from expression                                                   
                     ImPlot::SetNextLineStyle(expr->plotLineColor, expr->thickness);
 
@@ -956,10 +975,10 @@ int main()
                 }
                 ImGui::EndChild();
 
-                if (selectedExpression != nullptr && selectedExpression->showOptions)
-                {                
-                    if (ImGui::BeginChild("OptionsChild", ImVec2(windowSize.x - 15.0f, 0), childFlags, childWindowFlags))
-                    { 
+                if (ImGui::BeginChild("OptionsChild", ImVec2(windowSize.x - 15.0f, 0), childFlags, childWindowFlags))
+                { 
+                    if (selectedExpression != nullptr && selectedExpression->showOptions)
+                    {                
                         ImGui::Text("Visible");
                         ImGui::SameLine();
                         if (ImGui::RadioButton("##VisibleRadio", selectedExpression->show))
@@ -1002,8 +1021,8 @@ int main()
                         ImGui::Separator();
                         drawDebugAST();
                     }
-                    ImGui::EndChild();
                 }
+                ImGui::EndChild();
             }
             ImGui::End();
 
