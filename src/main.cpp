@@ -581,8 +581,10 @@ struct Expression
     float thickness = 2.0f;
 
     bool valid = true;
+
     bool changeColor;
     bool isRandomColorSetted;
+    bool showOptions;
 
     ~Expression()
     {
@@ -611,40 +613,10 @@ static void calculatePlotPoints(std::shared_ptr<Expression> expr, double max = M
     if (root->child == nullptr)
         return;
 
-    auto getRanges = [&](const kubvc::algorithm::ASTree& tree, double& xMax, double& xMin)
-    {
-        double yMin = INFINITY;
-        double yMax = -INFINITY;
-        
-        for (std::int32_t i = 0; i < MAX_PLOT_BUFFER_SIZE; ++i)
-        {
-            double result = 0.0;
-            auto lerpAxis = std::lerp(yMin, yMax, static_cast<double>(i) / (MAX_PLOT_BUFFER_SIZE - 1));
-            root->calculate(lerpAxis, result);
-            yMin = std::min(yMin, result);
-            yMax = std::max(yMax, result);
-        }
-
-        if (yMin < - 1e6 || yMax > 1e6)
-        {
-            xMin *= 0.5;
-            xMax *= 0.5;
-        } 
-        else if (std::abs(yMin) < 1e-6 
-            && std::abs(yMax) < 1e-6)
-        {
-            xMin *= 2.0;
-            xMax *= 2.0;
-        }
-    };
-
-    double xMax = max;
-    double xMin = min;
-
     for (std::int32_t i = 0; i < MAX_PLOT_BUFFER_SIZE; ++i)
     {
         double result = 0.0;
-        auto lerpAxis = std::lerp(xMin, xMax, static_cast<double>(i) / (MAX_PLOT_BUFFER_SIZE - 1));
+        auto lerpAxis = std::lerp(min, max, static_cast<double>(i) / (MAX_PLOT_BUFFER_SIZE - 1));
         root->calculate(lerpAxis, result);
         expr->plotBuffer[i] = { lerpAxis, result };
     }
@@ -766,46 +738,18 @@ static void drawFunctionInList(kubvc::render::GUI* gui, std::shared_ptr<Expressi
     ImGui::SameLine();
 
     ImGui::PushFont(fontBig);
-
-    // Do not show color editor when we are not generate random color    
-    if (expr->isRandomColorSetted)
-    {
-        if (ImGui::ColorButton(("##" + idStr + "_ExprColorPicker").c_str(), expr->plotLineColor))
-        {
-            expr->changeColor = !expr->changeColor;
-            selectedExpression = expr;
-        }
-    }
-    
-    ImGui::SameLine();
-    ImGui::PushItemWidth(45.0f);
-
-    if (ImGui::DragFloat(("##" + idStr + "_ExprThick").c_str(), &expr->thickness, THICKNESS_SPEED, THICKNESS_MIN, THICKNESS_MAX, "%.1f"))
-    {
-        // Handle manualy writed value
-        if (expr->thickness > THICKNESS_MAX)
-        {
-            expr->thickness = THICKNESS_MAX;
-        } 
-        else if (expr->thickness < THICKNESS_MIN)
-        {
-            expr->thickness = THICKNESS_MIN;
-        } 
-        
-    }
-    ImGui::PopItemWidth();
-    ImGui::SameLine();
-    
     ImGui::PushID(("##" + idStr + "_ExprButton").c_str());
     if (ImGui::Button("-"))
     {
         auto it = std::find_if(expressions.begin(), expressions.end(), [expr](auto it) { return it->id == expr->id; });
-        if (it == expressions.end())
+        if (it != expressions.end())
         {
-            ERROR("WTF: it == expressions.end()");
-        }
-        else
-        {
+            // Set as nullptr to avoid some weird behaviour
+            if (selectedExpression == expr)
+            {
+                selectedExpression = nullptr;
+            }
+
             expressions.erase(it);
         }
     }
@@ -819,7 +763,26 @@ static void drawFunctionInList(kubvc::render::GUI* gui, std::shared_ptr<Expressi
     }
 
     ImGui::SameLine();
+    ImGui::PushFont(fontBig);
+    ImGui::PushID(("##" + idStr + "_ExprOptionsButton").c_str());    
+    if (ImGui::Button("O"))
+    {
+        if (selectedExpression == expr)
+        {
+            expr->showOptions = !expr->showOptions;
+            selectedExpression = expr;
+        }
+        else 
+        {
+            expr->showOptions = true;
+            selectedExpression = expr;
+        }
+    }
+    ImGui::PopID();
+    ImGui::PopFont();
 
+
+    ImGui::SameLine();
     ImGui::PushFont(fontBig);
     ImGui::PushID(("##" + idStr + "_ExprRadioButton").c_str());    
     if (ImGui::RadioButton("V", expr->show))
@@ -835,9 +798,11 @@ static void drawFunctionInList(kubvc::render::GUI* gui, std::shared_ptr<Expressi
     }
 }
 
-static void drawAddExpressionButton()
+static void drawBasicToolsButtons()
 {
-    if (ImGui::Button("+"))
+    auto region = ImGui::GetContentRegionAvail();
+    
+    if (ImGui::Button("Add"))
     {
         auto expr = std::make_shared<Expression>();
         createTree(expr->tree);
@@ -852,6 +817,20 @@ static void drawAddExpressionButton()
     {
         ImGui::SetTooltip("A button which you can add new graph.");
     }
+
+    ImGui::SameLine(region.x - 55.0f);
+    ImGui::SetNextItemWidth(region.x - 55.0f);
+    
+    if (ImGui::Button("Clear All"))
+    {
+        selectedExpression = nullptr;
+        expressions.clear();
+        expressions.shrink_to_fit();
+    }
+
+    
+    // TODO: Undo redo buttons
+                
 }
 
 static void drawExpressionsList(kubvc::render::GUI* gui)
@@ -901,13 +880,44 @@ static void drawDebugAST()
     }
 }
 
-static void drawColorEditor()
+static void drawLineColorPicker()
 {
     if (selectedExpression != nullptr && selectedExpression->changeColor)
     {
         ImGui::ColorPicker4("##_CurrentExprColorPicker", &selectedExpression->plotLineColor.x, ImGuiColorEditFlags_::ImGuiColorEditFlags_NoLabel);
     }
 }
+
+static void drawPlotter()
+{
+    auto size = ImGui::GetContentRegionAvail();
+    const auto plotFlags = ImPlotFlags_::ImPlotFlags_NoTitle | ImPlotFlags_::ImPlotFlags_Crosshairs;
+    if (ImPlot::BeginPlot("##PlotViewer", size, plotFlags)) 
+    {	
+        // Draw axis notes 
+        ImPlot::SetupAxis(ImAxis_X1, "X-Axis", ImPlotAxisFlags_::ImPlotAxisFlags_Foreground);
+        ImPlot::PushStyleColor(ImPlotCol_::ImPlotCol_AxisBgActive, ImVec4(255,0,0,255));
+        ImPlot::SetupAxis(ImAxis_Y1, "Y-Axis", ImPlotAxisFlags_::ImPlotAxisFlags_Foreground);
+        
+        // Draw our functions 
+        for (auto expr : expressions)
+        {                    
+            if (expr != nullptr)
+            {
+                if (expr->show == true)
+                { 
+                    // Apply plot style from expression                                                   
+                    ImPlot::SetNextLineStyle(expr->plotLineColor, expr->thickness);
+
+                    static constexpr auto stride = 2 * sizeof(double);
+                    ImPlot::PlotLine(expr->textBuffer.data(), &expr->plotBuffer[0].x, &expr->plotBuffer[0].y, expr->plotBuffer.size(), 0, 0, stride);      
+                }
+            }    
+        }                        
+        ImPlot::EndPlot();
+    }
+}
+
 
 int main()
 {
@@ -931,42 +941,75 @@ int main()
             // TODO: Convert function into gui class  
             if (ImGui::Begin("Toolbox"))
             {
-                drawAddExpressionButton();
-                ImGui::Separator();
-                drawExpressionsList(gui);
-                drawColorEditor();
-                ImGui::Separator();
-                drawDebugAST();
-              
+                auto windowSize = ImGui::GetWindowSize();
+                const auto childFlags = ImGuiChildFlags_::ImGuiChildFlags_Borders;
+                const auto childWindowFlags = ImGuiWindowFlags_::ImGuiWindowFlags_HorizontalScrollbar;
+                if (ImGui::BeginChild("BasicToolsChild", ImVec2(windowSize.x - 15.0f, 40.0f), childFlags))
+                {
+                    drawBasicToolsButtons();
+                }
+                ImGui::EndChild();
+                
+                if (ImGui::BeginChild("ExpressionListChild", ImVec2(windowSize.x - 15.0f, windowSize.y / 2), childFlags, childWindowFlags))
+                { 
+                    drawExpressionsList(gui);
+                }
+                ImGui::EndChild();
 
+                if (selectedExpression != nullptr && selectedExpression->showOptions)
+                {                
+                    if (ImGui::BeginChild("OptionsChild", ImVec2(windowSize.x - 15.0f, 0), childFlags, childWindowFlags))
+                    { 
+                        ImGui::Text("Visible");
+                        ImGui::SameLine();
+                        if (ImGui::RadioButton("##VisibleRadio", selectedExpression->show))
+                        {
+                            selectedExpression->show = !selectedExpression->show;
+                        }
+                        
+                        // Do not show color editor when we are not generate random color    
+                        if (selectedExpression->isRandomColorSetted)
+                        {
+                            ImGui::Text("Color");
+                            ImGui::SameLine();
+                            if (ImGui::ColorButton("##ExprColorPicker", selectedExpression->plotLineColor))
+                            {
+                                selectedExpression->changeColor = !selectedExpression->changeColor;
+                                selectedExpression = selectedExpression;
+                            }
+                        }
+    
+                        ImGui::Text("Line Thickness");
+                        ImGui::SameLine();
+                        ImGui::PushItemWidth(45.0f);
+                        if (ImGui::DragFloat("##ThicknessDrag", &selectedExpression->thickness, THICKNESS_SPEED, THICKNESS_MIN, THICKNESS_MAX, "%.1f"))
+                        {
+                            // Handle manualy writed value
+                            if (selectedExpression->thickness > THICKNESS_MAX)
+                            {
+                                selectedExpression->thickness = THICKNESS_MAX;
+                            } 
+                            else if (selectedExpression->thickness < THICKNESS_MIN)
+                            {
+                                selectedExpression->thickness = THICKNESS_MIN;
+                            }     
+                        }
+                        ImGui::PopItemWidth();
+    
+    
+                        drawLineColorPicker();
+                        
+                        ImGui::Separator();
+                        drawDebugAST();
+                    }
+                    ImGui::EndChild();
+                }
             }
             ImGui::End();
 
             if (ImGui::Begin("Viewer"))
             {           
-                auto size = ImGui::GetContentRegionAvail();
-                const auto plotFlags = ImPlotFlags_::ImPlotFlags_NoTitle | ImPlotFlags_::ImPlotFlags_Crosshairs;
-
-                if (ImPlot::BeginPlot("##PlotViewer", size, plotFlags)) 
-                {	
-                    ImPlot::SetupAxis(ImAxis_X1, "X-Axis", ImPlotAxisFlags_::ImPlotAxisFlags_Foreground);
-                    ImPlot::PushStyleColor(ImPlotCol_::ImPlotCol_AxisBgActive, ImVec4(255,0,0,255));
-                    ImPlot::SetupAxis(ImAxis_Y1, "Y-Axis", ImPlotAxisFlags_::ImPlotAxisFlags_Foreground);
-                    
-                    for (auto expr : expressions)
-                    {                    
-                        if (expr != nullptr)
-                        {
-                            // TODO: Legend can change visibility too 
-                            if (expr->show == true)
-                            {                                                    
-                                ImPlot::SetNextLineStyle(expr->plotLineColor, expr->thickness);
-                                ImPlot::PlotLine(expr->textBuffer.data(), &expr->plotBuffer[0].x, &expr->plotBuffer[0].y, expr->plotBuffer.size(), 0, 0, 2 * sizeof(double));      
-                            }
-                        }    
-                    }                        
-                    ImPlot::EndPlot();
-                }
+                drawPlotter();
             }
             
             ImGui::End();       
