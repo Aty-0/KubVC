@@ -37,9 +37,9 @@ namespace kubvc::render
 			FATAL("ImGui OpenGL3 init failed!");
 		}	
 
-		m_defaultFont = io.Fonts->AddFontFromFileTTF("Roboto-Medium.ttf", DEFAULT_FONT_SIZE);
-		m_defaultFontMathSize = io.Fonts->AddFontFromFileTTF("Roboto-Medium.ttf", MATH_FONT_SIZE);
-		m_mathFont = io.Fonts->AddFontFromFileTTF("OldStandard-Regular.ttf", MATH_FONT_SIZE);
+		m_defaultFont = io.Fonts->AddFontFromFileTTF("fonts/Roboto-Light.ttf", DEFAULT_FONT_SIZE);
+		m_defaultFontMathSize = io.Fonts->AddFontFromFileTTF("fonts/Roboto-Light.ttf", MATH_FONT_SIZE);
+		m_mathFont = io.Fonts->AddFontFromFileTTF("fonts/OldStandard-Regular.ttf", MATH_FONT_SIZE);
     }
 
 	void GUI::beginDockspace()
