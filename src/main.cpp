@@ -5,35 +5,6 @@
 #include "gui.h"
 #include "alg_helpers.h"
 
-#include <algorithm>
-
-
-static inline void toLowerCase(std::string& text)
-{
-    std::transform(text.begin(), text.end(), text.begin(), std::tolower);
-}
-
-static inline std::string getTypeName(const kubvc::algorithm::NodeTypes& type)
-{
-    switch (type)
-    {
-        case kubvc::algorithm::NodeTypes::None:
-            return "None";           
-        case kubvc::algorithm::NodeTypes::Root:
-            return "Root";           
-        case kubvc::algorithm::NodeTypes::Number: 
-            return "Number";           
-        case kubvc::algorithm::NodeTypes::Variable:
-            return "Variable";           
-        case kubvc::algorithm::NodeTypes::Function:
-            return "Function";           
-        case kubvc::algorithm::NodeTypes::Operator:
-            return "Operator";               
-    }
-
-    return "Unknown";
-}
-
 static void showTreeList(std::shared_ptr<kubvc::algorithm::Node> start)
 {
     // We are reached the end of tree 
@@ -271,54 +242,6 @@ static void showTreeVisual(const kubvc::algorithm::ASTree& tree)
     ImGui::EndChild();
 }
 
-static auto createVariableNode(const kubvc::algorithm::ASTree& tree, char value)
-{
-    auto varNode = tree.createNode<kubvc::algorithm::VariableNode>();
-    varNode->value = value;    
-    return varNode;
-}
-
-static auto createNumberNode(const kubvc::algorithm::ASTree& tree, double value)
-{
-    auto numNode = tree.createNode<kubvc::algorithm::NumberNode>();
-    numNode->value = value;    
-    return numNode;
-}
-
-static auto createOperator(const kubvc::algorithm::ASTree& tree, std::shared_ptr<kubvc::algorithm::Node> x, 
-    std::shared_ptr<kubvc::algorithm::Node> y, char op)
-{
-    auto opNode = tree.createNode<kubvc::algorithm::OperatorNode>();
-    opNode->operation = op;
-    opNode->left = std::move(x);
-    opNode->right = std::move(y);
-    return opNode;
-}
-
-static auto createUnaryOperator(const kubvc::algorithm::ASTree& tree, std::shared_ptr<kubvc::algorithm::Node> x, char op)
-{
-    auto opNode = tree.createNode<kubvc::algorithm::UnaryOperatorNode>();
-    opNode->operation = op;
-    opNode->child = std::move(x);
-    return opNode;
-}
-
-
-static auto createInvalid(const kubvc::algorithm::ASTree& tree, const std::string& name)
-{
-    auto invalidNode = tree.createNode<kubvc::algorithm::InvalidNode>();
-    invalidNode->name = name;
-    return invalidNode;
-}
-
-static auto createFunction(const kubvc::algorithm::ASTree& tree, const std::string& name)
-{
-    auto funcNode = tree.createNode<kubvc::algorithm::FunctionNode>();
-    funcNode->name = name;
-
-    return funcNode;
-}
-
 static inline unsigned char getCurrentChar(const std::size_t& cursor, const std::string& text) 
 {
     if (cursor > text.size())
@@ -358,8 +281,8 @@ static auto parseLetters(std::size_t& cursor, const std::string& text, bool incl
     return output;
 }
 
-static std::shared_ptr<kubvc::algorithm::Node> parseExpression(const kubvc::algorithm::ASTree& tree, const std::string& text, std::size_t& cursor, bool isSubExpression);
-static std::shared_ptr<kubvc::algorithm::Node> parseFunction(const kubvc::algorithm::ASTree& tree, const std::size_t& cursor_pos, std::size_t& cursor, const std::string& text)
+static std::shared_ptr<kubvc::algorithm::Node> parseExpression(kubvc::algorithm::ASTree& tree, const std::string& text, std::size_t& cursor, bool isSubExpression);
+static std::shared_ptr<kubvc::algorithm::Node> parseFunction(kubvc::algorithm::ASTree& tree, const std::size_t& cursor_pos, std::size_t& cursor, const std::string& text)
 {
     std::size_t funcCursor = cursor_pos;
     std::string funcName = std::string();
@@ -367,10 +290,10 @@ static std::shared_ptr<kubvc::algorithm::Node> parseFunction(const kubvc::algori
     funcName = parseLetters(funcCursor, text);
 
     // Convert text to lower case to avoid mismatch 
-    toLowerCase(funcName);
+    kubvc::algorithm::Helpers::toLowerCase(funcName);
 
     if (funcCursor > text.size())
-        return createInvalid(tree, text);
+        return tree.createInvalidNode(text);
   
     // Next should be bracket character
     auto brChar = getCurrentChar(funcCursor, text);        
@@ -384,7 +307,7 @@ static std::shared_ptr<kubvc::algorithm::Node> parseFunction(const kubvc::algori
         auto argsNode = parseExpression(tree, text, cursor, true);
         if (argsNode->getType() != kubvc::algorithm::NodeTypes::Invalid)
         {
-            auto funcNode = createFunction(tree, funcName);
+            auto funcNode = tree.createFunctionNode(funcName);
             funcNode->argument = argsNode;
             return funcNode;            
         }
@@ -392,11 +315,11 @@ static std::shared_ptr<kubvc::algorithm::Node> parseFunction(const kubvc::algori
         WARN("Bad node returned...");
     }
 
-    return createInvalid(tree, text);
+    return tree.createInvalidNode(text);
 }
 
 
-static std::shared_ptr<kubvc::algorithm::Node> parseElement(const kubvc::algorithm::ASTree& tree, const std::string& text, std::size_t& cursor, char currentChar, bool isSubExpression)
+static std::shared_ptr<kubvc::algorithm::Node> parseElement(kubvc::algorithm::ASTree& tree, const std::string& text, std::size_t& cursor, char currentChar, bool isSubExpression)
 {
     DEBUG("try to find something usefull for %c", currentChar); 
 
@@ -421,7 +344,7 @@ static std::shared_ptr<kubvc::algorithm::Node> parseElement(const kubvc::algorit
         {
             if (kubvc::algorithm::Helpers::isNumber(out))
             {
-                return createNumberNode(tree, std::atof(out.c_str()));                
+                return tree.createNumberNode(std::atof(out.c_str()));                
             }
             else
             {
@@ -446,7 +369,7 @@ static std::shared_ptr<kubvc::algorithm::Node> parseElement(const kubvc::algorit
         else 
         {
             // TODO: What we need to do with constants 
-            return createVariableNode(tree, currentChar);
+            return tree.createVariableNode(currentChar);
         }
     }
     else if (kubvc::algorithm::Helpers::isBracketStart(currentChar)) 
@@ -463,15 +386,15 @@ static std::shared_ptr<kubvc::algorithm::Node> parseElement(const kubvc::algorit
         auto node = parseExpression(tree, text, cursor, isSubExpression);
 
         cursor--;
-        return createUnaryOperator(tree, node, currentChar);
+        return tree.createUnaryOperatorNode(node, currentChar);
     }
 
     DEBUG("Nothing found");
 
-    return createInvalid(tree, "INV_NODE");
+    return tree.createInvalidNode("INV_NODE");
 }
 
-static std::shared_ptr<kubvc::algorithm::Node> parseExpression(const kubvc::algorithm::ASTree& tree, const std::string& text, std::size_t& cursor, bool isSubExpression)
+static std::shared_ptr<kubvc::algorithm::Node> parseExpression(kubvc::algorithm::ASTree& tree, const std::string& text, std::size_t& cursor, bool isSubExpression)
 {
     // Don't do anything if text is empty 
     if (text.size() == 0)
@@ -526,7 +449,7 @@ static std::shared_ptr<kubvc::algorithm::Node> parseExpression(const kubvc::algo
             return nullptr;
         }
 
-        left = createOperator(tree, left, right, currentChar);
+        left = tree.createOperatorNode(left, right, currentChar);
     }   
 
     // If we are actually leave from cycle and if isSubExpression is true, 
@@ -545,13 +468,13 @@ static std::shared_ptr<kubvc::algorithm::Node> parseExpression(const kubvc::algo
         }
         
         WARN("is invalid brecket");
-        return createInvalid(tree, "InvalidBrecket");
+        return tree.createInvalidNode("InvalidBrecket");
     }
 
     return left;
 }
 
-static void parse(const kubvc::algorithm::ASTree& tree, const std::string& text, const std::size_t cursor_pos = 0)
+static void parse(kubvc::algorithm::ASTree& tree, const std::string& text, const std::size_t cursor_pos = 0)
 {
     std::size_t cursor = cursor_pos;
     auto root = static_cast<kubvc::algorithm::RootNode*>(tree.getRoot().get());

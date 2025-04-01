@@ -1,6 +1,8 @@
 #pragma once
 #include <string>
 #include <cmath>
+#include <algorithm>
+
 #include "functions.h"
 
 namespace kubvc::algorithm
@@ -9,6 +11,11 @@ namespace kubvc::algorithm
     {
         public:
             using uchar = unsigned char;
+
+            [[nodiscard]] static inline void toLowerCase(std::string& text)
+            {
+                std::transform(text.begin(), text.end(), text.begin(), std::tolower);
+            }
 
             [[nodiscard]] static inline double getResultFromFunction(const std::string& name, double x)
             { 

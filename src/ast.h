@@ -220,6 +220,14 @@ namespace kubvc::algorithm
             
             inline std::shared_ptr<RootNode> getRoot() const { return m_root; }
 
+            std::shared_ptr<kubvc::algorithm::VariableNode> createVariableNode(char value);
+            std::shared_ptr<kubvc::algorithm::NumberNode> createNumberNode(double value);
+            std::shared_ptr<kubvc::algorithm::OperatorNode> createOperatorNode(std::shared_ptr<kubvc::algorithm::Node> x,  std::shared_ptr<kubvc::algorithm::Node> y, char op);
+            std::shared_ptr<kubvc::algorithm::UnaryOperatorNode> createUnaryOperatorNode(std::shared_ptr<kubvc::algorithm::Node> x, char op);
+            std::shared_ptr<kubvc::algorithm::InvalidNode> createInvalidNode(const std::string& name);
+            std::shared_ptr<kubvc::algorithm::FunctionNode> createFunctionNode(const std::string& name);
+
+
             template <typename T, typename = std::enable_if<std::is_same<T, Node>::value 
                 || std::is_base_of<T, Node>::value>>
             inline std::shared_ptr<T> createNode() const
@@ -229,6 +237,27 @@ namespace kubvc::algorithm
                 node->id = id;
                 id++;
                 return node;
+            }
+
+            static inline std::string getNodeName(const kubvc::algorithm::NodeTypes& type)
+            {
+                switch (type)
+                {
+                    case kubvc::algorithm::NodeTypes::None:
+                        return "None";           
+                    case kubvc::algorithm::NodeTypes::Root:
+                        return "Root";           
+                    case kubvc::algorithm::NodeTypes::Number: 
+                        return "Number";           
+                    case kubvc::algorithm::NodeTypes::Variable:
+                        return "Variable";           
+                    case kubvc::algorithm::NodeTypes::Function:
+                        return "Function";           
+                    case kubvc::algorithm::NodeTypes::Operator:
+                        return "Operator";               
+                }
+            
+                return "Unknown";
             }
 
         private:
