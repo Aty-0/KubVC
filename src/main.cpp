@@ -1011,6 +1011,23 @@ int main()
             {           
                 drawPlotter();
             }
+
+            ImGui::End();  
+
+            const auto emptyWindowFlags = ImGuiWindowFlags_::ImGuiWindowFlags_NoBackground 
+            | ImGuiWindowFlags_::ImGuiWindowFlags_NoDecoration 
+            | ImGuiWindowFlags_::ImGuiWindowFlags_NoDocking 
+            | ImGuiWindowFlags_::ImGuiWindowFlags_AlwaysAutoResize 
+            | ImGuiWindowFlags_::ImGuiWindowFlags_NoScrollbar 
+            | ImGuiWindowFlags_::ImGuiWindowFlags_NoTitleBar 
+            | ImGuiWindowFlags_::ImGuiWindowFlags_NoResize 
+            | ImGuiWindowFlags_::ImGuiWindowFlags_NoCollapse; 
+
+            if (ImGui::Begin("##FpsCounter", nullptr, emptyWindowFlags))
+            {           
+                auto io = ImGui::GetIO();
+                ImGui::Text("Fps %.1f", io.Framerate);
+            }
             
             ImGui::End();       
         }
