@@ -834,18 +834,17 @@ static void drawPlotter()
             {
                 if (expr->show == true && expr->valid)
                 { 
-                    // TODO: I'm not sure about using hovering for this, maybe it will reduce perf 
                     if (ImPlot::IsPlotHovered())
                     {
-                        static auto prevPos = ImPlot::GetPlotPos();
-                        auto pos = ImVec2(0, 0);
+                        static auto prevPos = ImPlotPoint(0, 0);
+                        auto pos = ImPlot::GetPlotLimits().Min(); 
 
-                        if (prevPos.x != pos.x && prevPos.y != pos.y)
+                        if (prevPos.x != pos.x || prevPos.y != pos.y)
                         {
                             updateExpressionByPlotLimits(expr);        
                         }
-
-                        prevPos = ImPlot::GetPlotPos();
+                        
+                        prevPos = pos;
                     }
 
                     // Apply plot style from expression                                                   
