@@ -685,7 +685,7 @@ static void drawFunctionInList(kubvc::render::GUI* gui, std::shared_ptr<Expressi
         ImGui::SetTooltip("Remove this graph from graph list");
     }
 
-    static const auto fontIcon = gui->getIconFont();
+    //static const auto fontIcon = gui->getIconFont();
 
     ImGui::SameLine();
     ImGui::PushFont(fontBig);
@@ -826,6 +826,20 @@ static void drawPlotter()
         ImPlot::SetupAxis(ImAxis_X1, "X-Axis", ImPlotAxisFlags_::ImPlotAxisFlags_Foreground);
         ImPlot::PushStyleColor(ImPlotCol_::ImPlotCol_AxisBgActive, ImVec4(255,0,0,255));
         ImPlot::SetupAxis(ImAxis_Y1, "Y-Axis", ImPlotAxisFlags_::ImPlotAxisFlags_Foreground);
+
+        static bool updateExpr = false;
+        if (ImPlot::IsPlotHovered())
+        {
+            static auto prevPos = ImPlotPoint(0, 0);
+            auto pos = ImPlot::GetPlotLimits().Min(); 
+
+            if (prevPos.x != pos.x || prevPos.y != pos.y)
+            {
+                updateExpr = true;
+            }
+            
+            prevPos = pos;
+        }
         
         // Draw our functions 
         for (auto expr : expressions)
@@ -834,27 +848,19 @@ static void drawPlotter()
             {
                 if (expr->show == true && expr->valid)
                 { 
-                    if (ImPlot::IsPlotHovered())
+                    if (updateExpr)
                     {
-                        static auto prevPos = ImPlotPoint(0, 0);
-                        auto pos = ImPlot::GetPlotLimits().Min(); 
-
-                        if (prevPos.x != pos.x || prevPos.y != pos.y)
-                        {
-                            updateExpressionByPlotLimits(expr);        
-                        }
-                        
-                        prevPos = pos;
+                        updateExpressionByPlotLimits(expr);        
                     }
-
                     // Apply plot style from expression                                                   
                     ImPlot::SetNextLineStyle(expr->plotLineColor, expr->thickness);
-
+                    
                     static constexpr auto stride = 2 * sizeof(double);
                     ImPlot::PlotLine(expr->textBuffer.data(), &expr->plotBuffer[0].x, &expr->plotBuffer[0].y, expr->plotBuffer.size(), 0, 0, stride);      
                 }
             }    
         }                        
+        updateExpr = false;
         ImPlot::EndPlot();
     }
 }
