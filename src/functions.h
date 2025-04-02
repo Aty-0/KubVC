@@ -37,6 +37,8 @@ namespace kubvc::algorithm::functions
         { "ln",  DISAMBIGUATE_MATH_F(std::log) },
         { "log10",  DISAMBIGUATE_MATH_F(std::log10) },
         { "log2",  DISAMBIGUATE_MATH_F(std::log2) },
+        
+        { "fact",  DISAMBIGUATE_MATH_F(std::tgamma) },
     }; 
 
     static inline std::function<double(double)> getFunction(const std::string& name)
