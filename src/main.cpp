@@ -505,6 +505,7 @@ struct Expression
 
     bool valid = true;
 
+    bool shaded = false;
     bool changeColor;
     bool isRandomColorSetted;
     bool showOptions;
@@ -543,7 +544,7 @@ static void calculatePlotPoints(std::shared_ptr<Expression> expr, double max, do
         root->calculate(lerpAxis, result);
         expr->plotBuffer[i] = { lerpAxis, result };
     }
-    
+ 
     if (!expr->isRandomColorSetted)
     {
         std::srand(std::time({}));  
@@ -856,7 +857,12 @@ static void drawPlotter()
                     ImPlot::SetNextLineStyle(expr->plotLineColor, expr->thickness);
                     
                     static constexpr auto stride = 2 * sizeof(double);
-                    ImPlot::PlotLine(expr->textBuffer.data(), &expr->plotBuffer[0].x, &expr->plotBuffer[0].y, expr->plotBuffer.size(), 0, 0, stride);      
+                    
+                    const auto shaded = expr->shaded ? ImPlotLineFlags_::ImPlotLineFlags_Shaded : ImPlotLineFlags_::ImPlotLineFlags_None;
+                    const auto plotLineFlags = ImPlotLineFlags_::ImPlotLineFlags_SkipNaN 
+                        | shaded;
+
+                    ImPlot::PlotLine(expr->textBuffer.data(), &expr->plotBuffer[0].x, &expr->plotBuffer[0].y, expr->plotBuffer.size(), plotLineFlags, 0, stride);      
                 }
             }    
         }                        
@@ -909,17 +915,18 @@ int main()
                     {                
                         ImGui::Text("Visible");
                         ImGui::SameLine();
-                        if (ImGui::RadioButton("##VisibleRadio", selectedExpression->show))
-                        {
-                            selectedExpression->show = !selectedExpression->show;
-                        }
+                        ImGui::Checkbox("##OptionsExprVisibleCheckBox", &selectedExpression->show);
                         
+                        ImGui::Text("Shaded");
+                        ImGui::SameLine();
+                        ImGui::Checkbox("##OptionsExprShadedCheckBox", &selectedExpression->shaded);
+
                         // Do not show color editor when we are not generate random color    
                         if (selectedExpression->isRandomColorSetted)
                         {
                             ImGui::Text("Color");
                             ImGui::SameLine();
-                            if (ImGui::ColorButton("##ExprColorPicker", selectedExpression->plotLineColor))
+                            if (ImGui::ColorButton("##OptionsExprColorPicker", selectedExpression->plotLineColor))
                             {
                                 selectedExpression->changeColor = !selectedExpression->changeColor;
                                 selectedExpression = selectedExpression;
@@ -929,7 +936,7 @@ int main()
                         ImGui::Text("Line Thickness");
                         ImGui::SameLine();
                         ImGui::PushItemWidth(45.0f);
-                        if (ImGui::DragFloat("##ThicknessDrag", &selectedExpression->thickness, THICKNESS_SPEED, THICKNESS_MIN, THICKNESS_MAX, "%.1f"))
+                        if (ImGui::DragFloat("##OptionsExprThicknessDrag", &selectedExpression->thickness, THICKNESS_SPEED, THICKNESS_MIN, THICKNESS_MAX, "%.1f"))
                         {
                             // Handle manualy writed value
                             if (selectedExpression->thickness > THICKNESS_MAX)
