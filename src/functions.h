@@ -18,6 +18,11 @@ namespace kubvc::algorithm::functions
         return std::acos(x / std::sqrt(1 + std::pow(x, 2)));
     }
 
+    static inline auto fact(double x)
+    {
+        return std::tgamma(x + 1);
+    }
+
     // List of generic math functions 
     static const std::vector<std::pair<std::string, std::function<double(double)>>> FunctionList = 
     {        
@@ -38,7 +43,7 @@ namespace kubvc::algorithm::functions
         { "log10",  DISAMBIGUATE_MATH_F(std::log10) },
         { "log2",  DISAMBIGUATE_MATH_F(std::log2) },
         
-        { "fact",  DISAMBIGUATE_MATH_F(std::tgamma) },
+        { "fact", fact },
     }; 
 
     static inline std::function<double(double)> getFunction(const std::string& name)
