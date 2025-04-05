@@ -216,8 +216,14 @@ namespace kubvc::algorithm
             ASTree();    
             
             void clear();
-            void makeRoot();
+            void createRoot();
             
+            // Is tree had any invalid node 
+            inline bool isValid() const { return isValidFrom(m_root); }
+
+            // Is tree had any invalid node but we are start from specified node 
+            bool isValidFrom(std::shared_ptr<kubvc::algorithm::Node> start) const;
+
             inline std::shared_ptr<RootNode> getRoot() const { return m_root; }
 
             std::shared_ptr<kubvc::algorithm::VariableNode> createVariableNode(char value);

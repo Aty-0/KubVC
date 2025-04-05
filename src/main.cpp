@@ -1,9 +1,8 @@
 #include "logger.h"
 #include "renderer.h"
 #include "window.h"
-#include "ast.h"
 #include "gui.h"
-#include "alg_helpers.h"
+#include "expression_parser.h"
 
 static void showTreeList(std::shared_ptr<kubvc::algorithm::Node> start)
 {
@@ -242,249 +241,11 @@ static void showTreeVisual(const kubvc::algorithm::ASTree& tree)
     ImGui::EndChild();
 }
 
-static inline unsigned char getCurrentChar(const std::size_t& cursor, const std::string& text) 
-{
-    if (cursor > text.size())
-    {
-        FATAL("Cursor is out of bounds");
-        return '\0';
-    }
-    auto character = text[cursor];
-
-    return static_cast<unsigned char>(character);
-}
-
-static auto parseNumbers(std::size_t& cursor, const std::string& text)
-{
-    char character = getCurrentChar(cursor, text);
-    std::string output = std::string();
-    while(kubvc::algorithm::Helpers::isDigit(character) 
-        || kubvc::algorithm::Helpers::isDot(character))
-    {
-        output += character;
-        cursor++;
-        character = getCurrentChar(cursor, text);
-    }
-    return output;
-}
-
-static auto parseLetters(std::size_t& cursor, const std::string& text, bool includeDigits = true)
-{
-    char character = getCurrentChar(cursor, text);
-    std::string output = std::string();
-    while(kubvc::algorithm::Helpers::isLetter(character) || (kubvc::algorithm::Helpers::isDigit(character) && includeDigits))
-    {
-        output += character;
-        cursor++;
-        character = getCurrentChar(cursor, text);
-    }
-    return output;
-}
-
-static std::shared_ptr<kubvc::algorithm::Node> parseExpression(kubvc::algorithm::ASTree& tree, const std::string& text, std::size_t& cursor, bool isSubExpression);
-static std::shared_ptr<kubvc::algorithm::Node> parseFunction(kubvc::algorithm::ASTree& tree, const std::size_t& cursor_pos, std::size_t& cursor, const std::string& text)
-{
-    std::size_t funcCursor = cursor_pos;
-    std::string funcName = std::string();
-
-    funcName = parseLetters(funcCursor, text);
-
-    // Convert text to lower case to avoid mismatch 
-    kubvc::algorithm::Helpers::toLowerCase(funcName);
-
-    if (funcCursor > text.size())
-        return tree.createInvalidNode(text);
-  
-    // Next should be bracket character
-    auto brChar = getCurrentChar(funcCursor, text);        
-
-    // TODO: What if we are want support functions with more than one argument
-    if (kubvc::algorithm::Helpers::isBracketStart(brChar))
-    {
-        DEBUG("So, is bracket found...");
-        cursor++;
-    
-        auto argsNode = parseExpression(tree, text, cursor, true);
-        if (argsNode->getType() != kubvc::algorithm::NodeTypes::Invalid)
-        {
-            auto funcNode = tree.createFunctionNode(funcName);
-            funcNode->argument = argsNode;
-            return funcNode;            
-        }
-        
-        WARN("Bad node returned...");
-    }
-
-    return tree.createInvalidNode(text);
-}
-
-
-static std::shared_ptr<kubvc::algorithm::Node> parseElement(kubvc::algorithm::ASTree& tree, const std::string& text, std::size_t& cursor, char currentChar, bool isSubExpression)
-{
-    DEBUG("try to find something usefull for %c", currentChar); 
-
-    // Skip white space if we are find it  
-    if (kubvc::algorithm::Helpers::isWhiteSpace(currentChar))
-    {
-        DEBUG("Ignore white space in parse element stage"); 
-        cursor++;
-        currentChar = getCurrentChar(cursor, text);
-    } 
-
-    if (kubvc::algorithm::Helpers::isDigit(currentChar))
-    {
-        auto out = parseNumbers(cursor, text);
-
-        DEBUG("Is digit %s", out.c_str());
-        if (out.empty())
-        {
-            ERROR("Parse number has a empty output, hmm. Ignore!");
-        }
-        else
-        {
-            if (kubvc::algorithm::Helpers::isNumber(out))
-            {
-                return tree.createNumberNode(std::atof(out.c_str()));                
-            }
-            else
-            {
-                ERROR("Output is actually not a number, so ignore him! We catch that bad guy: %s", out.c_str());
-            }
-        }
-    }    
-    else if (kubvc::algorithm::Helpers::isLetter(currentChar))
-    {
-        auto out = parseLetters(cursor, text);
-        DEBUG("Is letter | parsed %s", out.c_str());
-        const auto outSize = out.size();
-        if (outSize == 0)
-        {
-            ERROR("Output has a zero size");                
-        } 
-        else if (outSize > 1)
-        {
-            DEBUG("Parse function...");
-            return parseFunction(tree, cursor - outSize, cursor, text);
-        }
-        else 
-        {
-            // TODO: What we need to do with constants 
-            return tree.createVariableNode(currentChar);
-        }
-    }
-    else if (kubvc::algorithm::Helpers::isBracketStart(currentChar)) 
-    {
-        cursor++;
-        DEBUG("Bracket start");
-        auto node = parseExpression(tree, text, cursor, true);
-        return node;
-    } 
-    else if (kubvc::algorithm::Helpers::isUnaryOperator(currentChar))
-    {
-        DEBUG("Possible unary operator");
-        cursor++;
-        auto node = parseExpression(tree, text, cursor, isSubExpression);
-
-        cursor--;
-        return tree.createUnaryOperatorNode(node, currentChar);
-    }
-
-    DEBUG("Nothing found");
-
-    return tree.createInvalidNode("INV_NODE");
-}
-
-static std::shared_ptr<kubvc::algorithm::Node> parseExpression(kubvc::algorithm::ASTree& tree, const std::string& text, std::size_t& cursor, bool isSubExpression)
-{
-    // Don't do anything if text is empty 
-    if (text.size() == 0)
-        return nullptr;
-    
-    DEBUG("----------------------------------------");
-    DEBUG("parseExpression | Start | cursor: %d", cursor);
-    
-    std::shared_ptr<kubvc::algorithm::Node> left = parseElement(tree, text, cursor, getCurrentChar(cursor, text), isSubExpression);
-
-    while (true)
-    {
-        auto currentChar = getCurrentChar(cursor, text);  
-        DEBUG("Current character in expression cycle: %c", currentChar); 
-
-        // Ignore white spaces
-        if (kubvc::algorithm::Helpers::isWhiteSpace(currentChar))
-        {
-            DEBUG("Ignore white space in expression parse"); 
-            cursor++;
-            continue;
-        }  
-        // We are want to continue cycle or want to break it if it's a subexpression
-        else if (kubvc::algorithm::Helpers::isBracketEnd(currentChar))
-        {
-            DEBUG("End of bracket | isSubExpression:%i", isSubExpression);
-            cursor++;
-
-            if (isSubExpression)
-            {
-                DEBUG("Return left node");
-                return left;
-            }
-
-            continue;
-        }
-        // If current character is not operator we are leave from cycle 
-        else if (!kubvc::algorithm::Helpers::isOperator(currentChar))
-        {
-            DEBUG("parseExpression | End | Leave from cycle");
-            DEBUG("----------------------------------------");
-            break;
-        }
-
-        // Augment cursor position 
-        cursor++;  
-        // Try to find something 
-        auto right = parseElement(tree, text, cursor, getCurrentChar(cursor, text), isSubExpression);
-        if (right == nullptr)
-        {
-            ERROR("parseElement is returned nullptr, maybe syntax error or not implemented element");
-            return nullptr;
-        }
-
-        left = tree.createOperatorNode(left, right, currentChar);
-    }   
-
-    // If we are actually leave from cycle and if isSubExpression is true, 
-    // it means we are not found end brecket symbol, so it's a invalid expression   
-    if (isSubExpression)
-    {
-        // In some cases we are reached from text range by one character, so it can be end of bracket. 
-        if (cursor > text.size())
-        {
-            WARN("Edgy case found");
-            auto preLastChar = getCurrentChar(cursor - 1, text);
-            if (kubvc::algorithm::Helpers::isBracketEnd(preLastChar))
-            {
-                return left;    
-            }
-        }
-        
-        WARN("is invalid brecket");
-        return tree.createInvalidNode("InvalidBrecket");
-    }
-
-    return left;
-}
-
-static void parse(kubvc::algorithm::ASTree& tree, const std::string& text, const std::size_t cursor_pos = 0)
-{
-    std::size_t cursor = cursor_pos;
-    auto root = static_cast<kubvc::algorithm::RootNode*>(tree.getRoot().get());
-    root->child = parseExpression(tree, text, cursor, false);
-}
 
 static void createTree(kubvc::algorithm::ASTree& tree)
 { 
     tree.clear();
-    tree.makeRoot();
+    tree.createRoot();
 }
 
 static const auto MAX_FUNC_RANGE = 100;
@@ -553,72 +314,6 @@ static void calculatePlotPoints(std::shared_ptr<Expression> expr, double max, do
     }
 }
 
-// This function is trying to find invalid nodes in tree, so if it's found something invalid it returns false otherwise true
-static bool checkTreeOnValid(std::shared_ptr<kubvc::algorithm::Node> start)
-{
-    // We are reached the end of tree 
-    if (start == nullptr)
-    {
-        return false;
-    }
-
-    auto type = start->getType();
-    switch (type)
-    {
-        case kubvc::algorithm::NodeTypes::Root:
-        {
-            auto node = static_cast<kubvc::algorithm::RootNode*>(start.get());
-            return checkTreeOnValid(node->child);
-        }
-        case kubvc::algorithm::NodeTypes::Number:
-        case kubvc::algorithm::NodeTypes::Variable:
-        {
-            return true;            
-        }
-        case kubvc::algorithm::NodeTypes::Operator:
-        {
-            auto node = static_cast<kubvc::algorithm::OperatorNode*>(start.get());         
-            bool resultLeft = true;
-            bool resultRight = true;
-
-            if (node->left != nullptr)
-            {
-                resultLeft = checkTreeOnValid(node->left);
-            }
-
-            if (node->right != nullptr)
-            {
-                resultRight = checkTreeOnValid(node->right);
-            }
-
-            return resultLeft && resultRight;    
-        }
-        case kubvc::algorithm::NodeTypes::UnaryOperator:
-        {
-            auto node = static_cast<kubvc::algorithm::UnaryOperatorNode*>(start.get());         
-            return checkTreeOnValid(node->child);     
-        }
-        case kubvc::algorithm::NodeTypes::Function:
-        {
-            auto node = static_cast<kubvc::algorithm::FunctionNode*>(start.get());         
-            if (node->argument != nullptr)
-            {
-                return checkTreeOnValid(node->argument);     
-            }
-            else 
-            {
-                return false;
-            }
-        }
-        case kubvc::algorithm::NodeTypes::Invalid:
-        default:
-            return false;
-    }
-
-    return false;
-}
-
-
 static const auto INVALID_COLOR = ImVec4(0.64f, 0.16f, 0.16f, 1.0f); 
 static const auto SELECTED_COLOR = ImVec4(0.16f, 0.64f, 0.16f, 1.0f); 
 static const auto THICKNESS_MIN = 0.5f;
@@ -641,10 +336,10 @@ static void drawFunctionInList(kubvc::render::GUI* gui, std::shared_ptr<Expressi
     
     if (ImGui::InputText(("##" + idStr + "_ExprInputText").c_str(), expr->textBuffer.data(), expr->textBuffer.size()))
     {
-        parse(expr->tree, expr->textBuffer.data());
+        kubvc::algorithm::Parser::parse(expr->tree, expr->textBuffer.data());
         calculatePlotPoints(expr, MAX_FUNC_RANGE, -MAX_FUNC_RANGE);
         
-        expr->valid = checkTreeOnValid(expr->tree.getRoot());
+        expr->valid = expr->tree.isValid();
     }
     ImGui::PopFont();
     

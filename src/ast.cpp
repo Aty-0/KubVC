@@ -12,12 +12,76 @@ namespace kubvc::algorithm
 
     }   
 
+    bool ASTree::isValidFrom(std::shared_ptr<kubvc::algorithm::Node> start) const 
+    {
+        // We are reached the end of tree 
+        if (start == nullptr)
+        {
+            return false;
+        }
+
+        auto type = start->getType();
+        switch (type)
+        {
+            case kubvc::algorithm::NodeTypes::Root:
+            {
+                auto node = static_cast<kubvc::algorithm::RootNode*>(start.get());
+                return isValidFrom(node->child);
+            }
+            case kubvc::algorithm::NodeTypes::Number:
+            case kubvc::algorithm::NodeTypes::Variable:
+            {
+                return true;            
+            }
+            case kubvc::algorithm::NodeTypes::Operator:
+            {
+                auto node = static_cast<kubvc::algorithm::OperatorNode*>(start.get());         
+                bool resultLeft = true;
+                bool resultRight = true;
+
+                if (node->left != nullptr)
+                {
+                    resultLeft = isValidFrom(node->left);
+                }
+
+                if (node->right != nullptr)
+                {
+                    resultRight = isValidFrom(node->right);
+                }
+
+                return resultLeft && resultRight;    
+            }
+            case kubvc::algorithm::NodeTypes::UnaryOperator:
+            {
+                auto node = static_cast<kubvc::algorithm::UnaryOperatorNode*>(start.get());         
+                return isValidFrom(node->child);     
+            }
+            case kubvc::algorithm::NodeTypes::Function:
+            {
+                auto node = static_cast<kubvc::algorithm::FunctionNode*>(start.get());         
+                if (node->argument != nullptr)
+                {
+                    return isValidFrom(node->argument);     
+                }
+                else 
+                {
+                    return false;
+                }
+            }
+            case kubvc::algorithm::NodeTypes::Invalid:
+            default:
+                return false;
+        }
+
+        return false;
+    }
+
     void ASTree::clear()
     {
         m_root.reset();
     }
 
-    void ASTree::makeRoot()
+    void ASTree::createRoot()
     {
         if (m_root != nullptr)
         {
