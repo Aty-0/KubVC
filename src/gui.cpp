@@ -40,6 +40,13 @@ namespace kubvc::render
 		m_defaultFont = io.Fonts->AddFontFromFileTTF("fonts/Roboto-Light.ttf", DEFAULT_FONT_SIZE);
 		m_defaultFontMathSize = io.Fonts->AddFontFromFileTTF("fonts/Roboto-Light.ttf", MATH_FONT_SIZE);
 		m_mathFont = io.Fonts->AddFontFromFileTTF("fonts/OldStandard-Regular.ttf", MATH_FONT_SIZE);
+
+		//ImFontConfig config;
+		//config.MergeMode = true;
+		//config.GlyphMinAdvanceX = 13.0f; // Use if you want to make the icon monospaced
+		//
+		//static const ImWchar icon_ranges[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };
+		//m_iconFont = io.Fonts->AddFontFromFileTTF("fonts/Font-Awesome.otf", 13.0f, &config, icon_ranges);
     }
 
 	void GUI::beginDockspace()
@@ -201,5 +208,6 @@ namespace kubvc::render
     	plotStyle.MajorGridSize = ImVec2(1.0f, 1.0f);
     	plotStyle.MinorGridSize = ImVec2(1.0f, 1.0f);
 
+		style.AntiAliasedLines = true;
 	}
 }

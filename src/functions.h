@@ -23,6 +23,36 @@ namespace kubvc::algorithm::functions
         return std::tgamma(x + 1);
     }
 
+    static inline auto sh(double x)
+    {
+        return (std::exp(x) - std::exp(-x)) / 2;
+    }
+
+    static inline auto ch(double x)
+    {
+        return (std::exp(x) + std::exp(-x)) / 2;
+    }
+    
+    static inline auto th(double x)
+    {
+        return (std::exp(x) - std::exp(-x)) / (std::exp(x) + std::exp(-x));
+    }
+
+    static inline auto cth(double x)
+    {
+        return 1 / th(x);
+    }
+
+    static inline auto sch(double x)
+    {
+        return 1 / ch(x);
+    }
+
+    static inline auto csch(double x)
+    {
+        return 1 / sh(x);
+    }
+
     // List of generic math functions 
     static const std::vector<std::pair<std::string, std::function<double(double)>>> FunctionList = 
     {        
@@ -31,6 +61,15 @@ namespace kubvc::algorithm::functions
         { "tg",  DISAMBIGUATE_MATH_F(std::tan) },
         { "ctg", ctg },
      
+        { "sh", sh  },
+        { "ch", ch },
+        { "th", th },
+        { "cth", cth },
+        { "sch", sch },
+        { "csch", csch },
+
+        // TODO: Arcs hyperbolic functions
+
         { "arccos",  DISAMBIGUATE_MATH_F(std::acos) },
         { "arcsin",  DISAMBIGUATE_MATH_F(std::asin) },
         { "arctg",  DISAMBIGUATE_MATH_F(std::atan) },

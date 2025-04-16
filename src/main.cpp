@@ -3,6 +3,7 @@
 #include "window.h"
 #include "gui.h"
 #include "expression_parser.h"
+#include <iterator>
 
 static void showTreeList(std::shared_ptr<kubvc::algorithm::Node> start)
 {
@@ -255,9 +256,12 @@ static const auto MAX_PLOT_BUFFER_SIZE = 2048;
 struct Expression
 {
     bool show = true;
-    kubvc::algorithm::ASTree tree = { };
     std::int32_t id = -1;
+    
+    std::int32_t cursor = 0;
     std::vector<char> textBuffer = std::vector<char>(MAX_BUFFER_SIZE);  
+    
+    kubvc::algorithm::ASTree tree = { };
     std::vector<glm::dvec2> plotBuffer = std::vector<glm::dvec2>(MAX_PLOT_BUFFER_SIZE);
    
     ImVec4 plotLineColor;
@@ -268,8 +272,7 @@ struct Expression
 
     bool shaded = false;
     bool changeColor;
-    bool isRandomColorSetted;
-    bool showOptions;
+    bool isRandomColorSetted;    
 
     ~Expression()
     {
@@ -320,31 +323,46 @@ static const auto THICKNESS_MIN = 0.5f;
 static const auto THICKNESS_MAX = 10.0f; 
 static const auto THICKNESS_SPEED = 0.1f; 
 
-static void drawFunctionInList(kubvc::render::GUI* gui, std::shared_ptr<Expression> expr, const std::int32_t& id, const std::int32_t& index)
+// Save current cursor position for expression
+static int handleExpressionCursorPosCallback(ImGuiInputTextCallbackData* data)
+{
+    if (data == nullptr || data->UserData == nullptr)
+    {        
+        return 0;
+    }
+    
+    auto expr = *static_cast<std::shared_ptr<Expression>*>(data->UserData);
+    expr->cursor = data->CursorPos;
+
+    return 0;
+}
+
+static void drawEditGraph(kubvc::render::GUI* gui, std::shared_ptr<Expression> expr, const std::int32_t& id, const std::int32_t& index)
 {
     auto idStr = std::to_string(id);
     
     ImGui::PushFont(gui->getMathFont());
     ImGui::Text("%d:", index);
     ImGui::SameLine();
-
     // Set special color for textbox border when we are selected expression or get invalid node somewhere kekw
     if (!expr->valid)
         ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Border, INVALID_COLOR);
     else if (expr == selectedExpression)
         ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Border, SELECTED_COLOR);
-    
-    if (ImGui::InputText(("##" + idStr + "_ExprInputText").c_str(), expr->textBuffer.data(), expr->textBuffer.size()))
+
+    if (ImGui::InputText(("##" + idStr + "_ExprInputText").c_str(), expr->textBuffer.data(), expr->textBuffer.size(), 
+            ImGuiInputTextFlags_::ImGuiInputTextFlags_CallbackAlways, handleExpressionCursorPosCallback, &expr))
     {
         kubvc::algorithm::Parser::parse(expr->tree, expr->textBuffer.data());
-        calculatePlotPoints(expr, MAX_FUNC_RANGE, -MAX_FUNC_RANGE);
-        
+        calculatePlotPoints(expr, MAX_FUNC_RANGE, -MAX_FUNC_RANGE);    
         expr->valid = expr->tree.isValid();
     }
+
     ImGui::PopFont();
     
     // Revert color changes
-    ImGui::PopStyleColor(static_cast<std::int32_t>(expr == selectedExpression || !expr->valid));
+    auto popColor = static_cast<std::int32_t>(expr == selectedExpression || !expr->valid);
+    ImGui::PopStyleColor(popColor);
 
     static const auto fontBig = gui->getDefaultFontMathSize();
 
@@ -376,7 +394,7 @@ static void drawFunctionInList(kubvc::render::GUI* gui, std::shared_ptr<Expressi
     
     ImGui::PopFont();
     
-    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_::ImGuiHoveredFlags_AllowWhenDisabled))
     {
         ImGui::SetTooltip("Remove this graph from graph list");
     }
@@ -385,23 +403,6 @@ static void drawFunctionInList(kubvc::render::GUI* gui, std::shared_ptr<Expressi
 
     ImGui::SameLine();
     ImGui::PushFont(fontBig);
-    ImGui::PushID(("##" + idStr + "_ExprEditButton").c_str());    
-    if (ImGui::Button("E"))
-    {
-        if (selectedExpression == expr)
-        {
-            expr->showOptions = !expr->showOptions;
-            selectedExpression = expr;
-        }
-        else 
-        {
-            expr->showOptions = true;
-            selectedExpression = expr;
-        }
-    }
-    ImGui::PopID();
-
-    ImGui::SameLine();
     ImGui::PushID(("##" + idStr + "_ExprRadioButton").c_str());    
     if (ImGui::RadioButton("V", expr->show))
     {
@@ -410,13 +411,13 @@ static void drawFunctionInList(kubvc::render::GUI* gui, std::shared_ptr<Expressi
     ImGui::PopID();
     ImGui::PopFont();
     
-    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_::ImGuiHoveredFlags_AllowWhenDisabled))
     {
         ImGui::SetTooltip("Change visibility for this graph.");
     }
 }
 
-static void drawBasicToolsButtons()
+static void drawMainGraphPanel()
 {
     auto region = ImGui::GetContentRegionAvail();
     
@@ -431,7 +432,7 @@ static void drawBasicToolsButtons()
         expr->id = id;
         expressions.push_back(expr);
     }
-    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_::ImGuiHoveredFlags_AllowWhenDisabled))
     {
         ImGui::SetTooltip("A button which you can add new graph.");
     }
@@ -445,13 +446,17 @@ static void drawBasicToolsButtons()
         expressions.clear();
         expressions.shrink_to_fit();
     }
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_::ImGuiHoveredFlags_AllowWhenDisabled))
+    {
+        ImGui::SetTooltip("Clear all your graphs.");
+    }
 
     
     // TODO: Undo redo buttons
                 
 }
 
-static void drawExpressionsList(kubvc::render::GUI* gui)
+static void drawGraphList(kubvc::render::GUI* gui)
 {
     std::int32_t expressionIndex = 0;
     for (auto expr : expressions)
@@ -459,7 +464,7 @@ static void drawExpressionsList(kubvc::render::GUI* gui)
         if (expr != nullptr)
         {
             expressionIndex++;
-            drawFunctionInList(gui, expr, expr->id, expressionIndex);
+            drawEditGraph(gui, expr, expr->id, expressionIndex);
         }
     }
 }
@@ -491,7 +496,7 @@ static void drawDebugAST()
     }
     else 
     {
-        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_::ImGuiHoveredFlags_AllowWhenDisabled))
         {
             ImGui::SetTooltip("Show a abstract syntax tree for current graph. Only for debug purposes");
         }
@@ -566,6 +571,72 @@ static void drawPlotter()
     }
 }
 
+static void drawPickElementButton(const std::string& text, const ImVec2& size)
+{
+    auto cText = text.c_str();
+
+    if (ImGui::Button(cText, size))
+    {
+        if (selectedExpression != nullptr)
+        {
+            auto end = cText + std::strlen(cText);
+            auto& buffer = selectedExpression->textBuffer;
+            // Find last empty character in buffer 
+            auto beg = buffer.begin() + selectedExpression->cursor;
+            
+            buffer.insert(beg, cText, end);
+        }
+    }    
+}
+
+static void drawToolsTable()
+{
+    const auto opColumnsCount = 6;
+    ImGui::TextDisabled("Operators");
+    ImGui::Separator();
+
+    if (ImGui::BeginTable("opTable", opColumnsCount))
+    {                        
+        static const std::initializer_list<unsigned char> ops = { '+', '-', '*', '/', '^', '=' };
+        const auto opButtonSize = ImVec2(35.0f, 35.0f);
+        for (auto item : ops)
+        {         
+            ImGui::TableNextColumn();       
+            drawPickElementButton(std::string(1, item), opButtonSize);                
+        }
+        
+        ImGui::TableNextColumn();       
+        drawPickElementButton(std::string(1, '('), opButtonSize);                
+
+        ImGui::TableNextColumn();       
+        drawPickElementButton(std::string(1, ')'), opButtonSize);                
+        
+        ImGui::EndTable();
+    }
+
+    ImGui::Dummy(ImVec2(0, 10));
+    ImGui::TextDisabled("Functions");
+    ImGui::Separator();
+
+    const auto funcColumnsCount = 5;
+    if (ImGui::BeginTable("funcTable", funcColumnsCount))
+    {     
+        std::int32_t itemCount = 0;                   
+        for (auto item : kubvc::algorithm::functions::FunctionList)
+        {         
+            if (itemCount % funcColumnsCount == 0 && itemCount != 0)
+            {
+                ImGui::TableNextRow();
+            }
+
+            ImGui::TableNextColumn();       
+            drawPickElementButton(item.first, ImVec2(0.0f, 35.0f));
+
+            ++itemCount;
+        }
+        ImGui::EndTable();
+    }
+}
 
 int main()
 {
@@ -586,73 +657,98 @@ int main()
         gui->begin();
         gui->beginDockspace();
         {
+            const auto childFlags = ImGuiChildFlags_::ImGuiChildFlags_Borders;
+            const auto childWindowFlags = ImGuiWindowFlags_::ImGuiWindowFlags_HorizontalScrollbar;
+
             // TODO: Convert function into gui class  
-            if (ImGui::Begin("Toolbox"))
+            if (ImGui::Begin("Tools"))
+            {
+                ImGui::Text("Tools list:");
+                ImGui::Separator();
+                if (ImGui::BeginChild("FunctionsListChild", ImVec2(0, 0), childFlags, childWindowFlags))
+                { 
+                    drawToolsTable();
+                }
+                ImGui::EndChild();
+            }
+            ImGui::End();
+            
+            if (ImGui::Begin("Graph List"))
             {
                 auto windowSize = ImGui::GetWindowSize();
-                const auto childFlags = ImGuiChildFlags_::ImGuiChildFlags_Borders;
-                const auto childWindowFlags = ImGuiWindowFlags_::ImGuiWindowFlags_HorizontalScrollbar;
-                if (ImGui::BeginChild("BasicToolsChild", ImVec2(windowSize.x - 15.0f, 40.0f), childFlags))
+                if (ImGui::BeginChild("MainGraphPanel", ImVec2(windowSize.x - 15.0f, 40.0f), childFlags))
                 {
-                    drawBasicToolsButtons();
+                    drawMainGraphPanel();
                 }
                 ImGui::EndChild();
                 
-                if (ImGui::BeginChild("ExpressionListChild", ImVec2(windowSize.x - 15.0f, windowSize.y / 2), childFlags, childWindowFlags))
+                if (ImGui::BeginChild("GraphListChild", ImVec2(windowSize.x - 15.0f, 0), childFlags, childWindowFlags))
                 { 
-                    drawExpressionsList(gui);
+                    ImGui::TextDisabled("Graphs:");
+                    ImGui::Separator();
+
+                    drawGraphList(gui);
                 }
                 ImGui::EndChild();
+            }
+            ImGui::End();
 
-                if (ImGui::BeginChild("OptionsChild", ImVec2(windowSize.x - 15.0f, 0), childFlags, childWindowFlags))
-                { 
-                    if (selectedExpression != nullptr && selectedExpression->showOptions)
-                    {                
-                        ImGui::Text("Visible");
+            if (ImGui::Begin("GraphOptions"))
+            { 
+                ImGui::TextDisabled("Current graph settings");
+                ImGui::Separator();      
+                
+                if (selectedExpression != nullptr)
+                {          
+                    ImGui::TextDisabled("Graph: %s", selectedExpression->textBuffer.data());
+                    ImGui::Dummy(ImVec2(0, 15.0f));
+                    
+                    ImGui::Text("Visible");
+                    ImGui::SameLine();
+                    ImGui::Checkbox("##OptionsGraphVisibleCheckBox", &selectedExpression->show);
+                    
+                    ImGui::Text("Shaded");
+                    ImGui::SameLine();
+                    ImGui::Checkbox("##OptionsGraphShadedCheckBox", &selectedExpression->shaded);
+                    // Do not show color editor when we are not generate random color    
+                    if (selectedExpression->isRandomColorSetted)
+                    {
+                        ImGui::Text("Color");
                         ImGui::SameLine();
-                        ImGui::Checkbox("##OptionsExprVisibleCheckBox", &selectedExpression->show);
-                        
-                        ImGui::Text("Shaded");
-                        ImGui::SameLine();
-                        ImGui::Checkbox("##OptionsExprShadedCheckBox", &selectedExpression->shaded);
-
-                        // Do not show color editor when we are not generate random color    
-                        if (selectedExpression->isRandomColorSetted)
+                        if (ImGui::ColorButton("##OptionsGraphColorPicker", selectedExpression->plotLineColor))
                         {
-                            ImGui::Text("Color");
-                            ImGui::SameLine();
-                            if (ImGui::ColorButton("##OptionsExprColorPicker", selectedExpression->plotLineColor))
-                            {
-                                selectedExpression->changeColor = !selectedExpression->changeColor;
-                                selectedExpression = selectedExpression;
-                            }
+                            selectedExpression->changeColor = !selectedExpression->changeColor;
+                            selectedExpression = selectedExpression;
                         }
-    
-                        ImGui::Text("Line Thickness");
-                        ImGui::SameLine();
-                        ImGui::PushItemWidth(45.0f);
-                        if (ImGui::DragFloat("##OptionsExprThicknessDrag", &selectedExpression->thickness, THICKNESS_SPEED, THICKNESS_MIN, THICKNESS_MAX, "%.1f"))
-                        {
-                            // Handle manualy writed value
-                            if (selectedExpression->thickness > THICKNESS_MAX)
-                            {
-                                selectedExpression->thickness = THICKNESS_MAX;
-                            } 
-                            else if (selectedExpression->thickness < THICKNESS_MIN)
-                            {
-                                selectedExpression->thickness = THICKNESS_MIN;
-                            }     
-                        }
-                        ImGui::PopItemWidth();
-    
-    
-                        drawLineColorPicker();
-                        
-                        ImGui::Separator();
-                        drawDebugAST();
                     }
+
+                    ImGui::Text("Line Thickness");
+                    ImGui::SameLine();
+                    ImGui::PushItemWidth(45.0f);
+                    if (ImGui::DragFloat("##OptionsGraphThicknessDrag", &selectedExpression->thickness, THICKNESS_SPEED, THICKNESS_MIN, THICKNESS_MAX, "%.1f"))
+                    {
+                        // Handle manualy writed value
+                        if (selectedExpression->thickness > THICKNESS_MAX)
+                        {
+                            selectedExpression->thickness = THICKNESS_MAX;
+                        } 
+                        else if (selectedExpression->thickness < THICKNESS_MIN)
+                        {
+                            selectedExpression->thickness = THICKNESS_MIN;
+                        }     
+                    }
+                    ImGui::PopItemWidth();
+
+
+                    drawLineColorPicker();
+                    
+                    ImGui::Separator();
+                    drawDebugAST();
                 }
-                ImGui::EndChild();
+                else 
+                {
+                    ImGui::TextDisabled("None");
+                }
             }
             ImGui::End();
 
@@ -663,16 +759,16 @@ int main()
 
             ImGui::End();  
 
-            const auto emptyWindowFlags = ImGuiWindowFlags_::ImGuiWindowFlags_NoBackground 
-            | ImGuiWindowFlags_::ImGuiWindowFlags_NoDecoration 
-            | ImGuiWindowFlags_::ImGuiWindowFlags_NoDocking 
-            | ImGuiWindowFlags_::ImGuiWindowFlags_AlwaysAutoResize 
-            | ImGuiWindowFlags_::ImGuiWindowFlags_NoScrollbar 
-            | ImGuiWindowFlags_::ImGuiWindowFlags_NoTitleBar 
-            | ImGuiWindowFlags_::ImGuiWindowFlags_NoResize 
-            | ImGuiWindowFlags_::ImGuiWindowFlags_NoCollapse; 
+            const auto fpsCounterWindowFlags = ImGuiWindowFlags_::ImGuiWindowFlags_NoBackground 
+                | ImGuiWindowFlags_::ImGuiWindowFlags_NoDecoration 
+                | ImGuiWindowFlags_::ImGuiWindowFlags_NoDocking 
+                | ImGuiWindowFlags_::ImGuiWindowFlags_AlwaysAutoResize 
+                | ImGuiWindowFlags_::ImGuiWindowFlags_NoScrollbar 
+                | ImGuiWindowFlags_::ImGuiWindowFlags_NoTitleBar 
+                | ImGuiWindowFlags_::ImGuiWindowFlags_NoResize 
+                | ImGuiWindowFlags_::ImGuiWindowFlags_NoCollapse; 
 
-            if (ImGui::Begin("##FpsCounter", nullptr, emptyWindowFlags))
+            if (ImGui::Begin("##FpsCounter", nullptr, fpsCounterWindowFlags))
             {           
                 auto io = ImGui::GetIO();
                 ImGui::Text("Fps %.1f", io.Framerate);
