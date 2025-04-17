@@ -162,7 +162,7 @@ namespace kubvc::algorithm
                 {
                     if (secondResult == 0)
                     {
-                        ERROR("[OperatorNode] second node is 0, we can't do division, result is NAN now!");
+                        //ERROR("[OperatorNode] second node is 0, we can't do division, result is NAN now!");
                         result = NAN;
                         break;   
                     }
@@ -200,11 +200,11 @@ namespace kubvc::algorithm
                 {
                     double argumentResult = 0;
                     argument->calculate(n, argumentResult);
-                    result = Helpers::getResultFromFunction(name, argumentResult); 
+                    result = Helpers::computeFunction(name, argumentResult); 
                     break;
                 }
                 case NodeTypes::Variable:
-                    result = Helpers::getResultFromFunction(name, n); 
+                    result = Helpers::computeFunction(name, n); 
                     break;
             }
         }

@@ -3,7 +3,7 @@
 #include <cmath>
 #include <algorithm>
 
-#include "functions.h"
+#include "math_base.h"
 
 namespace kubvc::algorithm
 {
@@ -17,9 +17,9 @@ namespace kubvc::algorithm
                 std::transform(text.begin(), text.end(), text.begin(), std::tolower);
             }
 
-            [[nodiscard]] static inline double getResultFromFunction(const std::string& name, double x)
+            [[nodiscard]] static inline double computeFunction(const std::string& name, double x)
             { 
-                auto func = functions::getFunction(name);
+                auto func = math::containers::Functions.get(name);
                 if (func == nullptr)
                 {
                     return 0;

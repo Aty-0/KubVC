@@ -1,4 +1,5 @@
 #include "expression_parser.h"
+#include "math_base.h"
 
 namespace kubvc::algorithm
 {
@@ -108,14 +109,21 @@ namespace kubvc::algorithm
             {
                 ERROR("Output has a zero size");                
             } 
-            else if (outSize > 1)
-            {
-                DEBUG("Parse function...");
-                return parseFunction(tree, cursor - outSize, cursor, text);
-            }
             else 
             {
-                // TODO: What we need to do with constants 
+                auto isConst = math::containers::Constants.find(out);
+                if (isConst)
+                {
+                    DEBUG("is const");
+                    return tree.createNumberNode(math::containers::Constants.get(out));
+                }
+
+                if (outSize > 1)
+                {
+                    DEBUG("Parse function...");
+                    return parseFunction(tree, cursor - outSize, cursor, text);
+                }
+
                 return tree.createVariableNode(currentChar);
             }
         }

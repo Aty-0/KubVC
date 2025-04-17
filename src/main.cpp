@@ -622,7 +622,7 @@ static void drawToolsTable()
     if (ImGui::BeginTable("funcTable", funcColumnsCount))
     {     
         std::int32_t itemCount = 0;                   
-        for (auto item : kubvc::algorithm::functions::FunctionList)
+        for (auto item : kubvc::math::containers::Functions)
         {         
             if (itemCount % funcColumnsCount == 0 && itemCount != 0)
             {
