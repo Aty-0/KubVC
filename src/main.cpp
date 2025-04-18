@@ -337,6 +337,14 @@ static int handleExpressionCursorPosCallback(ImGuiInputTextCallbackData* data)
     return 0;
 }
 
+// Parse text buffer then recalculate points
+static void updateExpression(std::shared_ptr<Expression> expr)
+{
+    kubvc::algorithm::Parser::parse(expr->tree, expr->textBuffer.data());
+    calculatePlotPoints(expr, MAX_FUNC_RANGE, -MAX_FUNC_RANGE);    
+    expr->valid = expr->tree.isValid();
+}
+
 static void drawEditGraph(kubvc::render::GUI* gui, std::shared_ptr<Expression> expr, const std::int32_t& id, const std::int32_t& index)
 {
     auto idStr = std::to_string(id);
@@ -353,9 +361,7 @@ static void drawEditGraph(kubvc::render::GUI* gui, std::shared_ptr<Expression> e
     if (ImGui::InputText(("##" + idStr + "_ExprInputText").c_str(), expr->textBuffer.data(), expr->textBuffer.size(), 
             ImGuiInputTextFlags_::ImGuiInputTextFlags_CallbackAlways, handleExpressionCursorPosCallback, &expr))
     {
-        kubvc::algorithm::Parser::parse(expr->tree, expr->textBuffer.data());
-        calculatePlotPoints(expr, MAX_FUNC_RANGE, -MAX_FUNC_RANGE);    
-        expr->valid = expr->tree.isValid();
+        updateExpression(expr);
     }
 
     ImGui::PopFont();
@@ -571,7 +577,7 @@ static void drawPlotter()
     }
 }
 
-static void drawPickElementButton(const std::string& text, const ImVec2& size)
+static bool drawPickElementButton(const std::string& text, const ImVec2& size)
 {
     auto cText = text.c_str();
 
@@ -579,17 +585,25 @@ static void drawPickElementButton(const std::string& text, const ImVec2& size)
     {
         if (selectedExpression != nullptr)
         {
-            auto end = cText + std::strlen(cText);
+            const auto len = std::strlen(cText);
+            auto end = cText + len;
             auto& buffer = selectedExpression->textBuffer;
             // Find last empty character in buffer 
             auto beg = buffer.begin() + selectedExpression->cursor;
             
             buffer.insert(beg, cText, end);
+            selectedExpression->cursor = selectedExpression->cursor + len;
+            
+            updateExpression(selectedExpression);
         }
+
+        return true;
     }    
+
+    return false;
 }
 
-static void drawToolsTable()
+static void drawOperatorsKeyboard()
 {
     const auto opColumnsCount = 6;
     ImGui::TextDisabled("Operators");
@@ -613,7 +627,63 @@ static void drawToolsTable()
         
         ImGui::EndTable();
     }
+}
 
+static void drawKeysKeyboard()
+{
+    const auto opColumnsCount = 6;
+    ImGui::TextDisabled("Keys");
+    ImGui::Separator();
+
+    if (ImGui::BeginTable("keysTable", opColumnsCount))
+    {                        
+        const auto opButtonSize = ImVec2(35.0f, 35.0f);
+        for (char i = 'a'; i <= 'z'; i++)
+        {         
+            ImGui::TableNextColumn();       
+            drawPickElementButton(std::string(1, i), opButtonSize);                
+        }
+        
+        ImGui::EndTable();
+    }
+}
+
+static void drawNumbersKeyboard()
+{
+    const auto opColumnsCount = 6;
+    ImGui::TextDisabled("Numbers");
+    ImGui::Separator();
+
+    if (ImGui::BeginTable("numTable", opColumnsCount))
+    {                        
+        const auto opButtonSize = ImVec2(35.0f, 35.0f);
+        for (char i = '0'; i <= '9'; i++)
+        {         
+            ImGui::TableNextColumn();       
+            drawPickElementButton(std::string(1, i), opButtonSize);                
+        }
+        
+        ImGui::EndTable();
+    }
+
+    ImGui::TextDisabled("Constants");
+    ImGui::Separator();
+
+    if (ImGui::BeginTable("constTable", opColumnsCount))
+    {                        
+        const auto opButtonSize = ImVec2(35.0f, 35.0f);
+        for (auto i : kubvc::math::containers::Constants)
+        {         
+            ImGui::TableNextColumn();       
+            drawPickElementButton(i.first, opButtonSize);                
+        }
+        
+        ImGui::EndTable();
+    }
+}
+
+static void drawFunctionsKeyboard()
+{
     ImGui::Dummy(ImVec2(0, 10));
     ImGui::TextDisabled("Functions");
     ImGui::Separator();
@@ -630,11 +700,19 @@ static void drawToolsTable()
             }
 
             ImGui::TableNextColumn();       
-            drawPickElementButton(item.first, ImVec2(0.0f, 35.0f));
+            if (drawPickElementButton(item.first, ImVec2(0.0f, 35.0f)))
+            {
+                ImGui::CloseCurrentPopup();
+            }
 
             ++itemCount;
         }
         ImGui::EndTable();
+    }
+
+    if (ImGui::Button("Close"))
+    {
+        ImGui::CloseCurrentPopup();
     }
 }
 
@@ -654,25 +732,51 @@ int main()
     while (!window->shouldClose())
     {
         render->clear();
+        // TODO: imgui wrap  
         gui->begin();
         gui->beginDockspace();
         {
             const auto childFlags = ImGuiChildFlags_::ImGuiChildFlags_Borders;
-            const auto childWindowFlags = ImGuiWindowFlags_::ImGuiWindowFlags_HorizontalScrollbar;
-
-            // TODO: Convert function into gui class  
-            if (ImGui::Begin("Tools"))
+            const auto childWindowFlags = ImGuiWindowFlags_::ImGuiWindowFlags_HorizontalScrollbar |  ImGuiWindowFlags_::ImGuiWindowFlags_AlwaysUseWindowPadding;
+            // TODO: Could be closed
+            if (ImGui::Begin("Keyboard"))
             {
-                ImGui::Text("Tools list:");
-                ImGui::Separator();
-                if (ImGui::BeginChild("FunctionsListChild", ImVec2(0, 0), childFlags, childWindowFlags))
+                // TODO: Operators, functions as childs
+                if (ImGui::Button("Functions"))
+                {
+                    ImGui::OpenPopup("FunctionsKeyboardPopup");
+                }
+
+                if (ImGui::BeginPopup("FunctionsKeyboardPopup"))
                 { 
-                    drawToolsTable();
+                    drawFunctionsKeyboard();
+                    ImGui::EndPopup();
+                }
+                auto availX = ImGui::GetContentRegionAvail().x;
+                if (ImGui::BeginChild("NumbersKeyboardChild", ImVec2(availX / 6, 0), childFlags, childWindowFlags))
+                { 
+                    drawNumbersKeyboard();
+                }
+                ImGui::EndChild();
+                // fixme: wat, not work
+                ImGui::SameLine();
+                
+                if (ImGui::BeginChild("OperatorsKeyboardChild", ImVec2(availX / 4, 0), childFlags, childWindowFlags))
+                { 
+                    drawOperatorsKeyboard();
+                }
+                ImGui::EndChild();
+                
+                ImGui::SameLine();
+                if (ImGui::BeginChild("keysKeyboardChild", ImVec2(availX / 2, 0), childFlags, childWindowFlags))
+                { 
+                    drawKeysKeyboard();
                 }
                 ImGui::EndChild();
             }
             ImGui::End();
             
+            ImGui::SameLine();
             if (ImGui::Begin("Graph List"))
             {
                 auto windowSize = ImGui::GetWindowSize();
