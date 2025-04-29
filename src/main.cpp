@@ -249,7 +249,7 @@ static void createTree(kubvc::algorithm::ASTree& tree)
     tree.createRoot();
 }
 
-static const auto MAX_FUNC_RANGE = 100;
+static const auto MAX_FUNC_RANGE = 1024;
 static const auto MAX_BUFFER_SIZE = 1024;
 static const auto MAX_PLOT_BUFFER_SIZE = 2048;
 
@@ -262,7 +262,7 @@ struct Expression
     std::vector<char> textBuffer = std::vector<char>(MAX_BUFFER_SIZE);  
     
     kubvc::algorithm::ASTree tree = { };
-    std::vector<glm::dvec2> plotBuffer = std::vector<glm::dvec2>(MAX_PLOT_BUFFER_SIZE);
+    std::vector<glm::dvec2> plotBuffer = std::vector<glm::dvec2>(MAX_PLOT_BUFFER_SIZE);  
    
     ImVec4 plotLineColor;
     
@@ -295,20 +295,62 @@ struct Expression
 static std::vector<std::shared_ptr<Expression>> expressions = { };  
 static std::shared_ptr<Expression> selectedExpression = nullptr;
 
-static void calculatePlotPoints(std::shared_ptr<Expression> expr, double max, double min, std::int32_t pointsDetail = MAX_PLOT_BUFFER_SIZE)
+static void calculatePlotPoints(std::shared_ptr<Expression> expr, double xMax, double xMin, double yMax, double yMin, std::int32_t pointsDetail = MAX_PLOT_BUFFER_SIZE)
 {    
     auto root = expr->tree.getRoot();
     if (root->child == nullptr)
         return;
 
+    static const auto f = [](std::shared_ptr<kubvc::algorithm::RootNode> root, double x)
+    {
+        double out = 0.0;
+        root->calculate(x, out);
+        return out;
+    };
+
+    const double asymptoteThreshold = std::fabs(yMax - yMin); 
+    double prevY = 0.0;
+    bool prevValid = false;
+
     for (std::int32_t i = 0; i < pointsDetail; ++i)
     {
-        double result = 0.0;
-        auto lerpAxis = std::lerp(min, max, static_cast<double>(i) / (pointsDetail - 1));
-        root->calculate(lerpAxis, result);
-        expr->plotBuffer[i] = { lerpAxis, result };
+        auto x = std::lerp(xMin, xMax, static_cast<double>(i) / (pointsDetail - 1));
+        double y = f(root, x);
+        bool currentValid = true;
+  
+        // Check for vertical asymptotes (function approaches infinity)
+        if (std::fabs(y) > asymptoteThreshold) 
+        {
+            currentValid = false;
+        }
+        
+        // Additional check for rapid changes that might indicate asymptotes
+        if (i > 0 && currentValid && prevValid)
+        {
+            double deltaY = std::abs(y - prevY);
+            double deltaX = std::abs(x - expr->plotBuffer[i-1].x);
+            if (deltaX > 0 && deltaY/deltaX > asymptoteThreshold) 
+            {
+                currentValid = false;
+            }
+        }
+    
+
+        if (currentValid) 
+        {
+            expr->plotBuffer[i] = { x, y };
+        } 
+        else 
+        {
+            expr->plotBuffer[i] = { x, std::numeric_limits<double>::quiet_NaN() };
+        }
+
+        prevY = y;
+        prevValid = currentValid;
     }
- 
+    
+
+    
     if (!expr->isRandomColorSetted)
     {
         std::srand(std::time({}));  
@@ -341,7 +383,7 @@ static int handleExpressionCursorPosCallback(ImGuiInputTextCallbackData* data)
 static void updateExpression(std::shared_ptr<Expression> expr)
 {
     kubvc::algorithm::Parser::parse(expr->tree, expr->textBuffer.data());
-    calculatePlotPoints(expr, MAX_FUNC_RANGE, -MAX_FUNC_RANGE);    
+    calculatePlotPoints(expr, MAX_FUNC_RANGE, -MAX_FUNC_RANGE, MAX_FUNC_RANGE, -MAX_FUNC_RANGE);    
     expr->valid = expr->tree.isValid();
 }
 
@@ -520,7 +562,7 @@ static void drawLineColorPicker()
 static void updateExpressionByPlotLimits(std::shared_ptr<Expression> expr)
 {
     auto limits = ImPlot::GetPlotLimits();                 
-    calculatePlotPoints(expr, limits.X.Max, limits.X.Min);
+    calculatePlotPoints(expr, limits.X.Max, limits.X.Min, limits.Y.Max, limits.Y.Min);
 }
 
 static void drawPlotter()
@@ -559,16 +601,19 @@ static void drawPlotter()
                     {
                         updateExpressionByPlotLimits(expr);        
                     }
-                    // Apply plot style from expression                                                   
-                    ImPlot::SetNextLineStyle(expr->plotLineColor, expr->thickness);
-                    
-                    static constexpr auto stride = 2 * sizeof(double);
-                    
-                    const auto shaded = expr->shaded ? ImPlotLineFlags_::ImPlotLineFlags_Shaded : ImPlotLineFlags_::ImPlotLineFlags_None;
-                    const auto plotLineFlags = ImPlotLineFlags_::ImPlotLineFlags_SkipNaN 
-                        | shaded;
 
-                    ImPlot::PlotLine(expr->textBuffer.data(), &expr->plotBuffer[0].x, &expr->plotBuffer[0].y, expr->plotBuffer.size(), plotLineFlags, 0, stride);      
+                    if (expr->plotBuffer.size() > 0)
+                    {
+                        // Apply plot style from expression                                                   
+                        ImPlot::SetNextLineStyle(expr->plotLineColor, expr->thickness);
+
+                        static constexpr auto stride = 2 * sizeof(double);
+
+                        const auto shaded = expr->shaded ? ImPlotLineFlags_::ImPlotLineFlags_Shaded : ImPlotLineFlags_::ImPlotLineFlags_None;
+                        const auto plotLineFlags = ImPlotLineFlags_::ImPlotLineFlags_NoClip | shaded;
+                        ImPlot::PlotLine(expr->textBuffer.data(), &expr->plotBuffer[0].x, &expr->plotBuffer[0].y, expr->plotBuffer.size(), plotLineFlags, 0, stride);      
+                        //ImPlot::PlotScatter(expr->textBuffer.data(), &expr->plotBuffer[0].x, &expr->plotBuffer[0].y, expr->plotBuffer.size(), plotLineFlags, 0, stride);      
+                    }
                 }
             }    
         }                        
@@ -632,16 +677,28 @@ static void drawOperatorsKeyboard()
 static void drawKeysKeyboard()
 {
     const auto opColumnsCount = 6;
+    const auto opButtonSize = ImVec2(35.0f, 35.0f);        
     ImGui::TextDisabled("Keys");
-    ImGui::Separator();
+    ImGui::Separator(); 
+    
+    if (ImGui::Button("Up", opButtonSize))
+    {
+        // TODO: Upper case 
+    }
+    
+    ImGui::SameLine();
+    if (ImGui::Button("<-", opButtonSize))
+    {
+        // TODO: Backspace
+    }
 
     if (ImGui::BeginTable("keysTable", opColumnsCount))
     {                        
-        const auto opButtonSize = ImVec2(35.0f, 35.0f);
-        for (char i = 'a'; i <= 'z'; i++)
+        const char* QWERTY_KEYS = "QWERTYUIOPASDFGHJKLZXCVBNM";
+        for (std::uint8_t i = 0; i < std::strlen(QWERTY_KEYS); i++)
         {         
             ImGui::TableNextColumn();       
-            drawPickElementButton(std::string(1, i), opButtonSize);                
+            drawPickElementButton(std::string(1, QWERTY_KEYS[i]), opButtonSize);                
         }
         
         ImGui::EndTable();
@@ -752,29 +809,38 @@ int main()
                     drawFunctionsKeyboard();
                     ImGui::EndPopup();
                 }
-                auto availX = ImGui::GetContentRegionAvail().x;
-                if (ImGui::BeginChild("NumbersKeyboardChild", ImVec2(availX / 6, 0), childFlags, childWindowFlags))
-                { 
-                    drawNumbersKeyboard();
+
+                static const auto keyboardTableFlags = ImGuiTableFlags_::ImGuiTableFlags_Reorderable | ImGuiTableFlags_::ImGuiTableFlags_Hideable 
+                    | ImGuiTableFlags_::ImGuiTableFlags_Sortable | ImGuiTableFlags_SortMulti
+                    | ImGuiTableFlags_::ImGuiTableFlags_RowBg |  ImGuiTableFlags_::ImGuiTableFlags_Resizable
+                    | ImGuiTableFlags_::ImGuiTableFlags_PadOuterX;
+                if (ImGui::BeginTable("##KeyboardTable", 4, keyboardTableFlags))
+                {                    
+                    ImGui::TableNextColumn();
+                    if (ImGui::BeginChild("NumbersKeyboardChild", ImVec2(0, 0), childFlags, childWindowFlags))
+                    { 
+                        drawNumbersKeyboard();
+                    }
+                    ImGui::EndChild();
+
+                    ImGui::TableNextColumn();
+                    if (ImGui::BeginChild("OperatorsKeyboardChild", ImVec2(0, 0), childFlags, childWindowFlags))
+                    { 
+                        drawOperatorsKeyboard();
+                    }
+                    ImGui::EndChild();
+
+                    ImGui::TableNextColumn();
+                    if (ImGui::BeginChild("keysKeyboardChild", ImVec2(0, 0), childFlags, childWindowFlags))
+                    { 
+                        drawKeysKeyboard();
+                    }
+                    ImGui::EndChild();
                 }
-                ImGui::EndChild();
-                // fixme: wat, not work
-                ImGui::SameLine();
-                
-                if (ImGui::BeginChild("OperatorsKeyboardChild", ImVec2(availX / 4, 0), childFlags, childWindowFlags))
-                { 
-                    drawOperatorsKeyboard();
-                }
-                ImGui::EndChild();
-                
-                ImGui::SameLine();
-                if (ImGui::BeginChild("keysKeyboardChild", ImVec2(availX / 2, 0), childFlags, childWindowFlags))
-                { 
-                    drawKeysKeyboard();
-                }
-                ImGui::EndChild();
+                ImGui::EndTable();
             }
             ImGui::End();
+
             
             ImGui::SameLine();
             if (ImGui::Begin("Graph List"))
@@ -848,6 +914,30 @@ int main()
                     
                     ImGui::Separator();
                     drawDebugAST();
+                    if (ImGui::CollapsingHeader("Debug points"))
+                    {
+                        if (ImGui::Button("Dump points to log"))
+                        {
+                            for (auto point : selectedExpression->plotBuffer)
+                            {
+                                DEBUG("[Dump] x:%f y:%f", point.x, point.y);
+                            }
+                        }
+
+                        ImGui::Separator();
+                        for (auto point : selectedExpression->plotBuffer)
+                        {
+                            if (glm::isnan(point.x) || glm::isnan(point.y))
+                            {
+                                ImGui::TextColored(ImVec4(1,0,0,1), "x:%f y:%f", point.x, point.y);
+                            }
+                            else 
+                            {
+                                ImGui::TextDisabled("x:%f y:%f", point.x, point.y);
+                            }
+                        }
+
+                    }
                 }
                 else 
                 {
