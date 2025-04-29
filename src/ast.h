@@ -160,12 +160,12 @@ namespace kubvc::algorithm
                     break;
                 case Operators::Division:
                 {
-                    if (secondResult == 0)
-                    {
-                        //ERROR("[OperatorNode] second node is 0, we can't do division, result is NAN now!");
-                        result = NAN;
-                        break;   
+                    if (std::abs(secondResult) < 1e-10) 
+                    {  
+                        result = std::numeric_limits<double>::quiet_NaN();
+                        break;
                     }
+                    
                     result = firstResult / secondResult;
                     break;
                 }
