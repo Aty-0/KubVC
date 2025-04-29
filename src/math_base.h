@@ -1,6 +1,7 @@
 #pragma once
 #include <cmath>
 #include <functional>
+#include <random>
 
 #include "container.h"
 // disambiguate overloaded functions 
@@ -54,6 +55,16 @@ namespace kubvc::math
         {
             return 1 / sh(x);
         }
+
+        static inline auto rnd(double x)
+        {
+            x = std::fabs(x);
+            std::uniform_real_distribution<double> unif(-x, x);
+            std::random_device rd;
+            std::default_random_engine re(rd());
+            auto result = unif(re);
+            return result;
+        }
     }
 
     namespace constants
@@ -103,6 +114,7 @@ namespace kubvc::math
                 { "log2",  DISAMBIGUATE_MATH_F(std::log2) },
 
                 { "fact", functions::fact },
+                { "rnd", functions::rnd },
             }
         }; 
     }
