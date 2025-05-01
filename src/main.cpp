@@ -4,6 +4,8 @@
 #include "gui.h"
 #include "expression_parser.h"
 #include <iterator>
+#include <cstring>
+#include <random>
 
 static void showTreeList(std::shared_ptr<kubvc::algorithm::Node> start)
 {
@@ -353,8 +355,11 @@ static void calculatePlotPoints(std::shared_ptr<Expression> expr, double xMax, d
     
     if (!expr->isRandomColorSetted)
     {
-        std::srand(std::time({}));  
-        expr->plotLineColor = { 0.01f * (std::rand() % 255), 0.01f * (std::rand() % 255), 0.01f * (std::rand() % 255), 1.0f };
+        std::uniform_real_distribution<float> unif(0, 1.0f);
+        std::random_device rd;
+        std::default_random_engine re(rd());
+
+        expr->plotLineColor = { unif(re), unif(re), unif(re), 1.0f };
         expr->isRandomColorSetted = true;
     }
 }

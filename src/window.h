@@ -1,6 +1,7 @@
 #pragma once
 #include <glfw/glfw3.h>
 #include "Singleton.h"
+#include <cstdint>
 
 namespace kubvc::application
 {

@@ -25,7 +25,7 @@ namespace kubvc::utility
     static inline auto log = kubvc::utility::Logger::getInstance();
 }
 
-#define DEBUG(fmt, ...) kubvc::utility::log->print(kubvc::utility::Logger::LogLevel::Debug, std::source_location::current(), fmt, __VA_ARGS__)
-#define WARN(fmt, ...) kubvc::utility::log->print(kubvc::utility::Logger::LogLevel::Warning, std::source_location::current(), fmt, __VA_ARGS__)
-#define ERROR(fmt, ...) kubvc::utility::log->print(kubvc::utility::Logger::LogLevel::Error,  std::source_location::current(), fmt, __VA_ARGS__)
-#define FATAL(fmt, ...) kubvc::utility::log->print(kubvc::utility::Logger::LogLevel::Fatal, std::source_location::current(), fmt, __VA_ARGS__)
+#define DEBUG(fmt, ...) kubvc::utility::log->print(kubvc::utility::Logger::LogLevel::Debug, std::source_location::current(), fmt, ##__VA_ARGS__)
+#define WARN(fmt, ...) kubvc::utility::log->print(kubvc::utility::Logger::LogLevel::Warning, std::source_location::current(), fmt, ##__VA_ARGS__)
+#define ERROR(fmt, ...) kubvc::utility::log->print(kubvc::utility::Logger::LogLevel::Error,  std::source_location::current(), fmt, ##__VA_ARGS__)
+#define FATAL(fmt, ...) kubvc::utility::log->print(kubvc::utility::Logger::LogLevel::Fatal, std::source_location::current(), fmt, ##__VA_ARGS__)

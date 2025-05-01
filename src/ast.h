@@ -142,7 +142,7 @@ namespace kubvc::algorithm
                 || left->getType() == NodeTypes::Invalid))
                 return;
 
-            double firstResult, secondResult = 0;
+            double firstResult, secondResult = 0.0;
             left->calculate(n, firstResult);
             right->calculate(n, secondResult);
 

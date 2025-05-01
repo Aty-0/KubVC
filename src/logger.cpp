@@ -3,6 +3,8 @@
 #include <cstdarg>
 #include <vector>
 #include <string>
+#include <stdexcept>
+
 
 namespace kubvc::utility
 {
@@ -18,24 +20,24 @@ namespace kubvc::utility
     {
         if (Logger::LogLevel::LOG_LEVEL_SIZE != LogLevelInStr.size())
         {
-            throw std::exception("Enumerator and string list size is different");
+            throw std::runtime_error("Enumerator and string list size is different");
         } 
         else if (level == Logger::LogLevel::LOG_LEVEL_SIZE)
         {
             return;
         }
-
-        // Construct fmt and args together and put it to buffer  
+        
         std::va_list args = { };
         va_start(args, fmt);
-        const auto buffer_size = 1 + std::vsnprintf(nullptr, 0, fmt, args);
+        const auto buffer_size = 1 + std::vsnprintf(nullptr, 0, fmt, args);        
         std::vector<char> buffer(buffer_size);
         std::vsnprintf(buffer.data(), buffer.size(), fmt, args);
         va_end(args);
-        
+
         // Print buffer         
         std::printf("[%s] [%s line: %d]: %s\n", LogLevelInStr[static_cast<int>(level)], source.function_name(), source.line(), buffer.data());
 
+//#endif
         // Clear buffer
         buffer.clear();
         buffer.shrink_to_fit();
@@ -43,7 +45,7 @@ namespace kubvc::utility
         // Throw error if we are get a fatal log level 
         if (level == Logger::LogLevel::Fatal)
         {
-            throw std::exception("Fatal error");
+            throw std::runtime_error("Fatal error");
         }
     }
 }

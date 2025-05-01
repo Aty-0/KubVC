@@ -12,9 +12,11 @@ namespace kubvc::algorithm
         public:
             using uchar = unsigned char;
 
-            [[nodiscard]] static inline void toLowerCase(std::string& text)
+            static inline void toLowerCase(std::string& text)
             {
-                std::transform(text.begin(), text.end(), text.begin(), std::tolower);
+                std::transform(text.begin(), text.end(), text.begin(), 
+                    [](uchar chr) { return std::tolower(chr); }
+                );
             }
 
             [[nodiscard]] static inline double computeFunction(const std::string& name, double x)

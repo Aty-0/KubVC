@@ -14,7 +14,7 @@ namespace kubvc::utility
             Singleton& operator=(const Singleton&) = delete;
             Singleton& operator=(Singleton&&) = delete;
 
-            [[noexcept]] [[nodiscard]] static inline T* getInstance() 
+            [[nodiscard]] static inline T* getInstance()
             {
                 // FIXME: Possible memory leak 
                 static auto instance = std::make_shared<T>();
