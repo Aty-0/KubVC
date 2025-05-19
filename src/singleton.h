@@ -16,9 +16,8 @@ namespace kubvc::utility
 
             [[nodiscard]] static inline T* getInstance()
             {
-                // FIXME: Possible memory leak 
-                static auto instance = std::make_shared<T>();
-                return instance.get();
+                static auto instance = T();
+                return &instance;
             } 
     };
 }
