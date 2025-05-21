@@ -7,7 +7,7 @@ namespace kubvc::math
     Expression::~Expression()
     {
         DEBUG("Destroy expression id %d ...", m_id);
-        m_show = false;
+        m_visible = false;
         m_valid = false;
         m_tree.clear();
         m_id = -1;

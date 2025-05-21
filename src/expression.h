@@ -15,7 +15,7 @@ namespace kubvc::math
             static constexpr auto MAX_PLOT_BUFFER_SIZE = 2048;
 
             Expression() : 
-                m_id(-1), m_show(true), 
+                m_id(-1), m_visible(true), 
                 m_cursor(0), m_tree(), 
                 m_textBuffer(std::vector<char>(MAX_BUFFER_SIZE)),
                 m_plotBuffer(std::vector<glm::dvec2>(MAX_PLOT_BUFFER_SIZE)),
@@ -48,10 +48,10 @@ namespace kubvc::math
                 m_cursor = cursorPos; 
             } 
 
-            inline void setShow(bool show) { m_show = show; }
+            inline void setVisible(bool visible) { m_visible = visible; }
             
             inline bool isValid() const { return m_valid; }
-            inline bool isShowing() const { return m_show; }
+            inline bool isVisible() const { return m_visible; }
             inline std::int32_t getCursor() const { return m_cursor; }
             inline std::int32_t getId() const { return m_id; }
             inline std::vector<glm::dvec2> getPlotBuffer() const { return m_plotBuffer; } 
@@ -63,7 +63,7 @@ namespace kubvc::math
         private:
             
             // Show expression on graph 
-            bool m_show;
+            bool m_visible;
             // Is expression valid for ast
             bool m_valid;
             // Current expression id 

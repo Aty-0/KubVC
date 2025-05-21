@@ -4,6 +4,7 @@
 #include "gui.h"
 #include "expression.h"
 #include "expression_parser.h"
+#include "vec_convert.h"
 #include <iterator>
 #include <cstring>
 
@@ -335,10 +336,10 @@ static void drawEditGraph(kubvc::render::GUI* gui, std::shared_ptr<kubvc::math::
     ImGui::SameLine();
     ImGui::PushFont(fontBig);
     ImGui::PushID(("##" + idStr + "_ExprRadioButton").c_str());    
-    auto show = expr->isShowing();
-    if (ImGui::RadioButton("V", show))
+    auto visible = expr->isVisible();
+    if (ImGui::RadioButton("V", visible))
     {
-        expr->setShow(!show);
+        expr->setVisible(!visible);
     }
 
     ImGui::PopID();
@@ -476,7 +477,7 @@ static void drawPlotter()
         {                    
             if (expr != nullptr)
             {
-                if (expr->isShowing() && expr->isValid())
+                if (expr->isVisible() && expr->isValid())
                 { 
                     if (updateExpr)
                     {
@@ -487,7 +488,7 @@ static void drawPlotter()
                     if (buffer.size() > 0)
                     {
                         // Apply plot style from expression                                                   
-                        ImPlot::SetNextLineStyle(kubvc::render::toImVec4(expr->Settings.color), expr->Settings.thickness);
+                        ImPlot::SetNextLineStyle(kubvc::utility::toImVec4(expr->Settings.color), expr->Settings.thickness);
 
                         static constexpr auto stride = 2 * sizeof(double);
 
@@ -779,10 +780,10 @@ int main()
                     ImGui::Text("Visible");
                     ImGui::SameLine();
 
-                    bool visible = selected->isShowing();
+                    bool visible = selected->isVisible();
                     if (ImGui::Checkbox("##OptionsGraphVisibleCheckBox", &visible))
                     {
-                        selected->setShow(visible);
+                        selected->setVisible(visible);
                     }
                     
                     ImGui::Text("Shaded");
@@ -795,10 +796,10 @@ int main()
                         ImGui::Text("Color");
                         ImGui::SameLine();
 
-                        auto color = kubvc::render::toImVec4(selected->Settings.color);
+                        auto color = kubvc::utility::toImVec4(selected->Settings.color);
                         if (ImGui::ColorButton("##OptionsGraphColorPicker", color))
                         {
-                            selected->Settings.color = kubvc::render::toGlmVec4(color);
+                            selected->Settings.color = kubvc::utility::toGlmVec4(color);
                             selected->Settings.changeColor = !selected->Settings.changeColor;
                         }
                     }
