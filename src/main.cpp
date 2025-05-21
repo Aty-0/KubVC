@@ -267,19 +267,23 @@ static int handleExpressionCursorPosCallback(ImGuiInputTextCallbackData* data)
 
 static void drawEditGraph(kubvc::render::GUI* gui, std::shared_ptr<kubvc::math::Expression> expr, const std::int32_t& id, const std::int32_t& index)
 {
-    auto idStr = std::to_string(id);
-
-    ImGui::PushFont(gui->getDefaultFontMathSize());
+    static const auto fontBig = gui->getDefaultFontMathSize();
+    
+    // Draw counter 
+    ImGui::PushFont(fontBig);
     ImGui::TextDisabled("%d:", index);
     ImGui::PopFont();
     
     ImGui::SameLine();
+
     ImGui::PushFont(gui->getMathFont());
     // Set special color for textbox border when we are selected expression or get invalid node somewhere kekw
     if (!expr->isValid())
         ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Border, INVALID_COLOR);
     else if (expr == kubvc::math::expressions::Selected)
         ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Border, SELECTED_COLOR);
+
+    const auto idStr = std::to_string(id);
 
     if (ImGui::InputText(("##" + idStr + "_ExprInputText").c_str(), expr->getTextBuffer().data(), expr->getTextBuffer().size(), 
             ImGuiInputTextFlags_::ImGuiInputTextFlags_CallbackAlways, handleExpressionCursorPosCallback, &expr))
@@ -292,8 +296,6 @@ static void drawEditGraph(kubvc::render::GUI* gui, std::shared_ptr<kubvc::math::
     // Revert color changes
     auto popColor = static_cast<std::int32_t>(expr == kubvc::math::expressions::Selected || !expr->isValid());
     ImGui::PopStyleColor(popColor);
-
-    static const auto fontBig = gui->getDefaultFontMathSize();
 
     // Set current expression by clicking on textbox 
     if (ImGui::IsItemActive() && ImGui::IsItemClicked())
@@ -485,8 +487,7 @@ static void drawPlotter()
                     if (buffer.size() > 0)
                     {
                         // Apply plot style from expression                                                   
-                        ImPlot::SetNextLineStyle(ImVec4(expr->Settings.color.x, expr->Settings.color.y, expr->Settings.color.z, expr->Settings.color.w), 
-                            expr->Settings.thickness);
+                        ImPlot::SetNextLineStyle(kubvc::render::toImVec4(expr->Settings.color), expr->Settings.thickness);
 
                         static constexpr auto stride = 2 * sizeof(double);
 
@@ -794,11 +795,10 @@ int main()
                         ImGui::Text("Color");
                         ImGui::SameLine();
 
-                        // TODO: Make helper - cast imvec to glm vec
-                        auto color = ImVec4(selected->Settings.color.x, selected->Settings.color.y, selected->Settings.color.z, selected->Settings.color.w);
+                        auto color = kubvc::render::toImVec4(selected->Settings.color);
                         if (ImGui::ColorButton("##OptionsGraphColorPicker", color))
                         {
-                            selected->Settings.color = glm::vec4(color.x, color.y, color.z, color.w);
+                            selected->Settings.color = kubvc::render::toGlmVec4(color);
                             selected->Settings.changeColor = !selected->Settings.changeColor;
                         }
                     }
