@@ -2,10 +2,10 @@
 #include "renderer.h"
 #include "window.h"
 #include "gui.h"
+#include "expression.h"
 #include "expression_parser.h"
 #include <iterator>
 #include <cstring>
-#include <random>
 
 static void showTreeList(std::shared_ptr<kubvc::algorithm::Node> start)
 {
@@ -244,126 +244,6 @@ static void showTreeVisual(const kubvc::algorithm::ASTree& tree)
     ImGui::EndChild();
 }
 
-
-static void createTree(kubvc::algorithm::ASTree& tree)
-{ 
-    tree.clear();
-    tree.createRoot();
-}
-
-static const auto MAX_FUNC_RANGE = 1024;
-static const auto MAX_BUFFER_SIZE = 1024;
-static const auto MAX_PLOT_BUFFER_SIZE = 2048;
-
-struct Expression
-{
-    bool show = true;
-    std::int32_t id = -1;
-    
-    std::int32_t cursor = 0;
-    std::vector<char> textBuffer = std::vector<char>(MAX_BUFFER_SIZE);  
-    
-    kubvc::algorithm::ASTree tree = { };
-    std::vector<glm::dvec2> plotBuffer = std::vector<glm::dvec2>(MAX_PLOT_BUFFER_SIZE);  
-   
-    ImVec4 plotLineColor;
-    
-    float thickness = 2.0f;
-
-    bool valid = true;
-
-    bool shaded = false;
-    bool changeColor;
-    bool isRandomColorSetted;    
-
-    ~Expression()
-    {
-        DEBUG("Destroy expression id %d ...", id);
-
-        show = false;
-
-        tree.clear();
-
-        id = -1;
-
-        textBuffer.clear();
-        textBuffer.shrink_to_fit();
-
-        plotBuffer.clear();
-        plotBuffer.shrink_to_fit();
-    }
-};
-
-static std::vector<std::shared_ptr<Expression>> expressions = { };  
-static std::shared_ptr<Expression> selectedExpression = nullptr;
-
-static void calculatePlotPoints(std::shared_ptr<Expression> expr, double xMax, double xMin, double yMax, double yMin, std::int32_t pointsDetail = MAX_PLOT_BUFFER_SIZE)
-{    
-    auto root = expr->tree.getRoot();
-    if (root->child == nullptr)
-        return;
-
-    static const auto f = [](std::shared_ptr<kubvc::algorithm::RootNode> root, double x)
-    {
-        double out = 0.0;
-        root->calculate(x, out);
-        return out;
-    };
-
-    const double asymptoteThreshold = std::fabs(yMax - yMin); 
-    double prevY = 0.0;
-    bool prevValid = false;
-
-    for (std::int32_t i = 0; i < pointsDetail; ++i)
-    {
-        auto x = std::lerp(xMin, xMax, static_cast<double>(i) / (pointsDetail - 1));
-        double y = f(root, x);
-        bool currentValid = true;
-  
-        // Check for vertical asymptotes (function approaches infinity)
-        if (std::fabs(y) > asymptoteThreshold) 
-        {
-            currentValid = false;
-        }
-        
-        // Additional check for rapid changes that might indicate asymptotes
-        if (i > 0 && currentValid && prevValid)
-        {
-            double deltaY = std::abs(y - prevY);
-            double deltaX = std::abs(x - expr->plotBuffer[i-1].x);
-            if (deltaX > 0 && deltaY/deltaX > asymptoteThreshold) 
-            {
-                currentValid = false;
-            }
-        }
-    
-
-        if (currentValid) 
-        {
-            expr->plotBuffer[i] = { x, y };
-        } 
-        else 
-        {
-            expr->plotBuffer[i] = { x, std::numeric_limits<double>::quiet_NaN() };
-        }
-
-        prevY = y;
-        prevValid = currentValid;
-    }
-    
-
-    
-    if (!expr->isRandomColorSetted)
-    {
-        std::uniform_real_distribution<float> unif(0, 1.0f);
-        std::random_device rd;
-        std::default_random_engine re(rd());
-
-        expr->plotLineColor = { unif(re), unif(re), unif(re), 1.0f };
-        expr->isRandomColorSetted = true;
-    }
-}
-
 static const auto INVALID_COLOR = ImVec4(0.64f, 0.16f, 0.16f, 1.0f); 
 static const auto SELECTED_COLOR = ImVec4(0.16f, 0.64f, 0.16f, 1.0f); 
 static const auto THICKNESS_MIN = 0.5f;
@@ -377,44 +257,40 @@ static int handleExpressionCursorPosCallback(ImGuiInputTextCallbackData* data)
     {        
         return 0;
     }
-    
-    auto expr = *static_cast<std::shared_ptr<Expression>*>(data->UserData);
-    expr->cursor = data->CursorPos;
+
+    // Update cursor position 
+    auto expr = *static_cast<std::shared_ptr<kubvc::math::Expression>*>(data->UserData);
+    expr->setCursor(data->CursorPos);
 
     return 0;
 }
 
-// Parse text buffer then recalculate points
-static void updateExpression(std::shared_ptr<Expression> expr)
-{
-    kubvc::algorithm::Parser::parse(expr->tree, expr->textBuffer.data());
-    calculatePlotPoints(expr, MAX_FUNC_RANGE, -MAX_FUNC_RANGE, MAX_FUNC_RANGE, -MAX_FUNC_RANGE);    
-    expr->valid = expr->tree.isValid();
-}
-
-static void drawEditGraph(kubvc::render::GUI* gui, std::shared_ptr<Expression> expr, const std::int32_t& id, const std::int32_t& index)
+static void drawEditGraph(kubvc::render::GUI* gui, std::shared_ptr<kubvc::math::Expression> expr, const std::int32_t& id, const std::int32_t& index)
 {
     auto idStr = std::to_string(id);
+
+    ImGui::PushFont(gui->getDefaultFontMathSize());
+    ImGui::TextDisabled("%d:", index);
+    ImGui::PopFont();
     
-    ImGui::PushFont(gui->getMathFont());
-    ImGui::Text("%d:", index);
     ImGui::SameLine();
+    ImGui::PushFont(gui->getMathFont());
     // Set special color for textbox border when we are selected expression or get invalid node somewhere kekw
-    if (!expr->valid)
+    if (!expr->isValid())
         ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Border, INVALID_COLOR);
-    else if (expr == selectedExpression)
+    else if (expr == kubvc::math::expressions::Selected)
         ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Border, SELECTED_COLOR);
 
-    if (ImGui::InputText(("##" + idStr + "_ExprInputText").c_str(), expr->textBuffer.data(), expr->textBuffer.size(), 
+    if (ImGui::InputText(("##" + idStr + "_ExprInputText").c_str(), expr->getTextBuffer().data(), expr->getTextBuffer().size(), 
             ImGuiInputTextFlags_::ImGuiInputTextFlags_CallbackAlways, handleExpressionCursorPosCallback, &expr))
     {
-        updateExpression(expr);
+        expr->parseAndEval();
     }
 
     ImGui::PopFont();
     
     // Revert color changes
-    auto popColor = static_cast<std::int32_t>(expr == selectedExpression || !expr->valid);
+    auto popColor = static_cast<std::int32_t>(expr == kubvc::math::expressions::Selected || !expr->isValid());
     ImGui::PopStyleColor(popColor);
 
     static const auto fontBig = gui->getDefaultFontMathSize();
@@ -422,7 +298,7 @@ static void drawEditGraph(kubvc::render::GUI* gui, std::shared_ptr<Expression> e
     // Set current expression by clicking on textbox 
     if (ImGui::IsItemActive() && ImGui::IsItemClicked())
     {
-        selectedExpression = expr;
+        kubvc::math::expressions::Selected = expr;
     }
 
     ImGui::SameLine();
@@ -431,16 +307,16 @@ static void drawEditGraph(kubvc::render::GUI* gui, std::shared_ptr<Expression> e
     ImGui::PushID(("##" + idStr + "_ExprButton").c_str());
     if (ImGui::Button("-"))
     {
-        auto it = std::find_if(expressions.begin(), expressions.end(), [expr](auto it) { return it->id == expr->id; });
-        if (it != expressions.end())
+        auto it = std::find_if(kubvc::math::expressions::Expressions.begin(), kubvc::math::expressions::Expressions.end(), [expr](auto it) { return it->getId() == expr->getId(); });
+        if (it != kubvc::math::expressions::Expressions.end())
         {
             // Set as nullptr to avoid some weird behaviour
-            if (selectedExpression == expr)
+            if (kubvc::math::expressions::Selected == expr)
             {
-                selectedExpression = nullptr;
+                kubvc::math::expressions::Selected = nullptr;
             }
 
-            expressions.erase(it);
+            kubvc::math::expressions::Expressions.erase(it);
         }
     }
     ImGui::PopID();
@@ -457,10 +333,12 @@ static void drawEditGraph(kubvc::render::GUI* gui, std::shared_ptr<Expression> e
     ImGui::SameLine();
     ImGui::PushFont(fontBig);
     ImGui::PushID(("##" + idStr + "_ExprRadioButton").c_str());    
-    if (ImGui::RadioButton("V", expr->show))
+    auto show = expr->isShowing();
+    if (ImGui::RadioButton("V", show))
     {
-        expr->show = !expr->show;
+        expr->setShow(!show);
     }
+
     ImGui::PopID();
     ImGui::PopFont();
     
@@ -476,14 +354,8 @@ static void drawMainGraphPanel()
     
     if (ImGui::Button("Add"))
     {
-        auto expr = std::make_shared<Expression>();
-        createTree(expr->tree);
-        
-        // Dummy id set
-        static std::int32_t id = 0;
-        id++;
-        expr->id = id;
-        expressions.push_back(expr);
+        auto expr = std::make_shared<kubvc::math::Expression>();
+        kubvc::math::expressions::Expressions.push_back(expr);
     }
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_::ImGuiHoveredFlags_AllowWhenDisabled))
     {
@@ -495,9 +367,9 @@ static void drawMainGraphPanel()
     
     if (ImGui::Button("Clear All"))
     {
-        selectedExpression = nullptr;
-        expressions.clear();
-        expressions.shrink_to_fit();
+        kubvc::math::expressions::Selected = nullptr;
+        kubvc::math::expressions::Expressions.clear();
+        kubvc::math::expressions::Expressions.shrink_to_fit();
     }
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_::ImGuiHoveredFlags_AllowWhenDisabled))
     {
@@ -512,12 +384,12 @@ static void drawMainGraphPanel()
 static void drawGraphList(kubvc::render::GUI* gui)
 {
     std::int32_t expressionIndex = 0;
-    for (auto expr : expressions)
+    for (auto expr : kubvc::math::expressions::Expressions)
     {
         if (expr != nullptr)
         {
             expressionIndex++;
-            drawEditGraph(gui, expr, expr->id, expressionIndex);
+            drawEditGraph(gui, expr, expr->getId(), expressionIndex);
         }
     }
 }
@@ -526,20 +398,21 @@ static void drawDebugAST()
 {
     if (ImGui::CollapsingHeader("AST debug"))
     {
-        if (selectedExpression != nullptr)
+        auto selected = kubvc::math::expressions::Selected;
+        if (selected != nullptr)
         {
             ImGui::Text("AST:");   
-            ImGui::Text("Current tree is %s", selectedExpression->textBuffer.data());   
+            ImGui::Text("Current tree is %s", selected->getTextBuffer().data());   
             
             static bool listStyleTree = false;
             ImGui::Checkbox("List style for tree", &listStyleTree);
             if (listStyleTree)
             {
-                showTreeList(selectedExpression->tree.getRoot());
+                showTreeList(selected->getTree().getRoot());
             }
             else
             {
-                showTreeVisual(selectedExpression->tree);
+                showTreeVisual(selected->getTree());
             }
         }
         else 
@@ -558,16 +431,17 @@ static void drawDebugAST()
 
 static void drawLineColorPicker()
 {
-    if (selectedExpression != nullptr && selectedExpression->changeColor)
+    auto selected = kubvc::math::expressions::Selected;
+    if (selected != nullptr && selected->Settings.changeColor)
     {
-        ImGui::ColorPicker4("##_CurrentExprColorPicker", &selectedExpression->plotLineColor.x, ImGuiColorEditFlags_::ImGuiColorEditFlags_NoLabel);
+        ImGui::ColorPicker4("##_CurrentExprColorPicker", &selected->Settings.color.x, ImGuiColorEditFlags_::ImGuiColorEditFlags_NoLabel);
     }
 }
 
-static void updateExpressionByPlotLimits(std::shared_ptr<Expression> expr)
+static void updateExpressionByPlotLimits(std::shared_ptr<kubvc::math::Expression> expr)
 {
     auto limits = ImPlot::GetPlotLimits();                 
-    calculatePlotPoints(expr, limits.X.Max, limits.X.Min, limits.Y.Max, limits.Y.Min);
+    expr->eval(limits.X.Max, limits.X.Min, limits.Y.Max, limits.Y.Min);
 }
 
 static void drawPlotter()
@@ -596,27 +470,30 @@ static void drawPlotter()
         }
         
         // Draw our functions 
-        for (auto expr : expressions)
+        for (auto expr : kubvc::math::expressions::Expressions)
         {                    
             if (expr != nullptr)
             {
-                if (expr->show == true && expr->valid)
+                if (expr->isShowing() && expr->isValid())
                 { 
                     if (updateExpr)
                     {
                         updateExpressionByPlotLimits(expr);        
                     }
 
-                    if (expr->plotBuffer.size() > 0)
+                    auto buffer = expr->getPlotBuffer(); 
+                    if (buffer.size() > 0)
                     {
                         // Apply plot style from expression                                                   
-                        ImPlot::SetNextLineStyle(expr->plotLineColor, expr->thickness);
+                        ImPlot::SetNextLineStyle(ImVec4(expr->Settings.color.x, expr->Settings.color.y, expr->Settings.color.z, expr->Settings.color.w), 
+                            expr->Settings.thickness);
 
                         static constexpr auto stride = 2 * sizeof(double);
 
-                        const auto shaded = expr->shaded ? ImPlotLineFlags_::ImPlotLineFlags_Shaded : ImPlotLineFlags_::ImPlotLineFlags_None;
+                        const auto shaded = expr->Settings.shaded ? ImPlotLineFlags_::ImPlotLineFlags_Shaded : ImPlotLineFlags_::ImPlotLineFlags_None;
                         const auto plotLineFlags = ImPlotLineFlags_::ImPlotLineFlags_NoClip | shaded;
-                        ImPlot::PlotLine(expr->textBuffer.data(), &expr->plotBuffer[0].x, &expr->plotBuffer[0].y, expr->plotBuffer.size(), plotLineFlags, 0, stride);      
+
+                        ImPlot::PlotLine(expr->getTextBuffer().data(), &buffer[0].x, &buffer[0].y, buffer.size(), plotLineFlags, 0, stride);      
                         //ImPlot::PlotScatter(expr->textBuffer.data(), &expr->plotBuffer[0].x, &expr->plotBuffer[0].y, expr->plotBuffer.size(), plotLineFlags, 0, stride);      
                     }
                 }
@@ -633,18 +510,19 @@ static bool drawPickElementButton(const std::string& text, const ImVec2& size)
 
     if (ImGui::Button(cText, size))
     {
-        if (selectedExpression != nullptr)
+        auto selected = kubvc::math::expressions::Selected;
+        if (selected != nullptr)
         {
             const auto len = std::strlen(cText);
             auto end = cText + len;
-            auto& buffer = selectedExpression->textBuffer;
+            auto& buffer = selected->getTextBuffer();
             // Find last empty character in buffer 
-            auto beg = buffer.begin() + selectedExpression->cursor;
+            auto beg = buffer.begin() + selected->getCursor();
             
             buffer.insert(beg, cText, end);
-            selectedExpression->cursor = selectedExpression->cursor + len;
             
-            updateExpression(selectedExpression);
+            selected->setCursor(selected->getCursor() + len);        
+            selected->parseAndEval();
         }
 
         return true;
@@ -685,25 +563,44 @@ static void drawKeysKeyboard()
     const auto opButtonSize = ImVec2(35.0f, 35.0f);        
     ImGui::TextDisabled("Keys");
     ImGui::Separator(); 
-    
+    static bool isUp = false;    
     if (ImGui::Button("Up", opButtonSize))
     {
-        // TODO: Upper case 
+        isUp = !isUp;
     }
     
     ImGui::SameLine();
     if (ImGui::Button("<-", opButtonSize))
     {
-        // TODO: Backspace
+        auto selected = kubvc::math::expressions::Selected;
+        auto cursor = selected->getCursor();
+        
+        if (cursor > 0)
+        {
+            // Remove character by cursor from text buffer 
+            auto& buffer = selected->getTextBuffer();
+            auto begin = buffer.begin() + cursor;
+            buffer.erase(begin - 1, begin);
+
+            selected->setCursor(cursor - 1);
+            
+            // Update  
+            selected->parseAndEval();
+        }
     }
 
     if (ImGui::BeginTable("keysTable", opColumnsCount))
     {                        
-        const char* QWERTY_KEYS = "QWERTYUIOPASDFGHJKLZXCVBNM";
-        for (std::uint8_t i = 0; i < std::strlen(QWERTY_KEYS); i++)
+        // Very, a very dumb way to implement qwerty keyboard
+        // Maybe not, idk
+        const std::int8_t QWERTY_KEYS_SIZE = 26; 
+        const char* QWERTY_KEYS_UP = "QWERTYUIOPASDFGHJKLZXCVBNM";
+        const char* QWERTY_KEYS_DOWN = "qwertyuiopasdfghjklzxcvbnm";
+        
+        for (std::uint8_t i = 0; i < QWERTY_KEYS_SIZE; i++)
         {         
             ImGui::TableNextColumn();       
-            drawPickElementButton(std::string(1, QWERTY_KEYS[i]), opButtonSize);                
+            drawPickElementButton(std::string(1, isUp ? QWERTY_KEYS_UP[i] : QWERTY_KEYS_DOWN[i]), opButtonSize);                
         }
         
         ImGui::EndTable();
@@ -872,44 +769,53 @@ int main()
             { 
                 ImGui::TextDisabled("Current graph settings");
                 ImGui::Separator();      
-                
-                if (selectedExpression != nullptr)
+                auto selected = kubvc::math::expressions::Selected;
+                if (selected != nullptr)
                 {          
-                    ImGui::TextDisabled("Graph: %s", selectedExpression->textBuffer.data());
+                    ImGui::TextDisabled("Graph: %s", selected->getTextBuffer().data());
                     ImGui::Dummy(ImVec2(0, 15.0f));
                     
                     ImGui::Text("Visible");
                     ImGui::SameLine();
-                    ImGui::Checkbox("##OptionsGraphVisibleCheckBox", &selectedExpression->show);
+
+                    bool visible = selected->isShowing();
+                    if (ImGui::Checkbox("##OptionsGraphVisibleCheckBox", &visible))
+                    {
+                        selected->setShow(visible);
+                    }
                     
                     ImGui::Text("Shaded");
                     ImGui::SameLine();
-                    ImGui::Checkbox("##OptionsGraphShadedCheckBox", &selectedExpression->shaded);
+                    ImGui::Checkbox("##OptionsGraphShadedCheckBox", &selected->Settings.shaded);
+
                     // Do not show color editor when we are not generate random color    
-                    if (selectedExpression->isRandomColorSetted)
+                    if (selected->Settings.isRandomColorSetted)
                     {
                         ImGui::Text("Color");
                         ImGui::SameLine();
-                        if (ImGui::ColorButton("##OptionsGraphColorPicker", selectedExpression->plotLineColor))
+
+                        // TODO: Make helper - cast imvec to glm vec
+                        auto color = ImVec4(selected->Settings.color.x, selected->Settings.color.y, selected->Settings.color.z, selected->Settings.color.w);
+                        if (ImGui::ColorButton("##OptionsGraphColorPicker", color))
                         {
-                            selectedExpression->changeColor = !selectedExpression->changeColor;
-                            selectedExpression = selectedExpression;
+                            selected->Settings.color = glm::vec4(color.x, color.y, color.z, color.w);
+                            selected->Settings.changeColor = !selected->Settings.changeColor;
                         }
                     }
 
                     ImGui::Text("Line Thickness");
                     ImGui::SameLine();
                     ImGui::PushItemWidth(45.0f);
-                    if (ImGui::DragFloat("##OptionsGraphThicknessDrag", &selectedExpression->thickness, THICKNESS_SPEED, THICKNESS_MIN, THICKNESS_MAX, "%.1f"))
+                    if (ImGui::DragFloat("##OptionsGraphThicknessDrag", &selected->Settings.thickness, THICKNESS_SPEED, THICKNESS_MIN, THICKNESS_MAX, "%.1f"))
                     {
                         // Handle manualy writed value
-                        if (selectedExpression->thickness > THICKNESS_MAX)
+                        if (selected->Settings.thickness > THICKNESS_MAX)
                         {
-                            selectedExpression->thickness = THICKNESS_MAX;
+                            selected->Settings.thickness = THICKNESS_MAX;
                         } 
-                        else if (selectedExpression->thickness < THICKNESS_MIN)
+                        else if (selected->Settings.thickness < THICKNESS_MIN)
                         {
-                            selectedExpression->thickness = THICKNESS_MIN;
+                            selected->Settings.thickness = THICKNESS_MIN;
                         }     
                     }
                     ImGui::PopItemWidth();
@@ -923,14 +829,14 @@ int main()
                     {
                         if (ImGui::Button("Dump points to log"))
                         {
-                            for (auto point : selectedExpression->plotBuffer)
+                            for (auto point : selected->getPlotBuffer())
                             {
                                 DEBUG("[Dump] x:%f y:%f", point.x, point.y);
                             }
                         }
 
                         ImGui::Separator();
-                        for (auto point : selectedExpression->plotBuffer)
+                        for (auto point : selected->getPlotBuffer())
                         {
                             if (glm::isnan(point.x) || glm::isnan(point.y))
                             {
@@ -982,8 +888,8 @@ int main()
         window->swapAndPool();
     }
     
-    expressions.clear();
-    expressions.shrink_to_fit();
+    kubvc::math::expressions::Expressions.clear();
+    kubvc::math::expressions::Expressions.shrink_to_fit();
 
     // Destroy application components
     gui->destroy();

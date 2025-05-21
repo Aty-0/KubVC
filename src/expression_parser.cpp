@@ -21,7 +21,9 @@ namespace kubvc::algorithm
     {
         char character = getCurrentChar(cursor, text);
         std::string output = std::string();
-        while(kubvc::algorithm::Helpers::isLetter(character) || (kubvc::algorithm::Helpers::isDigit(character) && includeDigits))
+        while(kubvc::algorithm::Helpers::isLetter(character) 
+            || (kubvc::algorithm::Helpers::isDigit(character) 
+            && includeDigits))
         {
             output += character;
             cursor++;
@@ -84,48 +86,37 @@ namespace kubvc::algorithm
             auto out = parseNumbers(cursor, text);
 
             DEBUG("Is digit %s", out.c_str());
-            if (out.empty())
-            {
-                ERROR("Parse number has a empty output, hmm. Ignore!");
-            }
-            else
-            {
-                if (kubvc::algorithm::Helpers::isNumber(out))
-                {
-                    return tree.createNumberNode(std::atof(out.c_str()));                
-                }
-                else
-                {
-                    ERROR("Output is actually not a number, so ignore him! We catch that bad guy: %s", out.c_str());
-                }
-            }
+            ASSERT(!out.empty(), "Parse number has a empty output");
+            ASSERT(kubvc::algorithm::Helpers::isNumber(out), "Invalid output! It's not a number! %s", out.c_str());
+
+            return tree.createNumberNode(std::atof(out.c_str())); 
         }    
         else if (kubvc::algorithm::Helpers::isLetter(currentChar))
         {
             auto out = parseLetters(cursor, text);
-            DEBUG("Is letter | parsed %s", out.c_str());
             const auto outSize = out.size();
-            if (outSize == 0)
+            ASSERT(outSize != 0, "Output has a zero size");
+            
+            DEBUG("Is letter | parsed %s", out.c_str());
+            
+            // Find a constant name in container, if found it, we are create number node with constant value 
+            auto isConst = math::containers::Constants.find(out);
+            if (isConst)
             {
-                ERROR("Output has a zero size");                
-            } 
-            else 
-            {
-                auto isConst = math::containers::Constants.find(out);
-                if (isConst)
-                {
-                    DEBUG("is const");
-                    return tree.createNumberNode(math::containers::Constants.get(out));
-                }
-
-                if (outSize > 1)
-                {
-                    DEBUG("Parse function...");
-                    return parseFunction(tree, cursor - outSize, cursor, text);
-                }
-
-                return tree.createVariableNode(currentChar);
+                DEBUG("Is constant, create number node with constant value");
+                return tree.createNumberNode(math::containers::Constants.get(out));
             }
+
+            // If output size is bigger than one it's a probably a function  
+            if (outSize > 1)
+            {
+                DEBUG("Parse function...");
+                return parseFunction(tree, cursor - outSize, cursor, text);
+            }
+
+            // If output size is single character it's a variable 
+            return tree.createVariableNode(currentChar);
+            
         }
         else if (kubvc::algorithm::Helpers::isBracketStart(currentChar)) 
         {
@@ -144,9 +135,9 @@ namespace kubvc::algorithm
             return tree.createUnaryOperatorNode(node, currentChar);
         }
 
-        DEBUG("Nothing found");
+        ERROR("Nothing found");
 
-        return tree.createInvalidNode("INV_NODE");
+        return tree.createInvalidNode("InvalidElement");
     }
 
     Parser::NodePtr Parser::parseExpression(kubvc::algorithm::ASTree& tree, const std::string& text, std::size_t& cursor, bool isSubExpression)
