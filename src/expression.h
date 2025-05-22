@@ -42,8 +42,8 @@ namespace kubvc::math
 
             inline void setCursor(std::int32_t cursorPos) 
             {
-                ASSERT(cursorPos < 0, "Neg cursor pos");
-                ASSERT(cursorPos > m_textBuffer.size(), "Cursor is bigger than text buffer size");
+                ASSERT(cursorPos >= 0, "Neg cursor pos");
+                ASSERT(cursorPos < m_textBuffer.size(), "Cursor is bigger than text buffer size");
 
                 m_cursor = cursorPos; 
             } 
