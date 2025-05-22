@@ -26,7 +26,7 @@ namespace kubvc::utility
 }
 
 #define ASSERT(cond, fmt, ...) do {                                                                                                   \
-        if (!cond)                                                                                                                    \
+        if (!(cond))                                                                                                                    \
         {                                                                                                                             \
             ERROR("Assertion failed: ");                                                                                              \
             kubvc::utility::log->print(kubvc::utility::Logger::LogLevel::Fatal, std::source_location::current(), fmt, ##__VA_ARGS__); \
