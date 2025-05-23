@@ -1,6 +1,7 @@
 #include "expression.h"
 #include "logger.h"
 #include <random>
+#include <future>
 
 namespace kubvc::math
 {
@@ -17,11 +18,13 @@ namespace kubvc::math
         m_plotBuffer.shrink_to_fit();
     }
 
-    void Expression::eval(double xMax, double xMin, double yMax, double yMin, std::int32_t maxPointCount)
-    {    
+    void Expression::evalImpl(double xMax, double xMin, double yMax, double yMin, std::int32_t maxPointCount)
+    {
+        if (!isValid())
+            return;     
+        
         auto root = m_tree.getRoot();
-        if (root->child == nullptr)
-            return;
+        ASSERT(root != nullptr, "Root is nullptr, wtf");
 
         static const auto f = [](std::shared_ptr<kubvc::algorithm::RootNode> root, double x)
         {
@@ -49,9 +52,12 @@ namespace kubvc::math
             // Save our vector 
             m_plotBuffer[i] = { x, y };
         }
+    }   
 
-
-    
+    void Expression::eval(double xMax, double xMin, double yMax, double yMin, std::int32_t maxPointCount)
+    {    
+        auto implFuture = std::async(std::launch::async, &Expression::evalImpl, this, xMax, xMin, yMax, yMin, maxPointCount); 
+      
         if (!Settings.isRandomColorSetted)
         {
             std::uniform_real_distribution<float> unif(0, 1.0f);

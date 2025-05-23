@@ -61,6 +61,7 @@ namespace kubvc::math
 
             void eval(double xMax, double xMin, double yMax, double yMin, std::int32_t maxPointCount = MAX_PLOT_BUFFER_SIZE);
         private:
+            void evalImpl(double xMax, double xMin, double yMax, double yMin, std::int32_t maxPointCount);
             
             // Show expression on graph 
             bool m_visible;
