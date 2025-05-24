@@ -5,6 +5,9 @@
 
 namespace kubvc::math
 {
+    std::vector<std::shared_ptr<Expression>> ExpressionController::Expressions = { };  
+    std::shared_ptr<Expression> ExpressionController::Selected = nullptr;
+
     Expression::~Expression()
     {
         DEBUG("Destroy expression id %d ...", m_id);
