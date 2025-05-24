@@ -76,6 +76,7 @@ namespace kubvc::algorithm
         Division,
         Power,
         Equal,
+        Module,
         Unknown,
     };
 
@@ -95,6 +96,8 @@ namespace kubvc::algorithm
                 return Operators::Equal;
             case '^':
                 return Operators::Power;
+            case '%':
+                return Operators::Module;
         }
         return Operators::Unknown;
     } 
@@ -169,6 +172,9 @@ namespace kubvc::algorithm
                     result = firstResult / secondResult;
                     break;
                 }
+                case Operators::Module:
+                    result = std::fmod(firstResult, secondResult);
+                    break;
                 case Operators::Power:
                     result = std::pow(firstResult, secondResult);
                     break;

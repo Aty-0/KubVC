@@ -57,7 +57,8 @@ namespace kubvc::math
     void Expression::eval(double xMax, double xMin, double yMax, double yMin, std::int32_t maxPointCount)
     {    
         auto implFuture = std::async(std::launch::async, &Expression::evalImpl, this, xMax, xMin, yMax, yMin, maxPointCount); 
-      
+        
+        // Pre set random graph color  
         if (!Settings.isRandomColorSetted)
         {
             std::uniform_real_distribution<float> unif(0, 1.0f);
