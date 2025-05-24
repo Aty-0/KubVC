@@ -1,4 +1,10 @@
 #include "editor_menu_bar.h"
+#include "editor.h"
+
+#include "editor_keyboard_window.h"
+#include "editor_fps_counter_window.h"
+
+#include "../logger.h"
 
 namespace kubvc::editor
 {
@@ -26,16 +32,20 @@ namespace kubvc::editor
             }
             if (ImGui::BeginMenu("View"))
             {
+                const auto editor = Editor::getInstance();
+
                 if (ImGui::MenuItem("Keyboard"))
                 {
-                    // TODO: get from Editor
-                    //windowKeyboardVisible = !windowKeyboardVisible;
+                    static const auto window = editor->get<EditorKeyboardWindow>();
+                    ASSERT(window != nullptr, "Couldn't get keyboard window");
+                    window->setVisible(!window->isVisible());
                 }
 
                 if (ImGui::MenuItem("FPS Counter"))
                 {
-                    // TODO: get from Editor
-                    //windowFpsVisible = !windowFpsVisible;
+                    static const auto window = editor->get<EditorFpsCounterWindow>();
+                    ASSERT(window != nullptr, "Couldn't get fps counter window");
+                    window->setVisible(!window->isVisible());
                 }
 
                 ImGui::EndMenu();

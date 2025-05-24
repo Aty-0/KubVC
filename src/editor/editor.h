@@ -2,6 +2,7 @@
 #include "gui.h"
 #include "singleton.h"
 #include <set>
+#include <algorithm>
 
 namespace kubvc::editor
 {
@@ -54,6 +55,20 @@ namespace kubvc::editor
 
             void render(kubvc::render::GUI* gui);
 
+            template<typename T>
+            inline std::shared_ptr<T> get() const
+            {
+                auto it = std::find_if(m_windows.begin(), m_windows.end(), [](const std::shared_ptr<EditorDrawable>& draw) {
+                    return typeid(*draw) == typeid(T);
+                });
+                
+                if (it != m_windows.end())
+                {
+                    return std::static_pointer_cast<T>(*it);
+                }
+
+                return nullptr;
+            }  
         private:
             std::set<std::shared_ptr<EditorDrawable>> m_windows;
     };
