@@ -115,6 +115,8 @@ namespace kubvc::math
 
                 { "fact", functions::fact },
                 { "rnd", functions::rnd },
+                
+                { "round",  DISAMBIGUATE_MATH_F(std::round) },
             }
         }; 
     }
