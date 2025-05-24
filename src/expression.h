@@ -13,7 +13,7 @@ namespace kubvc::math
             static constexpr auto MAX_FUNC_RANGE = 1024.0;
             static constexpr auto MAX_BUFFER_SIZE = 1024;
             static constexpr auto MAX_PLOT_BUFFER_SIZE = 2048;
-
+            
             Expression() : 
                 m_id(-1), m_visible(true), 
                 m_cursor(0), m_tree(), 
@@ -92,10 +92,10 @@ namespace kubvc::math
                 GraphSettings Settings;
     };
 
-    namespace expressions
+    class ExpressionController
     {
-        // TODO: Expression controller ?
-        static std::vector<std::shared_ptr<Expression>> Expressions = { };  
-        static std::shared_ptr<Expression> Selected = nullptr;
-    }
+        public:
+            static std::vector<std::shared_ptr<Expression>> Expressions;  
+            static std::shared_ptr<Expression> Selected;
+    };
 }
