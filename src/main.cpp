@@ -677,6 +677,50 @@ static void drawFunctionsKeyboard()
     }
 }
 
+
+static bool windowKeyboardVisible = false;
+static bool windowFpsVisible = false;
+
+static void showMenuBar()
+{
+    if (ImGui::BeginMainMenuBar())
+    {
+        if (ImGui::BeginMenu("File"))
+        {
+            if (ImGui::MenuItem("Open (.graphlist, .txt)"))
+            {
+                // TODO: 
+            }
+
+            if (ImGui::MenuItem("Save (.graphlist, .txt)"))
+            {
+                // TODO: 
+            }
+
+            if (ImGui::MenuItem("Make graph screenshot"))
+            {
+                // TODO: 
+            }
+            ImGui::EndMenu();
+        }
+        if (ImGui::BeginMenu("View"))
+        {
+            if (ImGui::MenuItem("Keyboard"))
+            {
+                windowKeyboardVisible = !windowKeyboardVisible;
+            }
+
+            if (ImGui::MenuItem("FPS Counter"))
+            {
+                windowFpsVisible = !windowFpsVisible;
+            }
+            
+            ImGui::EndMenu();
+        }
+    }
+    ImGui::EndMainMenuBar();
+}
+
 int main()
 {
     // Initialize main application components
@@ -697,54 +741,58 @@ int main()
         gui->begin();
         gui->beginDockspace();
         {
+            showMenuBar();
+            
             const auto childFlags = ImGuiChildFlags_::ImGuiChildFlags_Borders;
             const auto childWindowFlags = ImGuiWindowFlags_::ImGuiWindowFlags_HorizontalScrollbar |  ImGuiWindowFlags_::ImGuiWindowFlags_AlwaysUseWindowPadding;
-            // TODO: Could be closed
-            if (ImGui::Begin("Keyboard"))
+
+            if (windowKeyboardVisible)
             {
-                // TODO: Operators, functions as childs
-                if (ImGui::Button("Functions"))
+                if (ImGui::Begin("Keyboard", &windowKeyboardVisible))
                 {
-                    ImGui::OpenPopup("FunctionsKeyboardPopup");
-                }
-
-                if (ImGui::BeginPopup("FunctionsKeyboardPopup"))
-                { 
-                    drawFunctionsKeyboard();
-                    ImGui::EndPopup();
-                }
-
-                static const auto keyboardTableFlags = ImGuiTableFlags_::ImGuiTableFlags_Reorderable | ImGuiTableFlags_::ImGuiTableFlags_Hideable 
-                    | ImGuiTableFlags_::ImGuiTableFlags_Sortable | ImGuiTableFlags_SortMulti
-                    | ImGuiTableFlags_::ImGuiTableFlags_RowBg |  ImGuiTableFlags_::ImGuiTableFlags_Resizable
-                    | ImGuiTableFlags_::ImGuiTableFlags_PadOuterX;
-                if (ImGui::BeginTable("##KeyboardTable", 4, keyboardTableFlags))
-                {                    
-                    ImGui::TableNextColumn();
-                    if (ImGui::BeginChild("NumbersKeyboardChild", ImVec2(0, 0), childFlags, childWindowFlags))
-                    { 
-                        drawNumbersKeyboard();
+                    // TODO: Operators, functions as childs
+                    if (ImGui::Button("Functions"))
+                    {
+                        ImGui::OpenPopup("FunctionsKeyboardPopup");
                     }
-                    ImGui::EndChild();
 
-                    ImGui::TableNextColumn();
-                    if (ImGui::BeginChild("OperatorsKeyboardChild", ImVec2(0, 0), childFlags, childWindowFlags))
+                    if (ImGui::BeginPopup("FunctionsKeyboardPopup"))
                     { 
-                        drawOperatorsKeyboard();
+                        drawFunctionsKeyboard();
+                        ImGui::EndPopup();
                     }
-                    ImGui::EndChild();
 
-                    ImGui::TableNextColumn();
-                    if (ImGui::BeginChild("keysKeyboardChild", ImVec2(0, 0), childFlags, childWindowFlags))
-                    { 
-                        drawKeysKeyboard();
+                    static const auto keyboardTableFlags = ImGuiTableFlags_::ImGuiTableFlags_Reorderable | ImGuiTableFlags_::ImGuiTableFlags_Hideable 
+                        | ImGuiTableFlags_::ImGuiTableFlags_Sortable | ImGuiTableFlags_SortMulti
+                        | ImGuiTableFlags_::ImGuiTableFlags_RowBg |  ImGuiTableFlags_::ImGuiTableFlags_Resizable
+                        | ImGuiTableFlags_::ImGuiTableFlags_PadOuterX;
+                    if (ImGui::BeginTable("##KeyboardTable", 4, keyboardTableFlags))
+                    {                    
+                        ImGui::TableNextColumn();
+                        if (ImGui::BeginChild("NumbersKeyboardChild", ImVec2(0, 0), childFlags, childWindowFlags))
+                        { 
+                            drawNumbersKeyboard();
+                        }
+                        ImGui::EndChild();
+
+                        ImGui::TableNextColumn();
+                        if (ImGui::BeginChild("OperatorsKeyboardChild", ImVec2(0, 0), childFlags, childWindowFlags))
+                        { 
+                            drawOperatorsKeyboard();
+                        }
+                        ImGui::EndChild();
+
+                        ImGui::TableNextColumn();
+                        if (ImGui::BeginChild("keysKeyboardChild", ImVec2(0, 0), childFlags, childWindowFlags))
+                        { 
+                            drawKeysKeyboard();
+                        }
+                        ImGui::EndChild();
                     }
-                    ImGui::EndChild();
+                    ImGui::EndTable();
                 }
-                ImGui::EndTable();
+                ImGui::End();
             }
-            ImGui::End();
-
             
             ImGui::SameLine();
             if (ImGui::Begin("Graph List"))
@@ -865,7 +913,7 @@ int main()
 
             ImGui::End();  
 
-            const auto fpsCounterWindowFlags = ImGuiWindowFlags_::ImGuiWindowFlags_NoBackground 
+            static const auto fpsCounterWindowFlags = ImGuiWindowFlags_::ImGuiWindowFlags_NoBackground 
                 | ImGuiWindowFlags_::ImGuiWindowFlags_NoDecoration 
                 | ImGuiWindowFlags_::ImGuiWindowFlags_NoDocking 
                 | ImGuiWindowFlags_::ImGuiWindowFlags_AlwaysAutoResize 
@@ -873,14 +921,17 @@ int main()
                 | ImGuiWindowFlags_::ImGuiWindowFlags_NoTitleBar 
                 | ImGuiWindowFlags_::ImGuiWindowFlags_NoResize 
                 | ImGuiWindowFlags_::ImGuiWindowFlags_NoCollapse; 
-
-            if (ImGui::Begin("##FpsCounter", nullptr, fpsCounterWindowFlags))
-            {           
-                auto io = ImGui::GetIO();
-                ImGui::Text("Fps %.1f", io.Framerate);
-            }
             
-            ImGui::End();       
+            if (windowFpsVisible)
+            {
+                if (ImGui::Begin("##FpsCounter", nullptr, fpsCounterWindowFlags))
+                {           
+                    auto io = ImGui::GetIO();
+                    ImGui::Text("Fps %.1f", io.Framerate);
+                }
+
+                ImGui::End();
+            }       
         }
         
 
