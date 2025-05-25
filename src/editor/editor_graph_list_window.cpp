@@ -156,9 +156,8 @@ namespace kubvc::editor
         const auto childFlags = ImGuiChildFlags_::ImGuiChildFlags_Borders;
         const auto childWindowFlags = ImGuiWindowFlags_::ImGuiWindowFlags_HorizontalScrollbar |  ImGuiWindowFlags_::ImGuiWindowFlags_AlwaysUseWindowPadding;
 
-
         auto windowSize = ImGui::GetWindowSize();
-        if (ImGui::BeginChild("MainGraphPanel", ImVec2(windowSize.x - 15.0f, 40.0f), childFlags))
+        if (ImGui::BeginChild("GraphListHeader", ImVec2(windowSize.x - 15.0f, 42.0f), childFlags))
         {
             drawGraphListHeader();
         }
