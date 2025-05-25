@@ -2,8 +2,10 @@
 #include "renderer.h"
 #include "ast.h"
 #include "expression_parser.h"
+#include "graph_limits.h"
 
-// TODO: GraphLimits - save, read 
+#include <thread>
+#include <condition_variable>
 
 namespace kubvc::math
 {
@@ -13,31 +15,16 @@ namespace kubvc::math
             static constexpr auto MAX_FUNC_RANGE = 1024.0;
             static constexpr auto MAX_BUFFER_SIZE = 1024;
             static constexpr auto MAX_PLOT_BUFFER_SIZE = 2048;
-
-            Expression() : 
-                m_id(-1), m_visible(true), 
-                m_cursor(0), m_tree(), 
-                m_textBuffer(std::vector<char>(MAX_BUFFER_SIZE)),
-                m_plotBuffer(std::vector<glm::dvec2>(MAX_PLOT_BUFFER_SIZE)),
-                Settings({{1,1,1,1}, 1.0f, false, false, false})
-            {
-                m_tree.createRoot();
-
-                // Dummy id set
-                static std::int32_t globalId = 0;
-                globalId++;
-
-                m_id = globalId;
-            }
-
+            
+            Expression();
             ~Expression();
             
             // Parse text buffer then evaluate
-            inline void parseAndEval()
+            inline void parseAndEval(const GraphLimits& limits)
             {
-                kubvc::algorithm::Parser::parse(m_tree, m_textBuffer.data());
-                eval(MAX_FUNC_RANGE, -MAX_FUNC_RANGE, MAX_FUNC_RANGE, -MAX_FUNC_RANGE);    
+                kubvc::algorithm::Parser::parse(m_tree, m_textBuffer.data());            
                 m_valid = m_tree.isValid();
+                eval(limits);    
             }
 
             inline void setCursor(std::int32_t cursorPos) 
@@ -59,10 +46,21 @@ namespace kubvc::math
             inline std::vector<char>& getTextBuffer() { return m_textBuffer; } 
             inline kubvc::algorithm::ASTree& getTree() { return m_tree; }
 
-            void eval(double xMax, double xMin, double yMax, double yMin, std::int32_t maxPointCount = MAX_PLOT_BUFFER_SIZE);
+            void eval(const GraphLimits& limits, std::int32_t maxPointCount = MAX_PLOT_BUFFER_SIZE);
         private:
-            void evalImpl(double xMax, double xMin, double yMax, double yMin, std::int32_t maxPointCount);
-            
+            void worker();
+
+            struct EvalFuncImplParams
+            {
+                GraphLimits limits;
+                std::int32_t maxPointCount;
+            };
+
+            using Params = EvalFuncImplParams;
+
+            void evalImpl(const Params& params);
+            Params m_currentEvalParams;
+
             // Show expression on graph 
             bool m_visible;
             // Is expression valid for ast
@@ -86,16 +84,22 @@ namespace kubvc::math
                 bool changeColor;
                 bool isRandomColorSetted;    
             };     
-                                
-            public:
-                // Actually can be changed anywhere-anytime
-                GraphSettings Settings;
-    };
 
-    namespace expressions
+            std::thread m_workerThread;
+            std::mutex m_mutex;
+            std::condition_variable m_cv;
+            std::atomic<bool> m_taskAvailable;
+            std::atomic<bool> m_workerStop;
+
+        public:
+            // Actually can be changed anywhere-anytime
+            GraphSettings Settings;
+    };
+    
+    class ExpressionController
     {
-        // TODO: Expression controller ?
-        static std::vector<std::shared_ptr<Expression>> Expressions = { };  
-        static std::shared_ptr<Expression> Selected = nullptr;
-    }
+        public:
+            static std::vector<std::shared_ptr<Expression>> Expressions;  
+            static std::shared_ptr<Expression> Selected;
+    };
 }
