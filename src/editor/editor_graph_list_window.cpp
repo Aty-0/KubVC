@@ -38,6 +38,7 @@ namespace kubvc::editor
     void EditorGraphListWindow::drawGraphPanel(kubvc::render::GUI* gui, std::shared_ptr<kubvc::math::Expression> expr, const std::int32_t& id, const std::int32_t& index)
     {
         static const auto fontBig = gui->getDefaultFontMathSize();
+        auto& selected = kubvc::math::ExpressionController::Selected;
 
         // Draw counter 
         ImGui::PushFont(fontBig);
@@ -50,7 +51,7 @@ namespace kubvc::editor
         // Set special color for textbox border when we are selected expression or get invalid node somewhere kekw
         if (!expr->isValid())
             ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Border, INVALID_COLOR);
-        else if (expr == kubvc::math::ExpressionController::Selected)
+        else if (expr == selected)
             ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Border, SELECTED_COLOR);
 
         const auto idStr = std::to_string(id);
@@ -58,19 +59,19 @@ namespace kubvc::editor
         if (ImGui::InputText(("##" + idStr + "_ExprInputText").c_str(), expr->getTextBuffer().data(), expr->getTextBuffer().size(), 
                 ImGuiInputTextFlags_::ImGuiInputTextFlags_CallbackAlways, EditorGraphListWindow::handleExpressionCursorPosCallback, &expr))
         {
-            expr->parseAndEval();
+            expr->parseAndEval(math::GraphLimits::Limits);
         }
 
         ImGui::PopFont();
 
         // Revert color changes
-        auto popColor = static_cast<std::int32_t>(expr == kubvc::math::ExpressionController::Selected || !expr->isValid());
+        auto popColor = static_cast<std::int32_t>(expr == selected || !expr->isValid());
         ImGui::PopStyleColor(popColor);
 
         // Set current expression by clicking on textbox 
         if (ImGui::IsItemActive() && ImGui::IsItemClicked())
         {
-            kubvc::math::ExpressionController::Selected = expr;
+            selected = expr;
         }
 
         ImGui::SameLine();
@@ -79,16 +80,13 @@ namespace kubvc::editor
         ImGui::PushID(("##" + idStr + "_ExprButton").c_str());
         if (ImGui::Button("-"))
         {
-            auto it = std::find_if(kubvc::math::ExpressionController::Expressions.begin(), kubvc::math::ExpressionController::Expressions.end(), [expr](auto it) { return it->getId() == expr->getId(); });
-            if (it != kubvc::math::ExpressionController::Expressions.end())
-            {
-                // Set as nullptr to avoid some weird behaviour
-                if (kubvc::math::ExpressionController::Selected == expr)
-                {
-                    kubvc::math::ExpressionController::Selected = nullptr;
-                }
+            auto& exprs = kubvc::math::ExpressionController::Expressions;
+            auto it = exprs.erase(std::remove_if(exprs.begin(), exprs.end(), [expr](auto it) { return it->getId() == expr->getId(); }));
 
-                kubvc::math::ExpressionController::Expressions.erase(it);
+            // Set as nullptr to avoid some weird behaviour
+            if (it != exprs.end() && selected == expr)
+            {
+                selected = nullptr;
             }
         }
         ImGui::PopID();
