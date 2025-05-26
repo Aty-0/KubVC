@@ -3,13 +3,16 @@
 #include "expression.h"
 #include "logger.h"
 
+//#define SHOW_DEBUG_TOOLS_ON_RELEASE
+
 namespace kubvc::editor
 {    
     EditorEditGraphWindow::EditorEditGraphWindow()
     {
         setName("Edit Graph");
     }
-    
+
+#if defined(_DEBUG) || defined(SHOW_DEBUG_TOOLS_ON_RELEASE) 
     static void showTreeList(std::shared_ptr<kubvc::algorithm::Node> start)
     {
         // We are reached the end of tree 
@@ -102,159 +105,158 @@ namespace kubvc::editor
         }
     }
 
-    static const auto MOVE = 100.0f;
+    static constexpr auto MOVE = 100.0f;
 
-    static void showTree(std::shared_ptr<kubvc::algorithm::Node> start, ImVec2 offset, ImVec2 pos = ImVec2(0,0), ImVec2 prev_pos = ImVec2(0,0))
+    static void showTree( const std::shared_ptr<kubvc::algorithm::Node>& node,
+        ImDrawList* drawList, ImVec2 origin, ImVec2 panOffset,
+        ImVec2 pos, bool hasParent, float spacing)
     {
-        // We are reached the end of tree 
-        if (start == nullptr)
-        {
+        if (!node) 
             return;
-        }
 
-        auto type = start->getType();
-        auto nodeName = std::string();
-
-        switch (type)
+        auto nodePos = ImVec2(origin.x + panOffset.x + pos.x, origin.y + panOffset.y + pos.y);
+        std::string label;
+        switch (node->getType())
         {
             case kubvc::algorithm::NodeTypes::Root:
             {
-                auto node = static_cast<kubvc::algorithm::RootNode*>(start.get());
-                nodeName = ". #" + std::to_string(node->id);
+                auto* n = static_cast<kubvc::algorithm::RootNode*>(node.get());
+                label = "#" + std::to_string(n->id);
+                drawList->AddText(nodePos, IM_COL32_WHITE, label.c_str());
 
-                ImGui::SetCursorPos(ImVec2(offset.x, offset.y));
-                ImGui::Text(nodeName.c_str());
-                showTree(node->child, ImVec2(offset.x, offset.y), ImVec2(0, MOVE));
+                if (n->child)
+                {
+                    hasParent = true;
+                    auto childPos = ImVec2(pos.x, pos.y + spacing);
+                    showTree(n->child, drawList, origin, panOffset, childPos, true, spacing);
+                    auto childAbs = ImVec2(origin.x + panOffset.x + childPos.x, origin.y + panOffset.y + childPos.y);
+                    drawList->AddLine(nodePos, childAbs, IM_COL32(255, 255, 255, 150), 2.0f);
+                }
                 break;
             }
             case kubvc::algorithm::NodeTypes::Number:
             {
-                auto node = static_cast<kubvc::algorithm::NumberNode*>(start.get());         
-                nodeName = std::to_string(node->value) + " #" + std::to_string(node->id);
-                const auto size = nodeName.size();
-                ImGui::SetCursorPos(ImVec2(offset.x + pos.x - size, offset.y + pos.y));
-                ImGui::Text(nodeName.c_str());
-                break;            
-            }
-            case kubvc::algorithm::NodeTypes::Operator:
-            {
-                auto node = static_cast<kubvc::algorithm::OperatorNode*>(start.get());         
-                nodeName = std::string(1, node->operation) +  " #" + std::to_string(node->id);
-
-                const auto size = nodeName.size();
-                ImGui::SetCursorPos(ImVec2(offset.x + pos.x - size, offset.y + pos.y));
-                ImGui::Text(nodeName.c_str());
-                if (node->left != nullptr)
-                {
-                    showTree(node->left, offset, node->left->getType() == kubvc::algorithm::NodeTypes::Operator 
-                        ? ImVec2(pos.x + -MOVE * 2, pos.y + MOVE) : ImVec2(pos.x + -MOVE, pos.y + MOVE), pos);                                    
-                }
-
-                if (node->right != nullptr)
-                {
-                    showTree(node->right, offset, node->right->getType() == kubvc::algorithm::NodeTypes::Operator 
-                        ? ImVec2(pos.x + MOVE * 2, pos.y + MOVE) : ImVec2(pos.x + MOVE, pos.y + MOVE), pos);                                 
-                }
-
-                break;    
+                auto* n = static_cast<kubvc::algorithm::NumberNode*>(node.get());
+                label = std::to_string(n->value) + " #" + std::to_string(n->id);
+                drawList->AddText(nodePos, IM_COL32_WHITE, label.c_str());
+                break;
             }
             case kubvc::algorithm::NodeTypes::Variable:
             {
-                auto node = static_cast<kubvc::algorithm::VariableNode*>(start.get());         
-                nodeName = node->value + " #" + std::to_string(node->id); 
-                const auto size = nodeName.size();
-                ImGui::SetCursorPos(ImVec2(offset.x + pos.x - size, offset.y + pos.y));
-                ImGui::Text(nodeName.c_str());
+                auto* n = static_cast<kubvc::algorithm::VariableNode*>(node.get());
+                label = n->value + " #" + std::to_string(n->id);
+                drawList->AddText(nodePos, IM_COL32_WHITE, label.c_str());
+                break;
+            }
+            case kubvc::algorithm::NodeTypes::Operator:
+            {
+                auto* n = static_cast<kubvc::algorithm::OperatorNode*>(node.get());
+                label = std::string(1, n->operation) + " #" + std::to_string(n->id);
+                drawList->AddText(nodePos, IM_COL32_WHITE, label.c_str());
+
+                if (n->left)
+                {
+                    auto leftPos = ImVec2(pos.x - spacing * 2, pos.y + spacing);
+                    showTree(n->left, drawList, origin, panOffset, leftPos, true, spacing);
+                    auto leftAbs = ImVec2(origin.x + panOffset.x + leftPos.x, origin.y + panOffset.y + leftPos.y);
+                    drawList->AddLine(nodePos, leftAbs, IM_COL32(255, 255, 255, 150), 2.0f);
+                }
+
+                if (n->right)
+                {
+                    auto rightPos = ImVec2(pos.x + spacing * 2, pos.y + spacing);
+                    showTree(n->right, drawList, origin, panOffset, rightPos, true, spacing);
+                    auto rightAbs = ImVec2(origin.x + panOffset.x + rightPos.x, origin.y + panOffset.y + rightPos.y);
+                    drawList->AddLine(nodePos, rightAbs, IM_COL32(255, 255, 255, 150), 2.0f);
+                }
                 break;
             }
             case kubvc::algorithm::NodeTypes::UnaryOperator:
             {
-                auto node = static_cast<kubvc::algorithm::UnaryOperatorNode*>(start.get());         
-                nodeName = std::string(1, node->operation) + " id:" + std::to_string(node->id); 
-                const auto size = nodeName.size();
-                ImGui::SetCursorPos(ImVec2(offset.x + pos.x - size, offset.y + pos.y));
-                ImGui::Text(nodeName.c_str());
+                auto* n = static_cast<kubvc::algorithm::UnaryOperatorNode*>(node.get());
+                label = std::string(1, n->operation) + " #" + std::to_string(n->id);
+                drawList->AddText(nodePos, IM_COL32_WHITE, label.c_str());
 
-                showTree(node->child, offset, ImVec2(pos.x, pos.y + MOVE), pos);     
+                if (n->child)
+                {
+                    auto childPos = ImVec2(pos.x, pos.y + spacing);
+                    showTree(n->child, drawList, origin, panOffset, childPos, true, spacing);
+                    auto childAbs = ImVec2(origin.x + panOffset.x + childPos.x, origin.y + panOffset.y + childPos.y);
+                    drawList->AddLine(nodePos, childAbs, IM_COL32(255, 255, 255, 150), 2.0f);
+                }
                 break;
             }
             case kubvc::algorithm::NodeTypes::Function:
             {
-                auto node = static_cast<kubvc::algorithm::FunctionNode*>(start.get());         
-                nodeName = node->name + " #" + std::to_string(node->id); 
-                const auto size = nodeName.size();
-                ImGui::SetCursorPos(ImVec2(offset.x + pos.x - size, offset.y + pos.y));
-                ImGui::Text(nodeName.c_str());
-                ImGui::SameLine();
-                if (node->argument != nullptr)
-                {
-                    ImGui::Text("Args tree:");
-                    showTree(node->argument, offset, ImVec2(pos.x, pos.y + MOVE), pos);     
-                }
-                else 
-                {
-                    ImGui::Text("(INV_ARG)");
-                }
+                auto* n = static_cast<kubvc::algorithm::FunctionNode*>(node.get());
+                label = n->name + " #" + std::to_string(n->id);
+                drawList->AddText(nodePos, IM_COL32_WHITE, label.c_str());
 
-
+                if (n->argument)
+                {
+                    auto argPos = ImVec2(pos.x, pos.y + spacing);
+                    showTree(n->argument, drawList, origin, panOffset, argPos, true, spacing);
+                    auto argAbs = ImVec2(origin.x + panOffset.x + argPos.x, origin.y + panOffset.y + argPos.y);
+                    drawList->AddLine(nodePos, argAbs, IM_COL32(255, 255, 255, 150), 2.0f);
+                }
                 break;
             }
             case kubvc::algorithm::NodeTypes::Invalid:
             {
-                auto node = static_cast<kubvc::algorithm::InvalidNode*>(start.get());         
-                nodeName = node->name + " #" + std::to_string(node->id); 
-                const auto size = nodeName.size();
-                ImGui::SetCursorPos(ImVec2(offset.x + pos.x - size, offset.y + pos.y));
-                ImGui::TextColored(ImVec4(255, 0, 0, 255), nodeName.c_str());
+                auto* n = static_cast<kubvc::algorithm::InvalidNode*>(node.get());
+                label = n->name + " #" + std::to_string(n->id);
+                drawList->AddText(nodePos, IM_COL32(255, 0, 0, 255), label.c_str());
                 break;
             }
             default:
-                ImGui::SetCursorPos(ImVec2(offset.x + pos.x, offset.y + pos.y));
-                ImGui::TextColored(ImVec4(255, 0, 0, 255), "UNK");
-                //ERROR("Unknown type or not implemented");
+                drawList->AddText(nodePos, IM_COL32(255, 0, 0, 255), "UNK");
                 break;
         }
 
-        auto regAvail = ImGui::GetWindowWidth() / ImGui::GetWindowHeight(); 
-        auto drawList = ImGui::GetWindowDrawList();
-        drawList->AddLine(ImVec2((offset.x + prev_pos.x) - regAvail, (offset.y + prev_pos.y + MOVE * 2) - regAvail), 
-            ImVec2((offset.x + pos.x) - regAvail, (offset.y + pos.y + MOVE * 2) - regAvail), IM_COL32(255,255,255,150), 2.0f);
-
+        if (hasParent)
+        {
+            drawList->AddCircleFilled(nodePos, 3.0f, IM_COL32(255, 0, 0, 255));
+        }
     }
 
     static void showTreeVisual(const kubvc::algorithm::ASTree& tree)
     {            
         static constexpr auto childFlags = ImGuiChildFlags_::ImGuiChildFlags_Borders; 
-        static auto pos = ImVec2(0,0);
-        static auto width = 0.65f;
-
+        static auto dragOffset = ImVec2(0,0);
+        //static auto width = 0.65f;
+        auto origin = ImGui::GetCursorScreenPos(); // Top-left of the child window
+        auto drawList = ImGui::GetWindowDrawList();
         // TODO: Soo, how we can implement zoom
         //ImGui::SliderFloat("Width##TreeChildWindow", &width, 0.1f, 2.0f);
 
         if (ImGui::BeginChild("TreeChildWindow", ImVec2(0,0), childFlags, ImGuiWindowFlags_NoInputs))
         { 
+            auto min = ImGui::GetWindowPos();
+            auto max = ImVec2(min.x + ImGui::GetWindowWidth(), min.y + ImGui::GetWindowHeight());
+            drawList->PushClipRect(min, max, true);
             //ImGui::PushItemWidth(ImGui::GetWindowWidth() * width);
-            showTree(tree.getRoot(), pos);
+            ImGui::Text("drag %f %f", dragOffset.x, dragOffset.y);
+            showTree(tree.getRoot(), drawList, origin, dragOffset, ImVec2(0, 0), false, MOVE);
             //ImGui::PopItemWidth();
+            drawList->PopClipRect();
         }   
 
         auto io = ImGui::GetIO();
         if (ImGui::IsMouseDragging(ImGuiMouseButton_::ImGuiMouseButton_Right))
         {
-            pos.x += io.MouseDelta.x;
-            pos.y += io.MouseDelta.y;
+            dragOffset.x += io.MouseDelta.x;
+            dragOffset.y += io.MouseDelta.y;
         }
         ImGui::EndChild();
     }
 
     static void drawDebugAST()
     {
-        if (ImGui::CollapsingHeader("AST debug"))
+        if (ImGui::CollapsingHeader("AST"))
         {
             auto selected = kubvc::math::ExpressionController::Selected;
             if (selected != nullptr)
             {
-                ImGui::Text("AST:");   
                 ImGui::Text("Current tree is %s", selected->getTextBuffer().data());   
 
                 static bool listStyleTree = false;
@@ -281,7 +283,7 @@ namespace kubvc::editor
             }
         }
     }
-
+#endif
 
     void EditorEditGraphWindow::drawLineColorPicker()
     {
@@ -342,10 +344,11 @@ namespace kubvc::editor
             }
             ImGui::PopItemWidth();
             drawLineColorPicker();
-            
-            ImGui::Separator();
+#if defined(_DEBUG) || defined(SHOW_DEBUG_TOOLS_ON_RELEASE)  
+            ImGui::Separator();        
+            ImGui::TextDisabled("Debug");
             drawDebugAST();
-            if (ImGui::CollapsingHeader("Debug points"))
+            if (ImGui::CollapsingHeader("Points"))
             {
                 if (ImGui::Button("Dump points to log"))
                 {
@@ -367,6 +370,7 @@ namespace kubvc::editor
                     }
                 }
             }
+#endif
         }
         else 
         {
