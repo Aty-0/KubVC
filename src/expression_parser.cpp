@@ -135,7 +135,7 @@ namespace kubvc::algorithm
             return tree.createUnaryOperatorNode(node, currentChar);
         }
 
-        ERROR("Nothing found");
+        WARN("Nothing found %s", text.c_str());
 
         return tree.createInvalidNode("InvalidElement");
     }
@@ -223,7 +223,7 @@ namespace kubvc::algorithm
     void Parser::parse(kubvc::algorithm::ASTree& tree, const std::string& text, const std::size_t cursor_pos)
     {
         std::size_t cursor = cursor_pos;
-        auto root = static_cast<kubvc::algorithm::RootNode*>(tree.getRoot().get());
+        auto root = tree.getRoot();
         root->child = parseExpression(tree, text, cursor, false);
     }
 }
