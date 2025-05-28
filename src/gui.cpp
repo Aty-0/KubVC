@@ -47,6 +47,7 @@ namespace kubvc::render
 		//
 		//static const ImWchar icon_ranges[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };
 		//m_iconFont = io.Fonts->AddFontFromFileTTF("fonts/Font-Awesome.otf", 13.0f, &config, icon_ranges);
+		applyColorTheme();
     }
 
 	void GUI::beginDockspace()
@@ -77,8 +78,6 @@ namespace kubvc::render
 
 		const auto dockId = ImGui::GetID("dockspace");
 		ImGui::DockSpace(dockId, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_PassthruCentralNode);
-
-		applyColorTheme();
 	}
 
 	void GUI::endDockspace()
