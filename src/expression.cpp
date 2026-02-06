@@ -3,8 +3,7 @@
 #include <random>
 #include <future>
 
-namespace kubvc::math
-{
+namespace kubvc::math {
     std::vector<std::shared_ptr<Expression>> ExpressionController::Expressions = { };  
     std::shared_ptr<Expression> ExpressionController::Selected = nullptr;
     
@@ -16,8 +15,7 @@ namespace kubvc::math
         m_taskAvailable(false),
         m_textBuffer(std::vector<char>(MAX_BUFFER_SIZE)),
         m_plotBuffer(std::vector<glm::dvec2>(MAX_PLOT_BUFFER_SIZE)),
-        Settings({{1,1,1,1}, 1.0f, false, false, false})
-    {
+        Settings({{1,1,1,1}, 1.0f, false, false, false}) {
         m_tree.createRoot();
     
         // Dummy id set
@@ -28,9 +26,8 @@ namespace kubvc::math
         m_workerThread = std::thread(&Expression::worker, this);
     }
 
-    Expression::~Expression()
-    {
-        DEBUG("Destroy expression id %d ...", m_id);
+    Expression::~Expression() {
+        KUB_DEBUG("Destroy expression id {} ...", m_id);
 
         m_workerStop = true;        
         m_cv.notify_all();
@@ -47,10 +44,8 @@ namespace kubvc::math
         m_plotBuffer.shrink_to_fit();
     }
 
-    void Expression::worker()
-    {
-        while (!m_workerStop)
-        {
+    auto Expression::worker() -> void {
+        while (!m_workerStop) {
             std::unique_lock<std::mutex> lk(m_mutex);
             m_cv.wait(lk, [this]() { 
                 return m_workerStop || m_taskAvailable;
@@ -59,8 +54,7 @@ namespace kubvc::math
             if (m_workerStop)
                 break;
 
-            if (m_taskAvailable)
-            {
+            if (m_taskAvailable) {
                 m_taskAvailable = false; 
                 lk.unlock(); 
                 evalImpl(m_currentEvalParams);        
@@ -68,55 +62,34 @@ namespace kubvc::math
         }
     }
             
-    void Expression::evalImpl(const Expression::Params& params)
-    {
+    auto Expression::evalImpl(const Expression::Params& params) -> void {
         if (!isValid())
             return;     
 
         auto root = m_tree.getRoot();
-        ASSERT(root != nullptr, "Root is nullptr, wtf");
-
-        static const auto f = [](std::shared_ptr<kubvc::algorithm::RootNode> root, double x)
-        {
+        KUB_ASSERT(root != nullptr, "Root is nullptr, wtf");
+        static const auto f = [](algorithm::NodePtr<algorithm::NodeTypes::Root> root, double x) {
             double out = 0.0;
             root->calculate(x, out);
             return out;
         };
         
-        double prevY = std::numeric_limits<double>::quiet_NaN();
-        double threshold = 100.0;
-        
-        for (std::int32_t i = 0; i < params.maxPointCount; ++i)
-        {
-            auto x = std::lerp(params.limits.xMin, params.limits.xMax, static_cast<double>(i) / (params.maxPointCount - 1));
-            double y = f(root, x);
-        
-            if (!std::isnan(prevY) && std::fabs(y - prevY) > threshold) 
-            {
-                y = std::numeric_limits<double>::quiet_NaN(); // Break the line segment
-            }
-            else 
-            {
-                y = std::clamp(y, params.limits.yMin, params.limits.yMax);
-            }
-
-            // Save our vector     
-            std::lock_guard<std::mutex> lg(m_mutex);
-            m_plotBuffer[i] = { x, y };
-            prevY = y;
+        for (std::int32_t i = 0; i < params.maxPointCount; ++i) {
+            const auto x0 = std::lerp(params.limits.xMin, params.limits.xMax, static_cast<double>(i) / (params.maxPointCount - 1));
+            auto y0 = f(root, x0);
+            std::lock_guard<std::mutex> lock(m_mutex); 
+            m_plotBuffer[i] = { x0, y0 };
         }
     }   
 
-    void Expression::eval(const GraphLimits& limits, std::int32_t maxPointCount)
-    {          
-        std::lock_guard<std::mutex> lg(m_mutex);
+    auto Expression::eval(const GraphLimits& limits, std::int32_t maxPointCount) -> void {          
+        std::lock_guard<std::mutex> lock(m_mutex);
         m_currentEvalParams = { limits, maxPointCount};
         m_taskAvailable = true;
         m_cv.notify_one();
 
         // Pre set random graph color  
-        if (!Settings.isRandomColorSetted)
-        {
+        if (!Settings.isRandomColorSetted) {
             std::uniform_real_distribution<float> unif(0, 1.0f);
             std::random_device rd;
             std::default_random_engine re(rd());
@@ -124,5 +97,12 @@ namespace kubvc::math
             Settings.color = { unif(re), unif(re), unif(re), 1.0f };
             Settings.isRandomColorSetted = true;
         }
+    }
+
+    auto Expression::parseThenEval(const GraphLimits& limits) -> void {
+        static const auto parser = kubvc::algorithm::Parser::getInstance(); 
+        parser->parse(m_tree, m_textBuffer.data());            
+        m_valid = m_tree.isValid();
+        eval(limits);    
     }
 }

@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <string>
+#include <optional>
 
 namespace kubvc::utility
 {
@@ -15,28 +16,25 @@ namespace kubvc::utility
 
             Container(const std::vector<std::pair<std::string, T>>& vec) : m_data(vec) { }
             
-            inline T get(const std::string& name) const 
-            {
-                auto result = std::find_if(m_data.begin(), m_data.end(), [name](std::pair<std::string, T> it) 
-                {
+            inline auto get(std::string_view name) const -> std::optional<T> {
+                const auto result = std::find_if(m_data.begin(), m_data.end(), [name](std::pair<std::string, T> it) {
                     return it.first == name;
                 });
 
-                if (result == m_data.end())
-                    return NULL;
+                if (result == m_data.end()) {
+                    return std::nullopt;
+                }
 
                 return result->second;
             }
 
-            inline bool find(const std::string& name) const 
-            {
-                return std::find_if(m_data.begin(), m_data.end(), [name](std::pair<std::string, T> it) 
-                {
+            inline auto find(std::string_view name) const -> bool {
+                return std::find_if(m_data.begin(), m_data.end(), [name](std::pair<std::string, T> it) {
                     return it.first == name;
                 }) != m_data.end();
             }
 
-            inline std::vector<std::pair<std::string, T>> getData() const { return m_data; }
+            inline auto getData() const -> std::vector<std::pair<std::string, T>> { return m_data; }
             
             inline iterator begin() { return m_data.begin(); }
             inline iterator end() { return m_data.end(); }

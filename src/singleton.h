@@ -1,11 +1,9 @@
 #pragma once
 #include <memory>
 
-namespace kubvc::utility
-{
+namespace kubvc::utility {
     template <typename T>
-    class Singleton
-    {
+    class Singleton {
         public:
             Singleton() { }
 		    Singleton(const Singleton&) = delete;
@@ -14,8 +12,7 @@ namespace kubvc::utility
             Singleton& operator=(const Singleton&) = delete;
             Singleton& operator=(Singleton&&) = delete;
 
-            [[nodiscard]] static inline T* getInstance()
-            {
+            [[nodiscard]] static inline auto getInstance() -> T* {
                 static auto instance = T();
                 return &instance;
             } 

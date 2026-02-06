@@ -1,42 +1,35 @@
 #include "editor_graph_list_window.h"
 
-namespace kubvc::editor
-{
-    EditorGraphListWindow::EditorGraphListWindow()
-    {
+namespace kubvc::editor {
+    EditorGraphListWindow::EditorGraphListWindow() {
         setName("Graph List");
     }
 
     // Save current cursor position for expression
-    std::int32_t EditorGraphListWindow::handleExpressionCursorPosCallback(ImGuiInputTextCallbackData* data)
-    {
-        if (data == nullptr || data->UserData == nullptr)
-        {        
+    auto EditorGraphListWindow::handleExpressionCursorPosCallback(ImGuiInputTextCallbackData* data) -> std::int32_t {
+        if (data == nullptr || data->UserData == nullptr) {        
             return 0;
         }
 
         // Update cursor position 
         auto expr = *static_cast<std::shared_ptr<kubvc::math::Expression>*>(data->UserData);
         expr->setCursor(data->CursorPos);
-
+        
         return 0;
     }
 
-    void EditorGraphListWindow::drawGraphList(kubvc::render::GUI* gui)
-    {
+    auto EditorGraphListWindow::drawGraphList(kubvc::render::GUI* gui) -> void {
         std::int32_t expressionIndex = 0;
-        for (auto expr : kubvc::math::ExpressionController::Expressions)
-        {
-            if (expr != nullptr)
-            {
+        for (auto expr : kubvc::math::ExpressionController::Expressions) {
+            if (expr != nullptr) {
                 expressionIndex++;
                 drawGraphPanel(gui, expr, expr->getId(), expressionIndex);
             }
         }
     }
 
-    void EditorGraphListWindow::drawGraphPanel(kubvc::render::GUI* gui, std::shared_ptr<kubvc::math::Expression> expr, const std::int32_t& id, const std::int32_t& index)
-    {
+    auto EditorGraphListWindow::drawGraphPanel(kubvc::render::GUI* gui, std::shared_ptr<kubvc::math::Expression> expr, 
+        const std::int32_t& id, const std::int32_t& index) -> void {
         static const auto fontBig = gui->getDefaultFontMathSize();
         auto& selected = kubvc::math::ExpressionController::Selected;
 
@@ -57,9 +50,9 @@ namespace kubvc::editor
         const auto idStr = std::to_string(id);
 
         if (ImGui::InputText(("##" + idStr + "_ExprInputText").c_str(), expr->getTextBuffer().data(), expr->getTextBuffer().size(), 
-                ImGuiInputTextFlags_::ImGuiInputTextFlags_CallbackAlways, EditorGraphListWindow::handleExpressionCursorPosCallback, &expr))
-        {
-            expr->parseAndEval(math::GraphLimits::Limits);
+                ImGuiInputTextFlags_::ImGuiInputTextFlags_CallbackAlways, 
+                EditorGraphListWindow::handleExpressionCursorPosCallback, &expr)) {
+            expr->parseThenEval(math::GraphLimits::Limits);
         }
 
         ImGui::PopFont();
@@ -69,8 +62,7 @@ namespace kubvc::editor
         ImGui::PopStyleColor(popColor);
 
         // Set current expression by clicking on textbox 
-        if (ImGui::IsItemActive() && ImGui::IsItemClicked())
-        {
+        if (ImGui::IsItemActive() && ImGui::IsItemClicked()) {
             selected = expr;
         }
 
@@ -78,14 +70,13 @@ namespace kubvc::editor
 
         ImGui::PushFont(fontBig);
         ImGui::PushID(("##" + idStr + "_ExprButton").c_str());
-        if (ImGui::Button("-"))
-        {
+        if (ImGui::Button("-")) {
             auto& exprs = kubvc::math::ExpressionController::Expressions;
             auto it = exprs.erase(std::remove_if(exprs.begin(), exprs.end(), [expr](auto it) { return it->getId() == expr->getId(); }));
 
             // Set as nullptr to avoid some weird behaviour
-            if (it != exprs.end() && selected == expr)
-            {
+            if (it != exprs.end() && selected == expr) {
+                selected.reset();
                 selected = nullptr;
             }
         }
@@ -93,8 +84,7 @@ namespace kubvc::editor
 
         ImGui::PopFont();
 
-        if (ImGui::IsItemHovered(ImGuiHoveredFlags_::ImGuiHoveredFlags_AllowWhenDisabled))
-        {
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_::ImGuiHoveredFlags_AllowWhenDisabled)) {
             ImGui::SetTooltip("Remove this graph from graph list");
         }
 
@@ -104,67 +94,57 @@ namespace kubvc::editor
         ImGui::PushFont(fontBig);
         ImGui::PushID(("##" + idStr + "_ExprRadioButton").c_str());    
         auto visible = expr->isVisible();
-        if (ImGui::RadioButton("V", visible))
-        {
+        if (ImGui::RadioButton("V", visible)) {
             expr->setVisible(!visible);
         }
 
         ImGui::PopID();
         ImGui::PopFont();
 
-        if (ImGui::IsItemHovered(ImGuiHoveredFlags_::ImGuiHoveredFlags_AllowWhenDisabled))
-        {
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_::ImGuiHoveredFlags_AllowWhenDisabled)) {
             ImGui::SetTooltip("Change visibility for this graph.");
         }
     }
 
-    void EditorGraphListWindow::drawGraphListHeader()
-    {
+    auto EditorGraphListWindow::drawGraphListHeader() -> void {
         auto region = ImGui::GetContentRegionAvail();
 
-        if (ImGui::Button("Add"))
-        {
+        const auto buttonSize = ImVec2(0, region.y);
+        if (ImGui::Button("Add", buttonSize)) {
             auto expr = std::make_shared<kubvc::math::Expression>();
             kubvc::math::ExpressionController::Expressions.push_back(expr);
         }
-        if (ImGui::IsItemHovered(ImGuiHoveredFlags_::ImGuiHoveredFlags_AllowWhenDisabled))
-        {
+
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_::ImGuiHoveredFlags_AllowWhenDisabled)) {
             ImGui::SetTooltip("A button which you can add new graph.");
         }
 
-        ImGui::SameLine(region.x - 55.0f);
+        ImGui::SameLine(region.x - 69.0f);
         ImGui::SetNextItemWidth(region.x - 55.0f);
 
-        if (ImGui::Button("Clear All"))
-        {
+        if (ImGui::Button("Clear All", buttonSize)) {
             kubvc::math::ExpressionController::Selected = nullptr;
             kubvc::math::ExpressionController::Expressions.clear();
             kubvc::math::ExpressionController::Expressions.shrink_to_fit();
         }
-        if (ImGui::IsItemHovered(ImGuiHoveredFlags_::ImGuiHoveredFlags_AllowWhenDisabled))
-        {
+
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_::ImGuiHoveredFlags_AllowWhenDisabled)) {
             ImGui::SetTooltip("Clear all your graphs.");
         }
-
-
         // TODO: Undo redo buttons
-
     }
 
-    void EditorGraphListWindow::onRender(kubvc::render::GUI* gui)
-    {
+    auto EditorGraphListWindow::onRender(kubvc::render::GUI* gui) -> void {
         const auto childFlags = ImGuiChildFlags_::ImGuiChildFlags_Borders;
         const auto childWindowFlags = ImGuiWindowFlags_::ImGuiWindowFlags_HorizontalScrollbar |  ImGuiWindowFlags_::ImGuiWindowFlags_AlwaysUseWindowPadding;
 
         auto windowSize = ImGui::GetWindowSize();
-        if (ImGui::BeginChild("GraphListHeader", ImVec2(windowSize.x - 15.0f, 42.0f), childFlags))
-        {
+        if (ImGui::BeginChild("GraphListHeader", ImVec2(windowSize.x, 42.0f), childFlags)) {
             drawGraphListHeader();
         }
         ImGui::EndChild();
         
-        if (ImGui::BeginChild("GraphListChild", ImVec2(windowSize.x - 15.0f, 0), childFlags, childWindowFlags))
-        { 
+        if (ImGui::BeginChild("GraphListChild", ImVec2(windowSize.x, 0), childFlags, childWindowFlags)) { 
             ImGui::TextDisabled("Graphs:");
             ImGui::Separator();
             drawGraphList(gui);

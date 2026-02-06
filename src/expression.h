@@ -7,51 +7,38 @@
 #include <thread>
 #include <condition_variable>
 
-namespace kubvc::math
-{
-    class Expression
-    {
+namespace kubvc::math {
+    class Expression {
         public:
             static constexpr auto MAX_FUNC_RANGE = 1024.0;
             static constexpr auto MAX_BUFFER_SIZE = 1024;
-            static constexpr auto MAX_PLOT_BUFFER_SIZE = 2048;
+            static constexpr auto MAX_PLOT_BUFFER_SIZE = 1024;
             
             Expression();
+            Expression(const Expression& expression) = delete;
+            Expression(Expression&& expression) = delete;
+
             ~Expression();
             
+
+            inline auto setVisible(bool visible) -> void { m_visible = visible; }
+            inline auto isValid() -> bool const { return m_valid; }
+            inline auto isVisible() -> bool const { return m_visible; }
+            inline auto getCursor() -> std::int32_t const { return m_cursor; }
+            inline auto getId() -> std::int32_t const { return m_id; }
+            inline auto getPlotBuffer() -> std::vector<glm::dvec2> const { return m_plotBuffer; } 
+
+            inline auto getTextBuffer() -> std::vector<char>& { return m_textBuffer; } 
+            inline auto getTree() -> algorithm::ASTree& { return m_tree; }
+
             // Parse text buffer then evaluate
-            inline void parseAndEval(const GraphLimits& limits)
-            {
-                kubvc::algorithm::Parser::parse(m_tree, m_textBuffer.data());            
-                m_valid = m_tree.isValid();
-                eval(limits);    
-            }
-
-            inline void setCursor(std::int32_t cursorPos) 
-            {
-                ASSERT(cursorPos >= 0, "Neg cursor pos");
-                ASSERT(cursorPos < m_textBuffer.size(), "Cursor is bigger than text buffer size");
-
-                m_cursor = cursorPos; 
-            } 
-
-            inline void setVisible(bool visible) { m_visible = visible; }
-            
-            inline bool isValid() const { return m_valid; }
-            inline bool isVisible() const { return m_visible; }
-            inline std::int32_t getCursor() const { return m_cursor; }
-            inline std::int32_t getId() const { return m_id; }
-            inline std::vector<glm::dvec2> getPlotBuffer() const { return m_plotBuffer; } 
-
-            inline std::vector<char>& getTextBuffer() { return m_textBuffer; } 
-            inline kubvc::algorithm::ASTree& getTree() { return m_tree; }
-
-            void eval(const GraphLimits& limits, std::int32_t maxPointCount = MAX_PLOT_BUFFER_SIZE);
+            auto parseThenEval(const GraphLimits& limits) -> void;
+            // Evaluate current expression 
+            auto eval(const GraphLimits& limits, std::int32_t maxPointCount = MAX_PLOT_BUFFER_SIZE) -> void;
         private:
-            void worker();
+            auto worker() -> void;
 
-            struct EvalFuncImplParams
-            {
+            struct EvalFuncImplParams {
                 GraphLimits limits;
                 std::int32_t maxPointCount;
             };
@@ -59,6 +46,7 @@ namespace kubvc::math
             using Params = EvalFuncImplParams;
 
             void evalImpl(const Params& params);
+
             Params m_currentEvalParams;
 
             // Show expression on graph 
@@ -76,8 +64,7 @@ namespace kubvc::math
             // Calculated points for graph
             std::vector<glm::dvec2> m_plotBuffer;  
 
-            struct GraphSettings
-            {
+            struct GraphSettings {
                 glm::vec4 color;
                 float thickness;
                 bool shaded;
@@ -94,10 +81,15 @@ namespace kubvc::math
         public:
             // Actually can be changed anywhere-anytime
             GraphSettings Settings;
+
+            inline auto setCursor(std::int32_t cursorPos) -> void {
+                KUB_ASSERT(cursorPos >= 0, "Neg cursor pos");
+                KUB_ASSERT(cursorPos < m_textBuffer.size(), "Cursor is bigger than text buffer size");
+                m_cursor = cursorPos; 
+            } 
     };
     
-    class ExpressionController
-    {
+    class ExpressionController {
         public:
             static std::vector<std::shared_ptr<Expression>> Expressions;  
             static std::shared_ptr<Expression> Selected;

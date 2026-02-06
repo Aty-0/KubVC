@@ -6,8 +6,7 @@
 
 #include "editor/editor.h"
 
-int main()
-{
+int main() {
     // Initialize main application components
     const auto window = kubvc::application::Window::getInstance();
     window->createWindow(1920, 1080, 0, 0, "KubVC");
@@ -21,12 +20,11 @@ int main()
     const auto editor = kubvc::editor::Editor::getInstance();
 
     // Run main loop 
-    while (!window->shouldClose())
-    {
+    while (!window->shouldClose()) {
         render->clear();
         // TODO: imgui wrap  
         gui->begin();
-        gui->beginDockspace();
+        gui->beginDockspace(); 
         {
             editor->render(gui);
         }

@@ -1,53 +1,44 @@
 #include "window.h"
-
 #include "logger.h"
 
-namespace kubvc::application
-{
-    bool Window::shouldClose() const
-    {
+namespace kubvc::application {
+    auto Window::shouldClose() -> bool const {
         return glfwWindowShouldClose(m_windowHandle);
     }
 
-    bool Window::initializeGLFW() const
-    {
+    auto Window::initializeGLFW() -> bool const {
         return glfwInit();
     }
     
-    void Window::destroy()
-    {
-        DEBUG("Destroy window");
+    auto Window::destroy() -> void {
+        KUB_DEBUG("Destroy window");
         glfwTerminate();
         m_windowHandle = nullptr;
     }
 
-    void Window::createWindow(std::uint32_t w, std::uint32_t h, std::uint32_t x, std::uint32_t y, const char* name)
-    {
-        if (m_windowHandle != nullptr)
-        {
-            DEBUG("Window is already created!");
+    auto Window::createWindow(std::uint32_t w, std::uint32_t h, std::uint32_t x, std::uint32_t y, std::string_view name) -> void {
+        if (m_windowHandle != nullptr) {
+            KUB_WARN("Window is already created!");
             return;
         }
 
-        if (!initializeGLFW())
-        {
-            FATAL("GLFW initialization is failed");
+        if (!initializeGLFW()) {
+            KUB_FATAL("GLFW initialization is failed");
         }
 
-        DEBUG("Create window w:%d h:%d x:%d y:%d name:%s", w, h, x, y, name);
+        KUB_DEBUG("Create window w:{} h:{} x:{} y:{} name:{}", w, h, x, y, name);
 
-        m_windowHandle = glfwCreateWindow(w, h, name, nullptr, nullptr);
-        if (m_windowHandle == nullptr)
-        {
+        m_windowHandle = glfwCreateWindow(w, h, name.data(), nullptr, nullptr);
+        if (m_windowHandle == nullptr) {
             destroy();
-            FATAL("Something wrong with window creation...");
+            KUB_FATAL("Something wrong with window creation...");
         }
-        
+
         glfwMakeContextCurrent(m_windowHandle);
+        glfwSwapInterval(0);
     }
 
-    void Window::swapAndPool()
-    {
+    auto Window::swapAndPool() -> void {
         glfwSwapBuffers(m_windowHandle);
         glfwPollEvents();
     }

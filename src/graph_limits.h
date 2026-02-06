@@ -4,12 +4,11 @@ struct ImPlotRect;
 
 namespace kubvc::math
 {
-    struct GraphLimits
-    {
+    struct GraphLimits {
         GraphLimits();
         GraphLimits(const ImPlotRect& rect);
 
-        GraphLimits& operator= (const ImPlotRect& l);
+        auto operator= (const ImPlotRect& l) -> GraphLimits&;
         
         double xMin;
         double xMax;

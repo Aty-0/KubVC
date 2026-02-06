@@ -10,8 +10,7 @@ namespace kubvc::math
             xMax(rect.X.Max), yMin(rect.Y.Min), yMax(rect.Y.Max) {}
     
     
-    GraphLimits& GraphLimits::operator= (const ImPlotRect& l) 
-    {
+    auto GraphLimits::operator= (const ImPlotRect& l) -> GraphLimits&  {
         xMin = l.X.Min;  
         xMax = l.X.Max;  
         yMin = l.Y.Min;  

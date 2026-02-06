@@ -5,26 +5,29 @@
 
 #include "IconsFontAwesome6.h"
 
-namespace kubvc::render
-{
-    class GUI : public utility::Singleton<GUI> 
-    {
+namespace kubvc::render {
+    class GUI : public utility::Singleton<GUI> {
         public:
-            void init();
-            void destroy();
+            auto init() -> void;
+            auto destroy() -> void;
 
-            void beginDockspace();
-            void endDockspace();
+            auto beginDockspace() -> void;
+            auto endDockspace() -> void;
 
-            void begin();
-            void end();
+            auto begin() -> void;
+            auto end() -> void;
 
-            inline ImFont* getMathFont() const { return m_mathFont; }
-            inline ImFont* getDefaultFont() const { return m_defaultFont; }
-            inline ImFont* getIconFont() const { return m_iconFont; }
+            inline auto getMathFont() -> ImFont* const { return m_mathFont; }
+            inline auto getDefaultFont() -> ImFont* const { return m_defaultFont; }
+            inline auto getIconFont() -> ImFont* const { return m_iconFont; }
 
             // Default font but with math font size 
-            inline ImFont* getDefaultFontMathSize() const { return m_defaultFontMathSize; }
+            inline auto getDefaultFontMathSize() -> ImFont* const { return m_defaultFontMathSize; }
+
+            auto applyDefaultKubDarkTheme() -> void;
+            auto applyImGuiWhiteTheme() -> void;
+            auto applyImGuiClassicTheme() -> void;
+            auto applyImGuiDarkTheme() -> void;
 
         private:
             ImFont* m_mathFont;
@@ -32,6 +35,5 @@ namespace kubvc::render
             ImFont* m_defaultFont;
             ImFont* m_defaultFontMathSize;
 
-            void applyColorTheme();
     };
 }

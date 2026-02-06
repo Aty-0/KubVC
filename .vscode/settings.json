@@ -69,7 +69,26 @@
         "xhash": "cpp",
         "source_location": "cpp",
         "ranges": "cpp",
-        "span": "cpp"
+        "span": "cpp",
+        "numbers": "cpp",
+        "random": "cpp",
+        "array": "cpp",
+        "cwctype": "cpp",
+        "deque": "cpp",
+        "numeric": "cpp",
+        "queue": "cpp",
+        "variant": "cpp",
+        "memory_resource": "cpp",
+        "string_view": "cpp",
+        "cinttypes": "cpp",
+        "future": "cpp",
+        "condition_variable": "cpp",
+        "coroutine": "cpp",
+        "resumable": "cpp",
+        "set": "cpp",
+        "xtree": "cpp",
+        "semaphore": "cpp",
+        "iostream": "cpp"
     },
     "C_Cpp.errorSquiggles": "enabled"
 }

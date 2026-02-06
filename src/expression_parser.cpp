@@ -1,197 +1,233 @@
 #include "expression_parser.h"
 #include "math_base.h"
+#include <charconv>
 
-namespace kubvc::algorithm
-{
-    std::string Parser::parseNumbers(std::size_t& cursor, const std::string& text)
-    {
-        char character = getCurrentChar(cursor, text);
-        std::string output = std::string();
+namespace kubvc::algorithm {
+    auto Parser::getCurrentChar(const std::size_t& cursor, std::string_view text) -> uchar {
+        if (cursor > text.size()) {
+            KUB_FATAL("Cursor is out of bounds");
+            return '\0';
+        }
+        auto character = text[cursor];
+        return static_cast<uchar>(character);
+    }
+
+    auto Parser::parseNumbers(std::size_t& cursor, std::string_view text) -> std::string_view {
+        const auto start = cursor;
+        auto character = getCurrentChar(cursor, text);
         while(kubvc::algorithm::Helpers::isDigit(character) 
-            || kubvc::algorithm::Helpers::isDot(character))
-        {
-            output += character;
+            || kubvc::algorithm::Helpers::isDot(character)) {
             cursor++;
             character = getCurrentChar(cursor, text);
         }
-        return output;
+        return text.substr(start, cursor - start);
     }
 
-    std::string Parser::parseLetters(std::size_t& cursor, const std::string& text, bool includeDigits)
-    {
-        char character = getCurrentChar(cursor, text);
-        std::string output = std::string();
+    auto Parser::parseLetters(std::size_t& cursor, std::string_view text, bool includeDigits) -> std::string_view {
+        const auto start = cursor;
+        auto character = getCurrentChar(cursor, text);
         while(kubvc::algorithm::Helpers::isLetter(character) 
             || (kubvc::algorithm::Helpers::isDigit(character) 
-            && includeDigits))
-        {
-            output += character;
+            && includeDigits)) {
             cursor++;
             character = getCurrentChar(cursor, text);
         }
-        return output;
+        return text.substr(start, cursor - start);
     }
 
-    Parser::NodePtr Parser::parseFunction(kubvc::algorithm::ASTree& tree, const std::size_t& cursor_pos, std::size_t& cursor, const std::string& text)
-    {
-        std::size_t funcCursor = cursor_pos;
-        std::string funcName = std::string();
-
-        funcName = parseLetters(funcCursor, text);
-
+    auto Parser::parseFunction(kubvc::algorithm::ASTree& tree, const std::size_t& startPos, 
+        std::size_t& cursor, std::string_view text) -> std::shared_ptr<INode> {
+        KUB_DEBUG("Parse function...");
+        auto funcPos = startPos;
+        auto funcName = std::string(parseLetters(funcPos, text));
         // Convert text to lower case to avoid mismatch 
         kubvc::algorithm::Helpers::toLowerCase(funcName);
 
-        if (funcCursor > text.size())
-            return tree.createInvalidNode(text);
+        if (funcPos > text.size())
+            return nullptr;
     
         // Next should be bracket character
-        auto brChar = getCurrentChar(funcCursor, text);        
+        auto brChar = getCurrentChar(funcPos, text);        
 
         // TODO: What if we are want support functions with more than one argument
-        if (kubvc::algorithm::Helpers::isBracketStart(brChar))
-        {
-            DEBUG("So, is bracket found...");
+        if (kubvc::algorithm::Helpers::isBracketStart(brChar)) {
+            KUB_DEBUG("So, is bracket found...");
             cursor++;
 
             auto argsNode = parseExpression(tree, text, cursor, true);
-            if (argsNode->getType() != kubvc::algorithm::NodeTypes::Invalid)
-            {
+            auto argsNodeIsInvalid = argsNode->getType() == kubvc::algorithm::NodeTypes::Invalid;
+            if (argsNode != nullptr && !argsNodeIsInvalid) {
                 auto funcNode = tree.createFunctionNode(funcName);
                 funcNode->argument = argsNode;
                 return funcNode;            
             }
-
-            WARN("Bad node returned...");
         }
 
-        return tree.createInvalidNode(text);
+        KUB_WARN("Bad node returned...");
+        return nullptr;
     }
 
+    auto Parser::parseExplicitMultiplication(kubvc::algorithm::ASTree& tree, std::string_view text) -> std::shared_ptr<INode> {
+        auto clearedNewText = std::string();
+        char prevChar = '\0';
+        
+        for (char chr : text) {
+            const auto currIsOperator = algorithm::Helpers::isOperator(chr);                
+            if (currIsOperator) {
+                break;
+            }
+            clearedNewText += chr;
+        }
 
-    Parser::NodePtr Parser::parseElement(kubvc::algorithm::ASTree& tree, const std::string& text, std::size_t& cursor, char currentChar, bool isSubExpression)
-    {
-        DEBUG("try to find something usefull for %c", currentChar); 
+        auto newText = std::string();
+        for (char chr : clearedNewText) {
+            if (!newText.empty()) {
+                const auto prevIsDigit = algorithm::Helpers::isDigit(prevChar);
+                const auto currIsDigit = algorithm::Helpers::isDigit(chr);                
+                const auto prevIsLetterOrUnderscore = kubvc::algorithm::Helpers::isLetter(prevChar) || prevChar == '_';                
+                if ((prevIsDigit && !currIsDigit && std::isalpha(chr)) || 
+                    (prevIsLetterOrUnderscore && (currIsDigit || std::isalpha(chr)))) {
+                    newText += '*';
+                }
+            }
+            
+            newText += chr;
+            prevChar = chr;
+        }
+
+        std::size_t newCursor = 0;
+        auto expr = parseExpression(tree, newText, newCursor, false);        
+        KUB_DEBUG("newText: {} cursor: {}", newText.c_str(), newCursor);
+        if (expr == nullptr || expr->getType() == kubvc::algorithm::NodeTypes::Invalid) {
+            return tree.createInvalidNode("InvalidElementExpMult");
+        }
+        return expr;
+    }   
+           
+    auto Parser::parseElement(kubvc::algorithm::ASTree& tree, std::string_view text, std::size_t& cursor, 
+        char currentChar, bool isSubExpression) -> std::shared_ptr<INode> {
+        KUB_DEBUG("[parseElement] -> {}", currentChar); 
 
         // Skip white space if we are find it  
-        if (kubvc::algorithm::Helpers::isWhiteSpace(currentChar))
-        {
-            DEBUG("Ignore white space in parse element stage"); 
+        if (kubvc::algorithm::Helpers::isWhiteSpace(currentChar)) {
+            KUB_DEBUG("[parseElement] Ignore white space in parse element stage"); 
             cursor++;
             currentChar = getCurrentChar(cursor, text);
         } 
 
-        if (kubvc::algorithm::Helpers::isDigit(currentChar))
-        {
-            auto out = parseNumbers(cursor, text);
-
-            DEBUG("Is digit %s", out.c_str());
-            ASSERT(!out.empty(), "Parse number has a empty output");
-            ASSERT(kubvc::algorithm::Helpers::isNumber(out), "Invalid output! It's not a number! %s", out.c_str());
-
-            return tree.createNumberNode(std::atof(out.c_str())); 
+        if (kubvc::algorithm::Helpers::isDigit(currentChar)) {
+            KUB_DEBUG("[parseElement] isDigit {}", currentChar);
+            std::size_t startCursor = cursor;
+            auto out = parseLetters(cursor, text, true);
+            KUB_ASSERT(!out.empty(), "Parse number has a empty output");
+            if (kubvc::algorithm::Helpers::isNumber(out)) {
+                KUB_DEBUG("[parseElement] isNumber {}", out.data());
+                double result = 0.0;
+                auto convertResult = std::from_chars(out.data(), out.data() + out.size(), result).ec;
+                KUB_ASSERT(convertResult == std::errc(), "Invalid convert");
+                return tree.createNumberNode(result); 
+            } 
+            else {
+                KUB_DEBUG("[parseElement] parseExplicitMultiplication {}", out.data());
+                return parseExplicitMultiplication(tree, text.substr(startCursor, cursor));
+            }
         }    
-        else if (kubvc::algorithm::Helpers::isLetter(currentChar))
-        {
+        else if (kubvc::algorithm::Helpers::isLetter(currentChar)) {
             auto out = parseLetters(cursor, text);
+            KUB_DEBUG("[parseElement] Is letter | parsed {}", out.data());
+
             const auto outSize = out.size();
-            ASSERT(outSize != 0, "Output has a zero size");
-            
-            DEBUG("Is letter | parsed %s", out.c_str());
-            
+            KUB_ASSERT(outSize != 0, "Output has a zero size");                        
             // Find a constant name in container, if found it, we are create number node with constant value 
-            auto isConst = math::containers::Constants.find(out);
-            if (isConst)
-            {
-                DEBUG("Is constant, create number node with constant value");
-                return tree.createNumberNode(math::containers::Constants.get(out));
+            auto constResult = math::containers::Constants.get(out);
+            if (constResult.has_value()) {
+                KUB_DEBUG("[parseElement] Is constant, create number node with constant value");
+                return tree.createNumberNode(constResult.value());
             }
 
             // If output size is bigger than one it's a probably a function  
-            if (outSize > 1)
-            {
-                DEBUG("Parse function...");
-                return parseFunction(tree, cursor - outSize, cursor, text);
+            if (outSize > 1) {
+                auto function = parseFunction(tree, cursor - outSize, cursor, text);
+                if (function == nullptr) {
+                    return parseExplicitMultiplication(tree, text.substr(cursor - outSize, cursor));
+                } 
+                else {
+                    return function;
+                }
             }
 
             // If output size is single character it's a variable 
             return tree.createVariableNode(currentChar);
             
         }
-        else if (kubvc::algorithm::Helpers::isBracketStart(currentChar)) 
-        {
+        else if (kubvc::algorithm::Helpers::isBracketStart(currentChar))  {
+            KUB_DEBUG("[parseElement] Bracket start");
             cursor++;
-            DEBUG("Bracket start");
-            auto node = parseExpression(tree, text, cursor, true);
-            return node;
+            return parseExpression(tree, text, cursor, true);
         } 
-        else if (kubvc::algorithm::Helpers::isUnaryOperator(currentChar))
-        {
-            DEBUG("Possible unary operator");
+        else if (kubvc::algorithm::Helpers::isUnaryOperator(currentChar)) {
+            KUB_DEBUG("[parseElement] Possible unary operator");
             cursor++;
             auto node = parseExpression(tree, text, cursor, isSubExpression);
+            if (node == nullptr) {
+                return tree.createInvalidNode("InvalidElement");
+            }
 
             cursor--;
             return tree.createUnaryOperatorNode(node, currentChar);
         }
 
-        WARN("Nothing found %s", text.c_str());
-
+        KUB_WARN("Invalid | {} | cursor: %d | text:{}", currentChar, cursor, text.data());
         return tree.createInvalidNode("InvalidElement");
     }
 
-    Parser::NodePtr Parser::parseExpression(kubvc::algorithm::ASTree& tree, const std::string& text, std::size_t& cursor, bool isSubExpression)
-    {
+    auto Parser::parseExpression(kubvc::algorithm::ASTree& tree, std::string_view text, 
+        std::size_t& cursor, bool isSubExpression) -> std::shared_ptr<INode> {
+        const auto textSize = text.size();
         // Don't do anything if text is empty 
-        if (text.size() == 0)
+        if (textSize == 0)
             return nullptr;
 
-        DEBUG("----------------------------------------");
-        DEBUG("parseExpression | Start | cursor: %d", cursor);
-
-        std::shared_ptr<kubvc::algorithm::Node> left = parseElement(tree, text, cursor, getCurrentChar(cursor, text), isSubExpression);
-
-        while (true)
-        {
+        KUB_DEBUG("parseExpression | Start | cursor: %d", cursor);
+        auto left = parseElement(tree, text, cursor, getCurrentChar(cursor, text), isSubExpression);
+        while (true) {
             auto currentChar = getCurrentChar(cursor, text);  
-            DEBUG("Current character in expression cycle: %c", currentChar); 
+            KUB_DEBUG("Current character in expression cycle: {}", currentChar); 
 
             // Ignore white spaces
-            if (kubvc::algorithm::Helpers::isWhiteSpace(currentChar))
-            {
-                DEBUG("Ignore white space in expression parse"); 
+            if (kubvc::algorithm::Helpers::isWhiteSpace(currentChar)) {
+                KUB_DEBUG("Ignore white space in expression parse"); 
                 cursor++;
                 continue;
             }  
             // We are want to continue cycle or want to break it if it's a subexpression
-            else if (kubvc::algorithm::Helpers::isBracketEnd(currentChar))
-            {
-                DEBUG("End of bracket | isSubExpression:%i", isSubExpression);
+            else if (kubvc::algorithm::Helpers::isBracketEnd(currentChar)) {
+                KUB_DEBUG("End of bracket | isSubExpression:{}", isSubExpression);
                 cursor++;
 
-                if (isSubExpression)
-                {
-                    DEBUG("Return left node");
+                if (isSubExpression) {
+                    KUB_DEBUG("Return left node");
                     return left;
                 }
 
                 continue;
             }
-            // If current character is not operator we are leave from cycle 
-            else if (!kubvc::algorithm::Helpers::isOperator(currentChar))
-            {
-                DEBUG("parseExpression | End | Leave from cycle");
-                DEBUG("----------------------------------------");
+            // If current character is blank we are break cycle
+            else if (!currentChar) {
+                KUB_DEBUG("parseExpression | End | Leave from cycle");
                 break;
             }
+            // Avoid inf cycle caused by if last character is operator, parser will be think it's unary and gets stuck 
+            else if (kubvc::algorithm::Helpers::isOperator(currentChar) && cursor == (textSize - 1)) {
+                return nullptr;
+            }
 
-            // Augment cursor position 
-            cursor++;  
-            // Try to find something 
+            // Augment cursor position
+            cursor++;
+            // Try to find element 
             auto right = parseElement(tree, text, cursor, getCurrentChar(cursor, text), isSubExpression);
-            if (right == nullptr)
-            {
-                ERROR("parseElement is returned nullptr, maybe syntax error or not implemented element");
+            if (right == nullptr) {
+                KUB_WARN("parseElement is returned a nullptr, maybe something not implemented, check logs.");                     
                 return nullptr;
             }
 
@@ -200,30 +236,36 @@ namespace kubvc::algorithm
 
         // If we are actually leave from cycle and if isSubExpression is true, 
         // it means we are not found end brecket symbol, so it's a invalid expression   
-        if (isSubExpression)
-        {
+        if (isSubExpression) {
             // In some cases we are reached from text range by one character, so it can be end of bracket. 
-            if (cursor > text.size())
-            {
-                WARN("Edgy case found");
+            if (cursor > textSize) {
+                KUB_WARN("Edgy case found");
                 auto preLastChar = getCurrentChar(cursor - 1, text);
-                if (kubvc::algorithm::Helpers::isBracketEnd(preLastChar))
-                {
+                if (kubvc::algorithm::Helpers::isBracketEnd(preLastChar)) {
                     return left;    
                 }
             }
 
-            WARN("is invalid brecket");
+            KUB_WARN("is invalid brecket");
             return tree.createInvalidNode("InvalidBrecket");
         }
 
         return left;
     }
 
-    void Parser::parse(kubvc::algorithm::ASTree& tree, const std::string& text, const std::size_t cursor_pos)
-    {
+    auto Parser::parse(kubvc::algorithm::ASTree& tree, std::string_view text, const std::size_t cursor_pos) -> void {
+        if (text.size() == 0) {
+            tree.clear();
+            tree.createRoot();
+            return;
+        }
+
+        KUB_DEBUG("\n\nRun text parser...");
+        KUB_DEBUG("----------------------------------------");
+       
         std::size_t cursor = cursor_pos;
         auto root = tree.getRoot();
         root->child = parseExpression(tree, text, cursor, false);
+        KUB_DEBUG("----------------------------------------");
     }
 }

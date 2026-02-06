@@ -5,14 +5,10 @@
 
 #include "singleton.h"
 
-namespace kubvc::render
-{
-    class Renderer : public utility::Singleton<Renderer> 
-    {
+namespace kubvc::render {
+    class Renderer : public utility::Singleton<Renderer> {
         public:
-            void init();
-            void clear();            
-        private:
-            static void onGetError(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, GLchar const* message, void const* user_param);
+            auto init() -> void;
+            auto clear() -> void;            
     };
 }

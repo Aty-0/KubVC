@@ -3,21 +3,19 @@
 #include "Singleton.h"
 #include <cstdint>
 
-namespace kubvc::application
-{
-    class Window : public utility::Singleton<Window>
-    {
+namespace kubvc::application {
+    class Window : public utility::Singleton<Window> {
         public:
-            void createWindow(std::uint32_t w, std::uint32_t h, 
-                std::uint32_t x, std::uint32_t y, const char* name);
+            auto createWindow(std::uint32_t w, std::uint32_t h, 
+                std::uint32_t x, std::uint32_t y, std::string_view name) -> void;
             
-            void destroy();
-            void swapAndPool();
+            auto destroy() -> void;
+            auto swapAndPool() -> void;
 
-            [[nodiscard]] bool shouldClose() const;
-            [[nodiscard]] inline GLFWwindow* getHandle() const { return m_windowHandle;}
+            [[nodiscard]] auto shouldClose() -> bool const;
+            [[nodiscard]] inline auto getHandle() -> GLFWwindow* const { return m_windowHandle; }
         private:
-            [[nodiscard]] bool initializeGLFW() const; 
+            [[nodiscard]] auto initializeGLFW() -> bool const; 
 
             GLFWwindow* m_windowHandle;
     };

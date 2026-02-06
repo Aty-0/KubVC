@@ -4,26 +4,21 @@
 
 //#define SHOW_DEBUG_LIMITS 
 
-namespace kubvc::editor
-{
-    EditorPlotterWindow::EditorPlotterWindow()
-    {
+namespace kubvc::editor {
+    EditorPlotterWindow::EditorPlotterWindow() {
         setName("Viewer");
     }
 
-    static void updateExpressionByPlotLimits(std::shared_ptr<kubvc::math::Expression> expr)
-    {
+    static void updateExpressionByPlotLimits(std::shared_ptr<kubvc::math::Expression> expr) {
         math::GraphLimits::Limits = ImPlot::GetPlotLimits();                 
         expr->eval(math::GraphLimits::Limits);
     }
 
-    void EditorPlotterWindow::onRender(kubvc::render::GUI* gui)  
-    {
+    void EditorPlotterWindow::onRender(kubvc::render::GUI* gui) {
         static constexpr auto vecStride = 2 * sizeof(double);
         auto size = ImGui::GetContentRegionAvail();
         const auto plotFlags = ImPlotFlags_::ImPlotFlags_NoTitle | ImPlotFlags_::ImPlotFlags_Crosshairs;
-        if (ImPlot::BeginPlot("##PlotViewer", size, plotFlags)) 
-        {
+        if (ImPlot::BeginPlot("##PlotViewer", size, plotFlags)) {
             static bool savedFirstLimits = false; 
 
             // Draw axis notes 
@@ -32,21 +27,18 @@ namespace kubvc::editor
             ImPlot::SetupAxis(ImAxis_Y1, "Y-Axis", ImPlotAxisFlags_::ImPlotAxisFlags_Foreground);
     
             static bool updateExpr = false;
-            if (ImPlot::IsPlotHovered())
-            {
+            if (ImPlot::IsPlotHovered()) {
                 static auto prevPos = ImPlotPoint(0, 0);
                 auto pos = ImPlot::GetPlotLimits().Min(); 
     
-                if (prevPos.x != pos.x || prevPos.y != pos.y)
-                {
+                if (prevPos.x != pos.x || prevPos.y != pos.y) {
                     updateExpr = true;
                 }
                 
                 prevPos = pos;
             }
             
-            if (!savedFirstLimits)
-            {
+            if (!savedFirstLimits) {
                 math::GraphLimits::Limits = ImPlot::GetPlotLimits(); 
                 savedFirstLimits = true;
             }	
@@ -61,23 +53,18 @@ namespace kubvc::editor
 #endif
 
             // Draw our functions 
-            for (auto expr : kubvc::math::ExpressionController::Expressions)
-            {                    
-                if (expr != nullptr)
-                {
-                    if (expr->isVisible() && expr->isValid())
-                    { 
-                        if (updateExpr)
-                        {
+            for (auto expr : kubvc::math::ExpressionController::Expressions) {                    
+                if (expr != nullptr) {
+                    if (expr->isVisible() && expr->isValid()) { 
+                        if (updateExpr) {
                             updateExpressionByPlotLimits(expr);        
                         }
     
                         auto buffer = expr->getPlotBuffer(); 
-                        if (buffer.size() > 0)
-                        {
+                        if (buffer.size() > 0) {
                             // Apply plot style from expression                                                   
                             ImPlot::SetNextLineStyle(kubvc::utility::toImVec4(expr->Settings.color), expr->Settings.thickness);    
-    
+
                             const auto shaded = expr->Settings.shaded ? ImPlotLineFlags_::ImPlotLineFlags_Shaded : ImPlotLineFlags_::ImPlotLineFlags_None;
                             const auto plotLineFlags = ImPlotLineFlags_::ImPlotLineFlags_NoClip | shaded;
     

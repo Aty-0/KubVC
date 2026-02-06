@@ -7,14 +7,12 @@
 #include "Libs/imgui/imgui_internal.h"
 #include "Libs/imgui/implot_internal.h"
 
-namespace kubvc::render
-{
-	static const auto DEFAULT_FONT_SIZE = 18.0f; 
-	static const auto MATH_FONT_SIZE = 22.0f; 
+namespace kubvc::render {
+	static constexpr auto DEFAULT_FONT_SIZE = 18.0f; 
+	static constexpr auto MATH_FONT_SIZE = 22.0f; 
 
-    void GUI::init()
-    {
-		DEBUG("Initialize Imgui...");
+    auto GUI::init() -> void {
+		KUB_DEBUG("Initialize Imgui...");
 		auto window = kubvc::application::Window::getInstance();
 
 		IMGUI_CHECKVERSION();
@@ -27,14 +25,12 @@ namespace kubvc::render
 		io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;     
 		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;    
 		
-		if (!ImGui_ImplGlfw_InitForOpenGL(window->getHandle(), true))
-		{
-			FATAL("ImGui GLFW impl failed!");
+		if (!ImGui_ImplGlfw_InitForOpenGL(window->getHandle(), true)) {
+			KUB_FATAL("ImGui GLFW impl failed!");
 		}
 
-		if (!ImGui_ImplOpenGL3_Init())
-		{
-			FATAL("ImGui OpenGL3 init failed!");
+		if (!ImGui_ImplOpenGL3_Init()) {
+			KUB_FATAL("ImGui OpenGL3 init failed!");
 		}	
 
 		m_defaultFont = io.Fonts->AddFontFromFileTTF("fonts/Roboto-Light.ttf", DEFAULT_FONT_SIZE);
@@ -47,11 +43,10 @@ namespace kubvc::render
 		//
 		//static const ImWchar icon_ranges[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };
 		//m_iconFont = io.Fonts->AddFontFromFileTTF("fonts/Font-Awesome.otf", 13.0f, &config, icon_ranges);
-		applyColorTheme();
+		applyDefaultKubDarkTheme();
     }
 
-	void GUI::beginDockspace()
-	{
+	auto GUI::beginDockspace() -> void {
 		const auto viewport = ImGui::GetMainViewport();
 	
 		const auto windowFlags = ImGuiWindowFlags_NoBringToFrontOnFocus |
@@ -80,27 +75,23 @@ namespace kubvc::render
 		ImGui::DockSpace(dockId, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_PassthruCentralNode);
 	}
 
-	void GUI::endDockspace()
-	{
+	auto GUI::endDockspace() -> void {
 		ImGui::PopStyleVar(3);
 		ImGui::End();
 	}
 
-    void GUI::begin()
-    {
+    auto GUI::begin() -> void {
         ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
     }
 	
-    void GUI::end()
-    {
+    auto GUI::end() -> void {
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     }
 
-    void GUI::destroy()
-    {
+    auto GUI::destroy() -> void {
 		ImPlot::DestroyContext();
 
         ImGui_ImplOpenGL3_Shutdown();
@@ -108,8 +99,24 @@ namespace kubvc::render
 		ImGui::DestroyContext();
     }
 	
-    void GUI::applyColorTheme()
-	{
+	// TODO: Save current theme to config
+
+	auto GUI::applyImGuiClassicTheme() -> void {
+		ImGui::StyleColorsClassic();
+		ImPlot::StyleColorsClassic();
+	}
+
+	auto GUI::applyImGuiWhiteTheme() -> void {
+		ImGui::StyleColorsLight();
+		ImPlot::StyleColorsLight();
+	}
+
+    auto GUI::applyImGuiDarkTheme() -> void {
+		ImGui::StyleColorsDark();
+		ImPlot::StyleColorsDark();
+	}
+
+	auto GUI::applyDefaultKubDarkTheme() -> void {
 		auto& style = ImGui::GetStyle();
 		style.Colors[ImGuiCol_Text] = ImVec4(0.95f, 0.95f, 0.95f, 1.00f);
 		style.Colors[ImGuiCol_TextDisabled] = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
@@ -160,13 +167,13 @@ namespace kubvc::render
 		style.Colors[ImGuiCol_NavWindowingDimBg] = ImVec4(0.80f, 0.80f, 0.80f, 0.20f);
 		style.Colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.80f, 0.80f, 0.80f, 0.35f);
 		
-		style.WindowRounding = 0.0f;
-		style.ChildRounding = 0.0f;
-		style.FrameRounding = 0.0f;
-		style.PopupRounding = 0.0f;
-		style.ScrollbarRounding = 0.0f;
-		style.GrabRounding = 0.0f;
-		style.TabRounding = 0.0f;
+		style.WindowRounding = 2.0f;
+		style.ChildRounding = 2.0f;
+		style.FrameRounding = 2.0f;
+		style.PopupRounding = 2.0f;
+		style.ScrollbarRounding = 2.0f;
+		style.GrabRounding = 2.0f;
+		style.TabRounding = 2.0f;
 
 		style.WindowPadding = ImVec2(8.0f, 8.0f);
 		style.FramePadding = ImVec2(6.0f, 4.0f);
