@@ -1,9 +1,5 @@
 # KubVC
-This is a graphing calculator, which can draw generic or custom functions. 
-Project are still on alpha state. 
-
-! It works, but have some issues with function evaluation rn !
-
+This is a graphing calculator, which can draw generic or custom functions. (Alpha) 
 
 # Screenshots:
 the hleb (toast)
