@@ -33,22 +33,42 @@ namespace kubvc::editor {
         static const auto fontBig = gui->getDefaultFontMathSize();
         auto& selected = kubvc::math::ExpressionController::Selected;
 
-        // Draw counter 
-        ImGui::PushFont(fontBig);
-        ImGui::TextDisabled("%d:", index);
-        ImGui::PopFont();
+        ImGui::BeginGroup();
 
-        ImGui::SameLine();
+        const auto scale = ImGui::GetIO().DisplayFramebufferScale.x;
+        const auto baseHeight = 55.0f;
+        const auto panelHeight = baseHeight * scale;
+        
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(12 * scale, 7 * scale));
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8 * scale, 8 * scale));
+
+        ImGui::BeginChild(("##panel_" + std::to_string(id)).c_str(), ImVec2(0, panelHeight), true);
+        
+        const auto frameHeight = ImGui::GetFrameHeight();
+        const auto verticalOffset = (panelHeight - frameHeight) * 0.5f;
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + verticalOffset);
+
+        // Draw counter 
+        {
+            ImGui::PushFont(fontBig);
+            ImGui::TextDisabled("%d:", index);
+            ImGui::PopFont();
+            ImGui::SameLine();
+        }
 
         ImGui::PushFont(gui->getMathFont());
-        // Set special color for textbox border when we are selected expression or get invalid node somewhere kekw
+        
         if (!expr->isValid())
-            ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Border, INVALID_COLOR);
+            ImGui::PushStyleColor(ImGuiCol_Border, INVALID_COLOR);
         else if (expr == selected)
-            ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Border, SELECTED_COLOR);
+            ImGui::PushStyleColor(ImGuiCol_Border, SELECTED_COLOR);
 
         const auto idStr = std::to_string(id);
-
+                
+        const auto availableWidth = ImGui::GetContentRegionAvail().x;
+        const auto textBoxWidth = availableWidth * 0.5f;
+        
+        ImGui::SetNextItemWidth(textBoxWidth);
         if (ImGui::InputText(("##" + idStr + "_ExprInputText").c_str(), expr->getTextBuffer().data(), expr->getTextBuffer().size(), 
                 ImGuiInputTextFlags_::ImGuiInputTextFlags_CallbackAlways, 
                 EditorGraphListWindow::handleExpressionCursorPosCallback, &expr)) {
@@ -56,6 +76,7 @@ namespace kubvc::editor {
         }
 
         ImGui::PopFont();
+
 
         // Revert color changes
         auto popColor = static_cast<std::int32_t>(expr == selected || !expr->isValid());
@@ -67,10 +88,44 @@ namespace kubvc::editor {
         }
 
         ImGui::SameLine();
+        ImGui::BeginGroup();
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.3f, 0.3f, 0.3f, 0.3f));
+        
+        ImGui::PushFont(gui->getIconFont());
+        
+        ImGui::PushID(("##" + idStr + "_ExprRadioButton").c_str());    
+        auto visible = expr->isVisible();
+        ImGui::PushStyleColor(ImGuiCol_Text, visible ? 
+            ImVec4(0.4f, 0.8f, 0.4f, 1.0f) : ImVec4(0.6f, 0.6f, 0.6f, 0.7f));
+        
+        if (ImGui::Button(!visible ? ICON_FA_EYE_SLASH : ICON_FA_EYE)) {
+            expr->setVisible(!visible);
+        }
+        ImGui::PopStyleColor();
+        ImGui::PopID();
 
-        ImGui::PushFont(fontBig);
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_::ImGuiHoveredFlags_AllowWhenDisabled)) {
+            ImGui::SetTooltip("Change visibility for this graph.");
+        }
+
+        ImGui::SameLine();
+
+        ImGui::PushID(("##" + idStr + "_ColorButton").c_str());
+        if (ImGui::Button(ICON_FA_PALETTE)) {
+            // TODO:
+        }
+        ImGui::PopID();
+
+        if (ImGui::IsItemHovered()) {
+            ImGui::SetTooltip("Change graph color");
+        }
+
+        ImGui::SameLine();
+
         ImGui::PushID(("##" + idStr + "_ExprButton").c_str());
-        if (ImGui::Button("-")) {
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.9f, 0.3f, 0.3f, 1.0f));
+        if (ImGui::Button(ICON_FA_TRASH)) {
             auto& exprs = kubvc::math::ExpressionController::Expressions;
             auto it = exprs.erase(std::remove_if(exprs.begin(), exprs.end(), [expr](auto it) { return it->getId() == expr->getId(); }));
 
@@ -80,30 +135,26 @@ namespace kubvc::editor {
                 selected = nullptr;
             }
         }
+        ImGui::PopStyleColor();
         ImGui::PopID();
-
-        ImGui::PopFont();
 
         if (ImGui::IsItemHovered(ImGuiHoveredFlags_::ImGuiHoveredFlags_AllowWhenDisabled)) {
             ImGui::SetTooltip("Remove this graph from graph list");
         }
 
-        //static const auto fontIcon = gui->getIconFont();
-
-        ImGui::SameLine();
-        ImGui::PushFont(fontBig);
-        ImGui::PushID(("##" + idStr + "_ExprRadioButton").c_str());    
-        auto visible = expr->isVisible();
-        if (ImGui::RadioButton("V", visible)) {
-            expr->setVisible(!visible);
-        }
-
-        ImGui::PopID();
         ImGui::PopFont();
+        ImGui::PopStyleColor(2);
+        ImGui::EndGroup();
 
-        if (ImGui::IsItemHovered(ImGuiHoveredFlags_::ImGuiHoveredFlags_AllowWhenDisabled)) {
-            ImGui::SetTooltip("Change visibility for this graph.");
+        ImGui::EndChild();
+        ImGui::PopStyleVar(2);
+        ImGui::EndGroup();
+
+        if (ImGui::IsItemClicked() && !ImGui::IsAnyItemActive()) {
+            selected = expr;
         }
+
+        ImGui::Spacing();
     }
 
     auto EditorGraphListWindow::drawGraphListHeader() -> void {
