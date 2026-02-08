@@ -130,7 +130,7 @@ namespace kubvc::editor {
             auto it = exprs.erase(std::remove_if(exprs.begin(), exprs.end(), [expr](auto it) { return it->getId() == expr->getId(); }));
 
             // Set as nullptr to avoid some weird behaviour
-            if (it != exprs.end() && selected == expr) {
+            if (it == exprs.end() && selected == expr) {
                 selected.reset();
                 selected = nullptr;
             }
