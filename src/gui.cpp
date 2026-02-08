@@ -7,6 +7,8 @@
 #include "Libs/imgui/imgui_internal.h"
 #include "Libs/imgui/implot_internal.h"
 
+#include "IconsFontAwesome6.h"
+
 namespace kubvc::render {
 	static constexpr auto DEFAULT_FONT_SIZE = 18.0f; 
 	static constexpr auto MATH_FONT_SIZE = 22.0f; 
@@ -34,15 +36,18 @@ namespace kubvc::render {
 		}	
 
 		m_defaultFont = io.Fonts->AddFontFromFileTTF("fonts/Roboto-Light.ttf", DEFAULT_FONT_SIZE);
-		m_defaultFontMathSize = io.Fonts->AddFontFromFileTTF("fonts/Roboto-Light.ttf", MATH_FONT_SIZE);
+		m_defaultFontMathSize = io.Fonts->AddFontFromFileTTF("fonts/Roboto-Light.ttf", MATH_FONT_SIZE * 1.5f);
 		m_mathFont = io.Fonts->AddFontFromFileTTF("fonts/OldStandard-Regular.ttf", MATH_FONT_SIZE);
 
-		//ImFontConfig config;
-		//config.MergeMode = true;
-		//config.GlyphMinAdvanceX = 13.0f; // Use if you want to make the icon monospaced
-		//
-		//static const ImWchar icon_ranges[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };
-		//m_iconFont = io.Fonts->AddFontFromFileTTF("fonts/Font-Awesome.otf", 13.0f, &config, icon_ranges);
+
+		ImFontConfig config;
+		config.MergeMode = true; 
+		config.GlyphMinAdvanceX = DEFAULT_FONT_SIZE; 
+		config.PixelSnapH = true;
+
+		static constexpr ImWchar icon_ranges[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };
+		m_iconFont = io.Fonts->AddFontFromFileTTF("fonts/fa-solid-900.ttf", DEFAULT_FONT_SIZE, &config, icon_ranges);
+
 		applyDefaultKubDarkTheme();
     }
 
