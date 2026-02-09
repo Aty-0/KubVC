@@ -264,40 +264,71 @@ namespace kubvc::editor {
             ImGui::ColorPicker4("##_CurrentExprColorPicker", &selected->Settings.color.x, ImGuiColorEditFlags_::ImGuiColorEditFlags_NoLabel);
         }
     }
+    
+    static inline auto drawIcon(kubvc::render::GUI* gui, std::string_view icon) -> void {
+        ImGui::PushFont(gui->getIconFont());
+        ImGui::Text(icon.data());
+        ImGui::PopFont();
+    }
 
     auto EditorEditGraphWindow::onRender(kubvc::render::GUI* gui) -> void {
         ImGui::TextDisabled("Current graph settings");
-        ImGui::Separator();      
+        ImGui::Separator();
+        
         auto selected = kubvc::math::ExpressionController::Selected;
-        if (selected != nullptr) {          
+        if (selected != nullptr) {
+            ImGui::Dummy(ImVec2(0, 5.0f));
+            drawIcon(gui, ICON_FA_WAVE_SQUARE);
+            ImGui::SameLine(0, 10.0f);
             ImGui::TextDisabled("Graph: %s", selected->getTextBuffer().data());
             ImGui::Dummy(ImVec2(0, 15.0f));
+
+            // Style settings block
+            ImGui::TextDisabled("Style");
+            ImGui::Dummy(ImVec2(0, 5.0f));
             
-            ImGui::Text("Visible");
-            ImGui::SameLine();
+            // Visible toggle 
+            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 5.0f);
+            drawIcon(gui, ICON_FA_EYE);
+            ImGui::SameLine(0, 10.0f);
+            ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 1.0f);
             bool visible = selected->isVisible();
-            if (ImGui::Checkbox("##OptionsGraphVisibleCheckBox", &visible)) {
+            if (ImGui::Checkbox("Visible##OptionsGraphVisibleCheckBox", &visible)) {
                 selected->setVisible(visible);
             }
             
-            ImGui::Text("Shaded");
-            ImGui::SameLine();
-            ImGui::Checkbox("##OptionsGraphShadedCheckBox", &selected->Settings.shaded);
-            // Do not show color editor when we are not generate random color    
+            // Shaded toggle
+            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 5.0f);
+            drawIcon(gui, ICON_FA_CIRCLE_HALF_STROKE);
+            ImGui::SameLine(0, 10.0f);
+            ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 1.0f);
+            ImGui::Checkbox("Shaded##OptionsGraphShadedCheckBox", &selected->Settings.shaded);
+            
+            // Color picker
             if (selected->Settings.isRandomColorSetted) {
-                ImGui::Text("Color");
-                ImGui::SameLine();
+                ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 5.0f);
+                drawIcon(gui, ICON_FA_PALETTE);
+                ImGui::SameLine(0, 10.0f);
+                ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 1.0f);
                 auto color = kubvc::utility::toImVec4(selected->Settings.color);
-                if (ImGui::ColorButton("##OptionsGraphColorPicker", color)) {
+                if (ImGui::ColorButton("##OptionsGraphColorPicker", color, ImGuiColorEditFlags_NoBorder, ImVec2(25, 25))) {
                     selected->Settings.color = kubvc::utility::toGlmVec4(color);
                     selected->Settings.changeColor = !selected->Settings.changeColor;
                 }
+                ImGui::SameLine();
+                ImGui::Text("Color");
             }
-            ImGui::Text("Line Thickness");
-            ImGui::SameLine();
-            ImGui::PushItemWidth(35.0f);
-            if (ImGui::DragFloat("##OptionsGraphThicknessDrag", &selected->Settings.thickness, THICKNESS_SPEED, THICKNESS_MIN, THICKNESS_MAX, "%.1f")) {
-                // Handle manualy writed value
+            drawLineColorPicker();
+
+            // Line thickness
+            ImGui::Dummy(ImVec2(0, 10.0f));
+            ImGui::TextDisabled("Thickness");
+            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 5.0f);
+            drawIcon(gui, ICON_FA_BRUSH);
+            ImGui::SameLine(0, 10.0f);
+            ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 3.0f);
+            ImGui::SetNextItemWidth(ImGui::GetWindowWidth() - 70.0f);
+            if (ImGui::SliderFloat("##OptionsGraphThicknessDrag", &selected->Settings.thickness, THICKNESS_MIN, THICKNESS_MAX, "%.1f")) {
                 if (selected->Settings.thickness > THICKNESS_MAX) {
                     selected->Settings.thickness = THICKNESS_MAX;
                 } 
@@ -305,10 +336,11 @@ namespace kubvc::editor {
                     selected->Settings.thickness = THICKNESS_MIN;
                 }     
             }
-            ImGui::PopItemWidth();
-            drawLineColorPicker();
+
 #if defined(KUB_IS_DEBUG) || defined(SHOW_DEBUG_TOOLS_ON_RELEASE)  
             ImGui::Separator();        
+            drawIcon(gui, ICON_FA_BUG);
+            ImGui::SameLine();        
             ImGui::TextDisabled("Debug");
             drawDebugAST();
             const auto points = selected->getPlotBuffer();
