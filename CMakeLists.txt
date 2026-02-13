@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 
 set(CPACK_PACKAGE_NAME "KubVC")
-set(CPACK_PACKAGE_VERSION "0.0.0")
+set(CPACK_PACKAGE_VERSION "1.0.0")
 
 set(CMAKE_MODULE_PATH "${CMAKE_BINARY_DIR}" "${CMAKE_MODULE_PATH}")
 set(CMAKE_PREFIX_PATH "${CMAKE_BINARY_DIR}" "${CMAKE_PREFIX_PATH}")
@@ -16,30 +16,49 @@ set(CMAKE_PREFIX_PATH "${CMAKE_BINARY_DIR}" "${CMAKE_PREFIX_PATH}")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/lib")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/bin")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/bin")
-message("Passed basic project setup")
 
 #################################################################################
-# Include third party 
+# Third party 
 #################################################################################
-set(LIBS_DIR_PATH "${PROJECT_SOURCE_DIR}/libs")
+include(FetchContent)
 
-set(LIBS_GLFW_DIR "${LIBS_DIR_PATH}/glfw")
+message("Fetch third party libs...")
+
+# Get glfw 
+FetchContent_Declare(
+	glfw
+	GIT_REPOSITORY	https://github.com/glfw/glfw
+	GIT_TAG 	"3.4"
+)
+
+FetchContent_MakeAvailable(glfw)
+
+# Disable some things from glfw
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-add_subdirectory(${LIBS_GLFW_DIR})
 
+# Get opengl package
 find_package(OpenGL REQUIRED)
-set(LIBS_GLEW_DIR "${PROJECT_SOURCE_DIR}/libs/glew")
-add_subdirectory("${LIBS_GLEW_DIR}/build/cmake")
-target_include_directories(glew PUBLIC ${LIBS_GLEW_DIR}/include)
-message("Add OpenGL and GLEW ${LIBS_GLEW_DIR}")
 
-set(LIBS_GLM_DIR "${LIBS_DIR_PATH}/glm/")
-message("Add GLM ${LIBS_GLM_DIR}")
-add_subdirectory(${LIBS_GLM_DIR}/glm)
+# Get glew 
+FetchContent_Declare(
+	glew
+	GIT_REPOSITORY https://github.com/Perlmint/glew-cmake
+	GIT_TAG 	"glew-cmake-2.3.1"
+)
 
-message("Included third party!")
+FetchContent_MakeAvailable(glew)
+
+# Get glm
+FetchContent_Declare(
+	glm
+	GIT_REPOSITORY	https://github.com/g-truc/glm.git
+	GIT_TAG 	"1.0.3"
+)
+
+FetchContent_MakeAvailable(glm)
+
 #################################################################################
 # Add sources 
 #################################################################################
