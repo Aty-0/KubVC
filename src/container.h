@@ -3,11 +3,9 @@
 #include <string>
 #include <optional>
 
-namespace kubvc::utility
-{
+namespace kubvc::utility {
     template<typename T>
-    class Container
-    {
+    class Container {
         public:
             using iterator = typename std::vector<std::pair<std::string, T>>::iterator;
             using const_iterator = typename std::vector<std::pair<std::string, T>>::const_iterator;
@@ -16,7 +14,7 @@ namespace kubvc::utility
 
             Container(const std::vector<std::pair<std::string, T>>& vec) : m_data(vec) { }
             
-            inline auto get(std::string_view name) const -> std::optional<T> {
+            inline std::optional<T> get(std::string_view name) const {
                 const auto result = std::find_if(m_data.begin(), m_data.end(), [name](std::pair<std::string, T> it) {
                     return it.first == name;
                 });
@@ -28,13 +26,13 @@ namespace kubvc::utility
                 return result->second;
             }
 
-            inline auto find(std::string_view name) const -> bool {
+            inline bool find(std::string_view name) const {
                 return std::find_if(m_data.begin(), m_data.end(), [name](std::pair<std::string, T> it) {
                     return it.first == name;
                 }) != m_data.end();
             }
 
-            inline auto getData() const -> std::vector<std::pair<std::string, T>> { return m_data; }
+            inline std::vector<std::pair<std::string, T>> getData() const { return m_data; }
             
             inline iterator begin() { return m_data.begin(); }
             inline iterator end() { return m_data.end(); }

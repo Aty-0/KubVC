@@ -44,7 +44,7 @@ namespace kubvc::math {
         m_plotBuffer.shrink_to_fit();
     }
 
-    auto Expression::worker() -> void {
+    void Expression::worker() {
         while (!m_workerStop) {
             std::unique_lock<std::mutex> lk(m_mutex);
             m_cv.wait(lk, [this]() { 
@@ -62,7 +62,7 @@ namespace kubvc::math {
         }
     }
             
-    auto Expression::evalImpl(const Expression::Params& params) -> void {
+    void Expression::evalImpl(const Expression::Params& params) {
         if (!isValid())
             return;     
 
@@ -82,7 +82,7 @@ namespace kubvc::math {
         }
     }   
 
-    auto Expression::eval(const GraphLimits& limits, std::int32_t maxPointCount) -> void {          
+    void Expression::eval(const GraphLimits& limits, std::int32_t maxPointCount) {          
         std::lock_guard<std::mutex> lock(m_mutex);
         m_currentEvalParams = { limits, maxPointCount};
         m_taskAvailable = true;
@@ -99,7 +99,7 @@ namespace kubvc::math {
         }
     }
 
-    auto Expression::parseThenEval(const GraphLimits& limits) -> void {
+    void Expression::parseThenEval(const GraphLimits& limits) {
         static const auto parser = kubvc::algorithm::Parser::getInstance(); 
         parser->parse(m_tree, m_textBuffer.data());            
         m_valid = m_tree.isValid();

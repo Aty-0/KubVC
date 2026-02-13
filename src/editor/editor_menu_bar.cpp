@@ -7,7 +7,7 @@
 #include "../logger.h"
 
 namespace kubvc::editor {
-    auto EditorMenuBar::render(kubvc::render::GUI* gui) -> void {
+    void EditorMenuBar::render(kubvc::render::GUI* gui) {
         if (ImGui::BeginMainMenuBar()) {
             if (ImGui::BeginMenu("File")) {
                 if (ImGui::MenuItem("Open (.graphlist, .txt)")) {

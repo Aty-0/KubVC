@@ -10,13 +10,13 @@ namespace kubvc::algorithm {
         public:
             using uchar = unsigned char;
 
-            static inline auto toLowerCase(std::string& text) -> void {
+            static inline void toLowerCase(std::string& text) {
                 std::transform(text.begin(), text.end(), text.begin(), 
                     [](uchar chr) { return std::tolower(chr); }
                 );
             }
 
-            [[nodiscard]] static inline auto computeFunction(std::string_view name, double x) -> double { 
+            static inline double computeFunction(std::string_view name, double x) { 
                 auto result = math::containers::Functions.get(name);
                 if (!result.has_value()) {
                     return 0;
@@ -25,25 +25,25 @@ namespace kubvc::algorithm {
                 return result.value()(x);
             }
 
-            [[nodiscard]] static inline auto isLetter(uchar chr) -> bool {
+            static inline bool isLetter(uchar chr)  {
                 return std::isalpha(chr);
             }
 
-            [[nodiscard]] static inline auto isNumber(std::string_view text) -> bool {
+            static inline bool isNumber(std::string_view text)  {
                 return !text.empty() && std::all_of(text.begin(), text.end(), [](uchar c) {
                     return std::isdigit(c) || isDot(c);
                 });
             }
 
-            [[nodiscard]] static inline auto isDigit(uchar chr) -> bool {
+            static inline bool isDigit(uchar chr)  {
                 return std::isdigit(chr);
             }
             
-            [[nodiscard]] static inline auto isDot(uchar chr) -> bool{
+            static inline bool isDot(uchar chr) {
                 return chr == '.';
             }
 
-            [[nodiscard]] static inline auto isUnaryOperator(uchar chr) -> bool{
+            static inline bool isUnaryOperator(uchar chr) {
                 switch (chr) {
                     case '+':
                     case '-':
@@ -52,7 +52,7 @@ namespace kubvc::algorithm {
                 return false;
             }
 
-            [[nodiscard]] static inline auto isOperator(uchar chr) -> bool {
+            static inline bool isOperator(uchar chr) {
                 switch (chr) {
                     case '+':
                     case '-':
@@ -67,19 +67,19 @@ namespace kubvc::algorithm {
             }
     
             // TODO: Support for other brackets 
-            [[nodiscard]] static inline auto isBracketStart(uchar chr) -> bool {
+            static inline bool isBracketStart(uchar chr) {
                 return chr == '(';
             }
 
-            [[nodiscard]] static inline auto isBracketEnd(uchar chr) -> bool {
+            static inline bool isBracketEnd(uchar chr) {
                 return chr == ')';
             }
 
-            [[nodiscard]] static inline auto isEqualsSign(uchar chr) -> bool {
+            static inline bool isEqualsSign(uchar chr) {
                 return chr == '=';
             }
 
-            [[nodiscard]] static inline auto isWhiteSpace(uchar chr) -> bool {
+            static inline bool isWhiteSpace(uchar chr) {
                 return std::isspace(chr);
             }
     };

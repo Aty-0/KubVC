@@ -4,12 +4,12 @@
 namespace kubvc::editor {
     struct EditorKeyboardWindow : public EditorWindow {
         EditorKeyboardWindow();
-        virtual auto onRender(kubvc::render::GUI* gui) -> void final;       
+        virtual void onRender(kubvc::render::GUI* gui) final;       
 
         private:
-            auto drawOperators() -> void;
-            auto drawKeys() -> void;
-            auto drawNumbers() -> void;
-            auto drawFunctions() -> void;
+            void drawOperators();
+            void drawKeys();
+            void drawNumbers();
+            void drawFunctions();
     };
 }

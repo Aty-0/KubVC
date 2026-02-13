@@ -1,8 +1,7 @@
 #include "graph_limits.h"
 #include "Libs/imgui/implot.h"
 
-namespace kubvc::math
-{
+namespace kubvc::math {
     GraphLimits GraphLimits::Limits;
     
     GraphLimits::GraphLimits() : xMin(0), xMax(0), yMin(0), yMax(0) {}
@@ -10,7 +9,7 @@ namespace kubvc::math
             xMax(rect.X.Max), yMin(rect.Y.Min), yMax(rect.Y.Max) {}
     
     
-    auto GraphLimits::operator= (const ImPlotRect& l) -> GraphLimits&  {
+    GraphLimits& GraphLimits::operator= (const ImPlotRect& l) {
         xMin = l.X.Min;  
         xMax = l.X.Max;  
         yMin = l.Y.Min;  

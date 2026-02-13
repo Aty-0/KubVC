@@ -3,19 +3,19 @@
 #include <glm/glm.hpp>
 
 namespace kubvc::utility {
-    static inline auto toImVec4(glm::vec4 vec) -> ImVec4 {
+    static inline ImVec4 toImVec4(glm::vec4 vec) {
         return ImVec4(vec.x, vec.y, vec.z, vec.w);
     }
 
-    static inline auto toImVec2(glm::vec2 vec) -> ImVec2 {
+    static inline ImVec2 toImVec2(glm::vec2 vec) {
         return ImVec2(vec.x, vec.y);
     }
 
-    static inline auto toGlmVec4(ImVec4 vec) -> glm::vec4 {
+    static inline glm::vec4 toGlmVec4(ImVec4 vec) {
         return glm::vec4(vec.x, vec.y, vec.z, vec.w);
     }
 
-    static inline auto toGlmVec2(ImVec2 vec) -> glm::vec2 {
+    static inline glm::vec2 toGlmVec2(ImVec2 vec) {
         return glm::vec2(vec.x, vec.y);
     }
 }

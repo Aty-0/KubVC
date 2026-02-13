@@ -8,7 +8,7 @@
 namespace kubvc::render {
     class Renderer : public utility::Singleton<Renderer> {
         public:
-            auto init() -> void;
-            auto clear() -> void;            
+            void init();
+            void clear();            
     };
 }

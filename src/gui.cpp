@@ -13,7 +13,7 @@ namespace kubvc::render {
 	static constexpr auto DEFAULT_FONT_SIZE = 18.0f; 
 	static constexpr auto MATH_FONT_SIZE = 22.0f; 
 
-    auto GUI::init() -> void {
+    void GUI::init() {
 		KUB_DEBUG("Initialize Imgui...");
 		auto window = kubvc::application::Window::getInstance();
 
@@ -51,7 +51,7 @@ namespace kubvc::render {
 		applyDefaultKubDarkTheme();
     }
 
-	auto GUI::beginDockspace() -> void {
+	void GUI::beginDockspace() {
 		const auto viewport = ImGui::GetMainViewport();
 	
 		const auto windowFlags = ImGuiWindowFlags_NoBringToFrontOnFocus |
@@ -80,23 +80,23 @@ namespace kubvc::render {
 		ImGui::DockSpace(dockId, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_PassthruCentralNode);
 	}
 
-	auto GUI::endDockspace() -> void {
+	void GUI::endDockspace() {
 		ImGui::PopStyleVar(3);
 		ImGui::End();
 	}
 
-    auto GUI::begin() -> void {
+    void GUI::begin() {
         ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
     }
 	
-    auto GUI::end() -> void {
+    void GUI::end() {
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     }
 
-    auto GUI::destroy() -> void {
+    void GUI::destroy() {
 		ImPlot::DestroyContext();
 
         ImGui_ImplOpenGL3_Shutdown();
@@ -106,22 +106,22 @@ namespace kubvc::render {
 	
 	// TODO: Save current theme to config
 
-	auto GUI::applyImGuiClassicTheme() -> void {
+	void GUI::applyImGuiClassicTheme() {
 		ImGui::StyleColorsClassic();
 		ImPlot::StyleColorsClassic();
 	}
 
-	auto GUI::applyImGuiWhiteTheme() -> void {
+	void GUI::applyImGuiWhiteTheme() {
 		ImGui::StyleColorsLight();
 		ImPlot::StyleColorsLight();
 	}
 
-    auto GUI::applyImGuiDarkTheme() -> void {
+    void GUI::applyImGuiDarkTheme() {
 		ImGui::StyleColorsDark();
 		ImPlot::StyleColorsDark();
 	}
 
-	auto GUI::applyDefaultKubDarkTheme() -> void {
+	void GUI::applyDefaultKubDarkTheme() {
 		auto& style = ImGui::GetStyle();
 		style.Colors[ImGuiCol_Text] = ImVec4(0.95f, 0.95f, 0.95f, 1.00f);
 		style.Colors[ImGuiCol_TextDisabled] = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);

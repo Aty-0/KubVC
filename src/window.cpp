@@ -2,21 +2,21 @@
 #include "logger.h"
 
 namespace kubvc::application {
-    auto Window::shouldClose() -> bool const {
+    bool Window::shouldClose() const {
         return glfwWindowShouldClose(m_windowHandle);
     }
 
-    auto Window::initializeGLFW() -> bool const {
+    bool Window::initializeGLFW()  const {
         return glfwInit();
     }
     
-    auto Window::destroy() -> void {
+    void Window::destroy() {
         KUB_DEBUG("Destroy window");
         glfwTerminate();
         m_windowHandle = nullptr;
     }
 
-    auto Window::createWindow(std::uint32_t w, std::uint32_t h, std::uint32_t x, std::uint32_t y, std::string_view name) -> void {
+    void Window::createWindow(std::uint32_t w, std::uint32_t h, std::uint32_t x, std::uint32_t y, std::string_view name) {
         if (m_windowHandle != nullptr) {
             KUB_WARN("Window is already created!");
             return;
@@ -38,7 +38,7 @@ namespace kubvc::application {
         glfwSwapInterval(0);
     }
 
-    auto Window::swapAndPool() -> void {
+    void Window::swapAndPool() {
         glfwSwapBuffers(m_windowHandle);
         glfwPollEvents();
     }

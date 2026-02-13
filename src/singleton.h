@@ -12,7 +12,7 @@ namespace kubvc::utility {
             Singleton& operator=(const Singleton&) = delete;
             Singleton& operator=(Singleton&&) = delete;
 
-            [[nodiscard]] static inline auto getInstance() -> T* {
+            [[nodiscard]] static inline T* getInstance() {
                 static auto instance = T();
                 return &instance;
             } 

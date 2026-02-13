@@ -6,35 +6,33 @@
 
 namespace kubvc::editor {
     struct EditorDrawable {
-        virtual auto render(kubvc::render::GUI* gui) -> void = 0;
+        virtual void render(kubvc::render::GUI* gui) = 0;
     };
 
     struct EditorWindow : public EditorDrawable {
         EditorWindow() : m_visible(true), m_name("untitled_editor_window"), 
             m_disableVisibleToggle(true), m_flags(0) { }
 
-        inline virtual auto render(kubvc::render::GUI* gui) -> void final {
+        inline virtual void render(kubvc::render::GUI* gui) final {
             if (!(m_visible && m_disableVisibleToggle))
                 return;                
 
-            if (ImGui::Begin(m_name, 
-                m_disableVisibleToggle ? nullptr : &m_visible, m_flags))
-            {
+            if (ImGui::Begin(m_name, m_disableVisibleToggle ? nullptr : &m_visible, m_flags)) {
                 onRender(gui);
             }
 
             ImGui::End();
         }
 
-        inline auto isVisible() -> bool const { return m_visible; }
-        inline auto getWindowFlags() -> ImGuiWindowFlags const { return m_flags; }
+        inline bool isVisible() const { return m_visible; }
+        inline ImGuiWindowFlags getWindowFlags() const { return m_flags; }
 
-        inline auto setVisible(bool visible) -> void { m_visible = visible; }
-        inline auto setWindowFlags(ImGuiWindowFlags flags) -> void { m_flags = flags; }
+        inline void setVisible(bool visible) { m_visible = visible; }
+        inline void setWindowFlags(ImGuiWindowFlags flags) { m_flags = flags; }
 
         protected:
-            virtual auto onRender(kubvc::render::GUI* gui) -> void { }
-            inline auto setName(const char* name) -> void { m_name = name; }
+            virtual void onRender(kubvc::render::GUI* gui) { }
+            inline void setName(const char* name) { m_name = name; }
             
             ImGuiWindowFlags m_flags;
             const char* m_name;
@@ -48,10 +46,10 @@ namespace kubvc::editor {
             Editor();
             ~Editor();
 
-            auto render(kubvc::render::GUI* gui) -> void;
+            void render(kubvc::render::GUI* gui);
 
             template<typename T>
-            inline auto get() -> std::shared_ptr<T> const {
+            inline std::shared_ptr<T> get() const {
                 auto it = std::find_if(m_windows.begin(), m_windows.end(), [](const std::shared_ptr<EditorDrawable>& draw) {
                     return typeid(*draw) == typeid(T);
                 });

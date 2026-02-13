@@ -4,6 +4,6 @@
 namespace kubvc::editor {
     struct EditorFpsCounterWindow : public EditorWindow {
         EditorFpsCounterWindow();
-        virtual auto onRender(kubvc::render::GUI* gui) -> void final;       
+        virtual void onRender(kubvc::render::GUI* gui);       
     };
 }

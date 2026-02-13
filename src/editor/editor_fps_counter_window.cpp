@@ -14,7 +14,7 @@ namespace kubvc::editor {
         setWindowFlags(fpsCounterWindowFlags);
     }
     
-    auto EditorFpsCounterWindow::onRender(kubvc::render::GUI* gui) -> void {
+    void EditorFpsCounterWindow::onRender(kubvc::render::GUI* gui) {
         auto io = ImGui::GetIO();
         ImGui::PushFont(gui->getDefaultFontMathSize());
         ImGui::Text("Fps %.1f", io.Framerate);

@@ -6,7 +6,7 @@ namespace kubvc::editor {
     }
 
     // Save current cursor position for expression
-    auto EditorGraphListWindow::handleExpressionCursorPosCallback(ImGuiInputTextCallbackData* data) -> std::int32_t {
+    std::int32_t EditorGraphListWindow::handleExpressionCursorPosCallback(ImGuiInputTextCallbackData* data) {
         if (data == nullptr || data->UserData == nullptr) {        
             return 0;
         }
@@ -18,7 +18,7 @@ namespace kubvc::editor {
         return 0;
     }
 
-    auto EditorGraphListWindow::drawGraphList(kubvc::render::GUI* gui) -> void {
+    void EditorGraphListWindow::drawGraphList(kubvc::render::GUI* gui) {
         std::int32_t expressionIndex = 0;
         for (auto expr : kubvc::math::ExpressionController::Expressions) {
             if (expr != nullptr) {
@@ -28,8 +28,8 @@ namespace kubvc::editor {
         }
     }
 
-    auto EditorGraphListWindow::drawGraphPanel(kubvc::render::GUI* gui, std::shared_ptr<kubvc::math::Expression> expr, 
-        const std::int32_t& id, const std::int32_t& index) -> void {
+    void EditorGraphListWindow::drawGraphPanel(kubvc::render::GUI* gui, std::shared_ptr<kubvc::math::Expression> expr, 
+        const std::int32_t& id, const std::int32_t& index) {
         static const auto fontBig = gui->getDefaultFontMathSize();
         auto& selected = kubvc::math::ExpressionController::Selected;
 
@@ -157,7 +157,7 @@ namespace kubvc::editor {
         ImGui::Spacing();
     }
 
-    auto EditorGraphListWindow::drawGraphListHeader() -> void {
+    void EditorGraphListWindow::drawGraphListHeader() {
         auto region = ImGui::GetContentRegionAvail();
 
         const auto buttonSize = ImVec2(0, region.y);
@@ -185,7 +185,7 @@ namespace kubvc::editor {
         // TODO: Undo redo buttons
     }
 
-    auto EditorGraphListWindow::onRender(kubvc::render::GUI* gui) -> void {
+    void EditorGraphListWindow::onRender(kubvc::render::GUI* gui) {
         const auto childFlags = ImGuiChildFlags_::ImGuiChildFlags_Borders;
         const auto childWindowFlags = ImGuiWindowFlags_::ImGuiWindowFlags_HorizontalScrollbar |  ImGuiWindowFlags_::ImGuiWindowFlags_AlwaysUseWindowPadding;
 

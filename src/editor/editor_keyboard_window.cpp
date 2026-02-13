@@ -10,7 +10,7 @@ namespace kubvc::editor {
         setVisible(false);
     }
 
-    static auto drawPickElementButton(const std::string& text, const ImVec2& size) -> bool {
+    static bool drawPickElementButton(const std::string& text, const ImVec2& size) {
         auto cText = text.c_str();
     
         if (ImGui::Button(cText, size)) {
@@ -34,7 +34,7 @@ namespace kubvc::editor {
         return false;
     }
 
-    auto EditorKeyboardWindow::onRender(kubvc::render::GUI* gui) -> void {
+    void EditorKeyboardWindow::onRender(kubvc::render::GUI* gui) {
         // TODO: Operators, functions as childs
         if (ImGui::Button("Functions")) {
             ImGui::OpenPopup("FunctionsKeyboardPopup");
@@ -74,7 +74,7 @@ namespace kubvc::editor {
         ImGui::EndTable();        
     }    
 
-    auto EditorKeyboardWindow::drawOperators() -> void {
+    void EditorKeyboardWindow::drawOperators() {
         const auto opColumnsCount = 6;
         ImGui::TextDisabled("Operators");
         ImGui::Separator();
@@ -97,7 +97,7 @@ namespace kubvc::editor {
         }
     }
 
-    auto EditorKeyboardWindow::drawKeys() -> void {
+    void EditorKeyboardWindow::drawKeys() {
         const auto opColumnsCount = 6;
         const auto opButtonSize = ImVec2(35.0f, 35.0f);        
         ImGui::TextDisabled("Keys");
@@ -141,7 +141,7 @@ namespace kubvc::editor {
         }
     }
 
-    auto EditorKeyboardWindow::drawNumbers() -> void {
+    void EditorKeyboardWindow::drawNumbers() {
         const auto opColumnsCount = 6;
         ImGui::TextDisabled("Numbers");
         ImGui::Separator();
@@ -170,7 +170,7 @@ namespace kubvc::editor {
         }
     }
 
-    auto EditorKeyboardWindow::drawFunctions() -> void {
+    void EditorKeyboardWindow::drawFunctions() {
         ImGui::Dummy(ImVec2(0, 10));
         ImGui::TextDisabled("Functions");
         ImGui::Separator();

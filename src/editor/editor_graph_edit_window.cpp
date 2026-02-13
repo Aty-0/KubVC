@@ -15,7 +15,7 @@ namespace kubvc::editor {
     }
 
 #if defined(KUB_IS_DEBUG) || defined(SHOW_DEBUG_TOOLS_ON_RELEASE) 
-    static auto showTreeList(std::shared_ptr<kubvc::algorithm::INode> start) -> void {
+    static void showTreeList(std::shared_ptr<kubvc::algorithm::INode> start) {
         // We are reached the end of tree 
         if (start == nullptr) {
             return;
@@ -202,7 +202,7 @@ namespace kubvc::editor {
         }
     }
 
-    static auto showTreeVisual(const kubvc::algorithm::ASTree& tree) -> void {            
+    static void showTreeVisual(const kubvc::algorithm::ASTree& tree) {            
         static constexpr auto childFlags = ImGuiChildFlags_::ImGuiChildFlags_Borders; 
         static auto dragOffset = ImVec2(0,0);
         //static auto width = 0.65f;
@@ -231,7 +231,7 @@ namespace kubvc::editor {
         ImGui::EndChild();
     }
 
-    static auto drawDebugAST() -> void {
+    static void drawDebugAST() {
         if (ImGui::CollapsingHeader("AST")) {
             auto selected = kubvc::math::ExpressionController::Selected;
             if (selected != nullptr) {
@@ -258,20 +258,20 @@ namespace kubvc::editor {
     }
 #endif
 
-    auto EditorEditGraphWindow::drawLineColorPicker() -> void {
+    void EditorEditGraphWindow::drawLineColorPicker() {
         auto selected = kubvc::math::ExpressionController::Selected;
         if (selected != nullptr && selected->Settings.changeColor) {
             ImGui::ColorPicker4("##_CurrentExprColorPicker", &selected->Settings.color.x, ImGuiColorEditFlags_::ImGuiColorEditFlags_NoLabel);
         }
     }
     
-    static inline auto drawIcon(kubvc::render::GUI* gui, std::string_view icon) -> void {
+    static inline void drawIcon(kubvc::render::GUI* gui, std::string_view icon) {
         ImGui::PushFont(gui->getIconFont());
         ImGui::Text(icon.data());
         ImGui::PopFont();
     }
 
-    auto EditorEditGraphWindow::onRender(kubvc::render::GUI* gui) -> void {
+    void EditorEditGraphWindow::onRender(kubvc::render::GUI* gui) {
         ImGui::TextDisabled("Current graph settings");
         ImGui::Separator();
         

@@ -15,43 +15,43 @@
 
 namespace kubvc::math {
     namespace functions {
-        static inline auto ctg(double x) -> double {
+        static inline double ctg(double x) {
             return glm::cos(x) / std::sin(x);
         }
 
-        static inline auto arcctg(double x) -> double {
+        static inline double arcctg(double x) {
             return glm::acos(x / std::sqrt(1 + std::pow(x, 2)));
         }
 
-        static inline auto fact(double x) -> double {            
+        static inline double fact(double x) {            
             return std::tgamma(x + 1);
         }
 
-        static inline auto sh(double x) -> double {
+        static inline double sh(double x) {
             return (glm::exp(x) - glm::exp(-x)) / 2;
         }
 
-        static inline auto ch(double x) -> double {
+        static inline double ch(double x) {
             return (glm::exp(x) + glm::exp(-x)) / 2;
         }
 
-        static inline auto th(double x) -> double {
+        static inline double th(double x) {
             return (glm::exp(x) - glm::exp(-x)) / (glm::exp(x) + glm::exp(-x));
         }
 
-        static inline auto cth(double x) -> double {
+        static inline double cth(double x) {
             return 1 / th(x);
         }
 
-        static inline auto sch(double x) -> double {
+        static inline double sch(double x) {
             return 1 / ch(x);
         }
 
-        static inline auto csch(double x) -> double {
+        static inline double csch(double x) {
             return 1 / sh(x);
         }
 
-        static inline auto rnd(double x) -> double {
+        static inline double rnd(double x) {
             x = glm::abs(x);
             std::uniform_real_distribution<double> unif(-x, x);
             std::random_device rd;

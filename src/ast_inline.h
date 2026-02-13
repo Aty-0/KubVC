@@ -2,7 +2,7 @@
 #include "ast.h"
 
 namespace kubvc::algorithm { 
-    inline auto NodeTraits<NodeTypes::Function>::calculate(const double& n, double& result) -> void {
+    inline void NodeTraits<NodeTypes::Function>::calculate(const double& n, double& result) {
         if (argument == nullptr) {
             KUB_ERROR("[FunctionNode] Argument is null");
             return;
@@ -24,7 +24,7 @@ namespace kubvc::algorithm {
         }
     }
         
-    inline auto NodeTraits<NodeTypes::UnaryOperator>::calculate(const double& n, double& result) -> void {
+    inline void NodeTraits<NodeTypes::UnaryOperator>::calculate(const double& n, double& result) {
         const bool isChildIsInvalid = child->getType() == NodeTypes::Invalid;
         if (child == nullptr || isChildIsInvalid)
             return;
@@ -42,7 +42,7 @@ namespace kubvc::algorithm {
         }
     }
     
-    inline auto NodeTraits<NodeTypes::Operator>::calculate(const double& n, double& result) -> void {
+    inline void NodeTraits<NodeTypes::Operator>::calculate(const double& n, double& result) {
         const bool isRightNodeInvalid = right->getType() == NodeTypes::Invalid;
         const bool isLeftNodeInvalid = left->getType() == NodeTypes::Invalid; 
         if ((right == nullptr || left == nullptr) 
@@ -87,20 +87,20 @@ namespace kubvc::algorithm {
         }              
     }
 
-    inline auto ASTree::createVariableNode(char value) -> NodePtr<NodeTypes::Variable> {
+    inline NodePtr<NodeTypes::Variable> ASTree::createVariableNode(char value) {
         auto varNode = createNode<NodeTypes::Variable>();
         varNode->setValue(value);    
         return varNode;
     }
 
-    inline auto ASTree::createNumberNode(double value) -> NodePtr<NodeTypes::Number> {
+    inline NodePtr<NodeTypes::Number> ASTree::createNumberNode(double value) {
         auto numNode = createNode<NodeTypes::Number>();
         numNode->setValue(value);   
         return numNode;
     }
 
-    inline auto ASTree::createOperatorNode(std::shared_ptr<INode> x, 
-        std::shared_ptr<INode> y, char op) -> NodePtr<NodeTypes::Operator> {
+    inline NodePtr<NodeTypes::Operator> ASTree::createOperatorNode(std::shared_ptr<INode> x, 
+        std::shared_ptr<INode> y, char op) {
         auto opNode = createNode<NodeTypes::Operator>();
         opNode->operation = op;
         opNode->left = std::move(x);
@@ -108,7 +108,7 @@ namespace kubvc::algorithm {
         return opNode;
     }
 
-    inline auto ASTree::createUnaryOperatorNode(std::shared_ptr<kubvc::algorithm::INode> x, char op) -> NodePtr<NodeTypes::UnaryOperator> {
+    inline NodePtr<NodeTypes::UnaryOperator> ASTree::createUnaryOperatorNode(std::shared_ptr<kubvc::algorithm::INode> x, char op) {
         auto opNode = createNode<NodeTypes::UnaryOperator>();
         opNode->operation = op;
         opNode->child = std::move(x);
@@ -116,23 +116,23 @@ namespace kubvc::algorithm {
     }
 
 
-    inline auto ASTree::createInvalidNode(std::string_view name) -> NodePtr<NodeTypes::Invalid> {
+    inline NodePtr<NodeTypes::Invalid> ASTree::createInvalidNode(std::string_view name) {
         auto invalidNode = createNode<NodeTypes::Invalid>();
         invalidNode->name = name;
         return invalidNode;
     }
 
-    inline auto ASTree::createFunctionNode(std::string_view name) -> NodePtr<NodeTypes::Function> {
+    inline NodePtr<NodeTypes::Function> ASTree::createFunctionNode(std::string_view name) {
         auto funcNode = createNode<NodeTypes::Function>();
         funcNode->name = name;
         return funcNode;
     }
 
-    inline auto ASTree::clear() -> void {        
+    inline void ASTree::clear()  {        
         m_root.reset();
     }
 
-    inline auto ASTree::createRoot() -> void {
+    inline void ASTree::createRoot()  {
         if (m_root != nullptr)
         {
             KUB_WARN("Root is already exist!");
@@ -142,7 +142,7 @@ namespace kubvc::algorithm {
         m_root = createNode<NodeTypes::Root>();
     }   
 
-    inline auto ASTree::isValidFrom(std::shared_ptr<kubvc::algorithm::INode> start) const -> bool {
+    inline bool ASTree::isValidFrom(std::shared_ptr<kubvc::algorithm::INode> start) const {
         // We are reached the end of tree 
         if (start == nullptr) {
             return false;
@@ -194,7 +194,7 @@ namespace kubvc::algorithm {
     }
     
     template <NodeTypes NodeType>
-    inline auto ASTree::createNode() const -> NodePtr<NodeType> {
+    inline NodePtr<NodeType> ASTree::createNode() const {
         static std::uint32_t id = 0;
         const auto node = std::make_shared<NodeTraits<NodeType>>();
         node->setId(id);

@@ -6,7 +6,7 @@
 namespace kubvc::render {
     static constexpr glm::vec4 CLEAR_COLOR = { 0.0f, 0.0f, 0.0f, 1.0f };
 
-    auto Renderer::init() -> void {
+    void Renderer::init() {
         auto initStatus = glewInit();
         if (initStatus != GLEW_OK) {
             const auto errStr = glewGetErrorString(initStatus);
@@ -19,7 +19,7 @@ namespace kubvc::render {
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     }
 
-    auto Renderer::clear() -> void {
+    void Renderer::clear() {
         glClear(GL_COLOR_BUFFER_BIT);
         glClearColor(CLEAR_COLOR.r, CLEAR_COLOR.g, CLEAR_COLOR.b, CLEAR_COLOR.a);
     }

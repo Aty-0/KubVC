@@ -4,10 +4,10 @@
 namespace kubvc::editor {
     struct EditorEditGraphWindow : public EditorWindow {
         EditorEditGraphWindow();
-        virtual auto onRender(kubvc::render::GUI* gui) -> void final;       
+        virtual void onRender(kubvc::render::GUI* gui) final;       
 
         private:
-            auto drawLineColorPicker() -> void;
+            void drawLineColorPicker();
 
             static constexpr auto THICKNESS_MIN = 0.5f;            
             static constexpr auto THICKNESS_MAX = 10.0f;       

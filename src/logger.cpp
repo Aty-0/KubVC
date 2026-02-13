@@ -4,7 +4,7 @@
 #define KUB_USE_ANSI_COLORS
 
 namespace kubvc::utility {       
-    static inline auto levelToStr(const Logger::LogLevel& level) {
+    static inline std::string_view levelToStr(const Logger::LogLevel& level) {
         switch (level) {
             case Logger::LogLevel::Debug:
                 return "debug";
@@ -19,7 +19,7 @@ namespace kubvc::utility {
     }
 
 #ifdef KUB_USE_ANSI_COLORS
-    static inline auto levelToColorStr(const Logger::LogLevel& level) {
+    static inline std::string_view levelToColorStr(const Logger::LogLevel& level) {
         switch (level) {
             case Logger::LogLevel::Debug:
                 return "37";
@@ -41,7 +41,8 @@ namespace kubvc::utility {
             m_file.close();
         }
     }
-    auto Logger::print(const Logger::LogLevel& level, const std::source_location source, std::string_view text) -> void {
+
+    void Logger::print(const Logger::LogLevel& level, const std::source_location source, std::string_view text) {
         const auto line = std::format("[{}] [{} line: {}]: {}\n", levelToStr(level), source.function_name(), source.line(), text.data());
         m_buffer.sputn(line.data(), line.size());
 
@@ -57,7 +58,7 @@ namespace kubvc::utility {
         }
     }
 
-    auto Logger::save(std::string_view path) -> void {
+    void Logger::save(std::string_view path) {
         m_file.open(path.data(), std::ios_base::out);
         if (!m_file.is_open()) {
             KUB_ERROR("Failed to save file.");

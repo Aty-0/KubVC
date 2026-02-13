@@ -10,16 +10,16 @@
 #endif
 
 namespace kubvc::algorithm {
-    auto Parser::getCurrentChar(const std::size_t& cursor, std::string_view text) -> uchar {
+    Helpers::uchar Parser::getCurrentChar(const std::size_t& cursor, std::string_view text) {
         if (cursor > text.size()) {
             KUB_FATAL("Cursor is out of bounds");
             return '\0';
         }
         auto character = text[cursor];
-        return static_cast<uchar>(character);
+        return static_cast<Helpers::uchar>(character);
     }
 
-    auto Parser::parseNumbers(std::size_t& cursor, std::string_view text) -> std::string_view {
+    std::string_view Parser::parseNumbers(std::size_t& cursor, std::string_view text) {
         const auto start = cursor;
         auto character = getCurrentChar(cursor, text);
         while(kubvc::algorithm::Helpers::isDigit(character) 
@@ -30,7 +30,7 @@ namespace kubvc::algorithm {
         return text.substr(start, cursor - start);
     }
 
-    auto Parser::parseLetters(std::size_t& cursor, std::string_view text, bool includeDigits) -> std::string_view {
+    std::string_view Parser::parseLetters(std::size_t& cursor, std::string_view text, bool includeDigits) {
         const auto start = cursor;
         auto character = getCurrentChar(cursor, text);
         while(kubvc::algorithm::Helpers::isLetter(character) 
@@ -42,8 +42,8 @@ namespace kubvc::algorithm {
         return text.substr(start, cursor - start);
     }
 
-    auto Parser::parseFunction(kubvc::algorithm::ASTree& tree, const std::size_t& startPos, 
-        std::size_t& cursor, std::string_view text) -> std::shared_ptr<INode> {
+    std::shared_ptr<INode> Parser::parseFunction(kubvc::algorithm::ASTree& tree, const std::size_t& startPos, 
+        std::size_t& cursor, std::string_view text) {
         KUB_PARSER_DEBUG("Parse function...");
         auto funcPos = startPos;
         auto funcName = std::string(parseLetters(funcPos, text));
@@ -74,7 +74,7 @@ namespace kubvc::algorithm {
         return nullptr;
     }
 
-    auto Parser::parseExplicitMultiplication(kubvc::algorithm::ASTree& tree, std::string_view text) -> std::shared_ptr<INode> {
+    std::shared_ptr<INode> Parser::parseExplicitMultiplication(kubvc::algorithm::ASTree& tree, std::string_view text) {
         auto clearedNewText = std::string();
         char prevChar = '\0';
         
@@ -111,8 +111,8 @@ namespace kubvc::algorithm {
         return expr;
     }   
            
-    auto Parser::parseElement(kubvc::algorithm::ASTree& tree, std::string_view text, std::size_t& cursor, 
-        char currentChar, bool isSubExpression) -> std::shared_ptr<INode> {
+    std::shared_ptr<INode> Parser::parseElement(kubvc::algorithm::ASTree& tree, std::string_view text, std::size_t& cursor, 
+        char currentChar, bool isSubExpression) {
         KUB_PARSER_DEBUG("[parseElement] -> {}", currentChar); 
 
         // Skip white space if we are find it  
@@ -188,8 +188,8 @@ namespace kubvc::algorithm {
         return tree.createInvalidNode("InvalidElement");
     }
 
-    auto Parser::parseExpression(kubvc::algorithm::ASTree& tree, std::string_view text, 
-        std::size_t& cursor, bool isSubExpression) -> std::shared_ptr<INode> {
+    std::shared_ptr<INode> Parser::parseExpression(kubvc::algorithm::ASTree& tree, std::string_view text, 
+        std::size_t& cursor, bool isSubExpression) {
         const auto textSize = text.size();
         // Don't do anything if text is empty 
         if (textSize == 0)
@@ -260,7 +260,7 @@ namespace kubvc::algorithm {
         return left;
     }
 
-    auto Parser::parse(kubvc::algorithm::ASTree& tree, std::string_view text, const std::size_t cursor_pos) -> void {
+    void Parser::parse(kubvc::algorithm::ASTree& tree, std::string_view text, const std::size_t cursor_pos) {
         if (text.size() == 0) {
             tree.clear();
             tree.createRoot();

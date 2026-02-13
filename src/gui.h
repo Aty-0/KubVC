@@ -8,26 +8,26 @@
 namespace kubvc::render {
     class GUI : public utility::Singleton<GUI> {
         public:
-            auto init() -> void;
-            auto destroy() -> void;
+            void init();
+            void destroy();
 
-            auto beginDockspace() -> void;
-            auto endDockspace() -> void;
+            void beginDockspace();
+            void endDockspace();
 
-            auto begin() -> void;
-            auto end() -> void;
+            void begin();
+            void end();
 
-            inline auto getMathFont() -> ImFont* const { return m_mathFont; }
-            inline auto getDefaultFont() -> ImFont* const { return m_defaultFont; }
-            inline auto getIconFont() -> ImFont* const { return m_iconFont; }
+            inline ImFont* getMathFont() const { return m_mathFont; }
+            inline ImFont* getDefaultFont() const { return m_defaultFont; }
+            inline ImFont* getIconFont() const { return m_iconFont; }
 
             // Default font but with math font size 
-            inline auto getDefaultFontMathSize() -> ImFont* const { return m_defaultFontMathSize; }
+            inline ImFont* getDefaultFontMathSize() const { return m_defaultFontMathSize; }
 
-            auto applyDefaultKubDarkTheme() -> void;
-            auto applyImGuiWhiteTheme() -> void;
-            auto applyImGuiClassicTheme() -> void;
-            auto applyImGuiDarkTheme() -> void;
+            void applyDefaultKubDarkTheme();
+            void applyImGuiWhiteTheme();
+            void applyImGuiClassicTheme();
+            void applyImGuiDarkTheme();
 
         private:
             ImFont* m_mathFont;

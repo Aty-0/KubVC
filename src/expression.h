@@ -21,22 +21,22 @@ namespace kubvc::math {
             ~Expression();
             
 
-            inline auto setVisible(bool visible) -> void { m_visible = visible; }
-            inline auto isValid() -> bool const { return m_valid; }
-            inline auto isVisible() -> bool const { return m_visible; }
-            inline auto getCursor() -> std::int32_t const { return m_cursor; }
-            inline auto getId() -> std::int32_t const { return m_id; }
-            inline auto getPlotBuffer() -> std::vector<glm::dvec2> const { return m_plotBuffer; } 
+            inline void setVisible(bool visible) { m_visible = visible; }
+            inline bool isValid() const { return m_valid; }
+            inline bool isVisible() const { return m_visible; }
+            inline std::int32_t getCursor()  const { return m_cursor; }
+            inline std::int32_t getId() const { return m_id; }
+            inline std::vector<glm::dvec2> getPlotBuffer() const { return m_plotBuffer; } 
 
-            inline auto getTextBuffer() -> std::vector<char>& { return m_textBuffer; } 
-            inline auto getTree() -> algorithm::ASTree& { return m_tree; }
+            inline std::vector<char>& getTextBuffer() { return m_textBuffer; } 
+            inline algorithm::ASTree& getTree() { return m_tree; }
 
             // Parse text buffer then evaluate
-            auto parseThenEval(const GraphLimits& limits) -> void;
+            void parseThenEval(const GraphLimits& limits);
             // Evaluate current expression 
-            auto eval(const GraphLimits& limits, std::int32_t maxPointCount = MAX_PLOT_BUFFER_SIZE) -> void;
+            void eval(const GraphLimits& limits, std::int32_t maxPointCount = MAX_PLOT_BUFFER_SIZE);
         private:
-            auto worker() -> void;
+            void worker();
 
             struct EvalFuncImplParams {
                 GraphLimits limits;
@@ -82,7 +82,7 @@ namespace kubvc::math {
             // Actually can be changed anywhere-anytime
             GraphSettings Settings;
 
-            inline auto setCursor(std::int32_t cursorPos) -> void {
+            inline void setCursor(std::int32_t cursorPos) {
                 KUB_ASSERT(cursorPos >= 0, "Neg cursor pos");
                 KUB_ASSERT(cursorPos < m_textBuffer.size(), "Cursor is bigger than text buffer size");
                 m_cursor = cursorPos; 

@@ -30,7 +30,7 @@ namespace kubvc::algorithm {
         Unknown,
     };
 
-    [[nodiscard]] static inline Operators getOperatorFrom(unsigned char chr) {   
+    [[nodiscard]] static inline Operators getOperatorFrom(Helpers::uchar chr) {   
         switch (chr) {
             case '+':
                 return Operators::Plus;
@@ -51,11 +51,11 @@ namespace kubvc::algorithm {
     } 
 
     struct INode {
-        virtual auto getType() const -> NodeTypes = 0;
-        virtual auto calculate(const double& n, double& result) -> void = 0;
+        virtual NodeTypes getType() const = 0;
+        virtual void calculate(const double& n, double& result) = 0;
         
-        inline auto getId() const -> std::int32_t { return m_id; }
-        inline auto setId(std::uint32_t id) -> void { if (m_id == DEFAULT_NODE_ID) { m_id = id; } }        
+        inline std::int32_t getId() const { return m_id; }
+        inline void setId(std::uint32_t id) { if (m_id == DEFAULT_NODE_ID) { m_id = id; } }        
 
         private:
             static constexpr auto DEFAULT_NODE_ID = -1;
@@ -64,8 +64,8 @@ namespace kubvc::algorithm {
 
     template <typename ValueType>
     struct NodeValue {
-        inline auto getValue() const -> ValueType { return m_value; }
-        inline auto setValue(const ValueType& value) -> void { m_value = value; }
+        inline ValueType getValue() const { return m_value; }
+        inline void setValue(const ValueType& value) { m_value = value; }
         protected:        
             ValueType m_value;
     };
@@ -75,8 +75,8 @@ namespace kubvc::algorithm {
     
     template<>
     struct NodeTraits<NodeTypes::Root> : INode {
-        virtual auto getType() const -> NodeTypes final { return NodeTypes::Root; }
-        virtual auto calculate(const double& n, double& result) -> void { 
+        virtual NodeTypes getType() const final { return NodeTypes::Root; }
+        virtual void calculate(const double& n, double& result) { 
             if (child == nullptr)
                 return;
             child->calculate(n, result);            
@@ -87,28 +87,28 @@ namespace kubvc::algorithm {
 
     template<>
     struct NodeTraits<NodeTypes::Variable> : INode, NodeValue<char> { 
-        virtual auto getType() const -> NodeTypes final { return NodeTypes::Variable; }
-        virtual auto calculate(const double& n, double& result) -> void final { result = n; }
+        virtual NodeTypes getType() const final { return NodeTypes::Variable; }
+        virtual void calculate(const double& n, double& result) final { result = n; }
     };
 
     template<>
     struct NodeTraits<NodeTypes::Number> : INode, NodeValue<double> {
-        virtual auto getType() const -> NodeTypes final { return NodeTypes::Number; }
-        virtual auto calculate(const double& n, double& result) -> void final { result = m_value; }
+        virtual NodeTypes getType() const final { return NodeTypes::Number; }
+        virtual void calculate(const double& n, double& result) final { result = m_value; }
     };
 
     template<>
     struct NodeTraits<NodeTypes::Invalid> : INode {
-        virtual auto getType() const -> NodeTypes final { return NodeTypes::Invalid; }
-        virtual auto calculate(const double& n, double& result) -> void final { } // Do nothing
+        virtual NodeTypes getType() const final { return NodeTypes::Invalid; }
+        virtual void calculate(const double& n, double& result) final { } // Do nothing
 
         std::string name;
     };
 
     template<>
     struct NodeTraits<NodeTypes::UnaryOperator> : INode {        
-        virtual auto getType() const -> NodeTypes final { return NodeTypes::UnaryOperator; }
-        virtual auto calculate(const double& n, double& result) -> void final;
+        virtual NodeTypes getType() const final { return NodeTypes::UnaryOperator; }
+        virtual void calculate(const double& n, double& result) final;
         
         char operation;
         std::shared_ptr<INode> child; 
@@ -116,8 +116,8 @@ namespace kubvc::algorithm {
 
     template<>
     struct NodeTraits<NodeTypes::Operator> : INode {
-        virtual auto getType() const -> NodeTypes final { return NodeTypes::Operator; }
-        virtual auto calculate(const double& n, double& result) -> void final;        
+        virtual NodeTypes getType() const final { return NodeTypes::Operator; }
+        virtual void calculate(const double& n, double& result) final;        
         
         char operation;
         std::shared_ptr<INode> right; 
@@ -126,14 +126,14 @@ namespace kubvc::algorithm {
 
     template<>
     struct NodeTraits<NodeTypes::Function> : INode {
-        virtual auto getType() const -> NodeTypes final { return NodeTypes::Function; }
-        virtual auto calculate(const double& n, double& result) -> void final;
+        virtual NodeTypes getType() const final { return NodeTypes::Function; }
+        virtual void calculate(const double& n, double& result) final;
         
         std::string name;
         std::shared_ptr<INode> argument;
     };
 
-    inline static auto getNodeName(const kubvc::algorithm::NodeTypes& type) -> std::string {
+    inline static std::string_view getNodeName(const kubvc::algorithm::NodeTypes& type) {
         switch (type) {
             case kubvc::algorithm::NodeTypes::None:
                 return "None";           
@@ -163,29 +163,30 @@ namespace kubvc::algorithm {
 
     class ASTree {
         public:                    
-            auto clear() -> void;
-            auto createRoot() -> void;
+            void clear();
+            void createRoot();
         
+            NodePtr<NodeTypes::Variable> createVariableNode(char value);
+            NodePtr<NodeTypes::Number> createNumberNode(double value);
+            NodePtr<NodeTypes::Operator> createOperatorNode(std::shared_ptr<INode> x,  std::shared_ptr<INode> y, char op);
+            NodePtr<NodeTypes::UnaryOperator> createUnaryOperatorNode(std::shared_ptr<INode> x, char op);
+            NodePtr<NodeTypes::Invalid> createInvalidNode(std::string_view name);
+            NodePtr<NodeTypes::Function> createFunctionNode(std::string_view name);
+
             // Start validating ast from root node
-            inline auto isValid() const -> bool { return isValidFrom(castToINodePtr<NodeTypes::Root>(m_root)); }
+            inline bool isValid() const { return isValidFrom(castToINodePtr<NodeTypes::Root>(m_root)); }
 
             // Start validating ast from specific node
-            auto isValidFrom(std::shared_ptr<INode> start) const -> bool;
-            auto createVariableNode(char value) -> NodePtr<NodeTypes::Variable>;
-            auto createNumberNode(double value) -> NodePtr<NodeTypes::Number>;
-            auto createOperatorNode(std::shared_ptr<INode> x,  std::shared_ptr<INode> y, char op) -> NodePtr<NodeTypes::Operator>;
-            auto createUnaryOperatorNode(std::shared_ptr<INode> x, char op) -> NodePtr<NodeTypes::UnaryOperator>;
-            auto createInvalidNode(std::string_view name) -> NodePtr<NodeTypes::Invalid>;
-            auto createFunctionNode(std::string_view name) -> NodePtr<NodeTypes::Function>;
+            bool isValidFrom(std::shared_ptr<INode> start) const;
 
-            inline auto getRoot() const -> NodePtr<NodeTypes::Root> { return m_root; }
+            inline NodePtr<NodeTypes::Root> getRoot() const { return m_root; }
 
         private:
             NodePtr<NodeTypes::Root> m_root;
 
             // Create node object 
             template <NodeTypes NodeType>
-            auto createNode() const -> NodePtr<NodeType>;
+            NodePtr<NodeType> createNode() const;
     };
 }
 
