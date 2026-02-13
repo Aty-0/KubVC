@@ -42,7 +42,7 @@ namespace kubvc::utility {
         }
     }
 
-    void Logger::print(const Logger::LogLevel& level, const std::source_location source, std::string_view text) {
+    void Logger::printImpl(const Logger::LogLevel& level, const std::source_location source, std::string_view text) {
         const auto line = std::format("[{}] [{} line: {}]: {}\n", levelToStr(level), source.function_name(), source.line(), text.data());
         m_buffer.sputn(line.data(), line.size());
 

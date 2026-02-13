@@ -17,21 +17,22 @@ namespace kubvc::utility {
 
             ~Logger();
 
-            void print(const Logger::LogLevel& level, const std::source_location source, std::string_view text);   
 
             template<typename... Args>
-            void print(const Logger::LogLevel& level, const std::source_location source, std::string_view text, Args&&... args) const;        
+            void print(const Logger::LogLevel& level, const std::source_location source, std::string_view text, Args&&... args);        
 
             void save(std::string_view path);
 
         private:
+            void printImpl(const Logger::LogLevel& level, const std::source_location source, std::string_view text);   
+            
             std::ofstream m_file;     
             std::basic_stringbuf<char> m_buffer;        
     };
     
     template<typename... Args>
     inline void Logger::print(const Logger::LogLevel& level, const std::source_location source, 
-        std::string_view text, Args&&... args) const {
+        std::string_view text, Args&&... args) {
         auto format_args = std::make_format_args(
             [](auto&& arg) -> decltype(auto) {
                 using T = std::decay_t<decltype(arg)>;
@@ -45,7 +46,7 @@ namespace kubvc::utility {
         );
 
         auto mergedArgsText = std::vformat(text, format_args);
-        print(level, source, mergedArgsText);
+        printImpl(level, source, mergedArgsText);
     }
 
     static inline auto log = kubvc::utility::Logger::getInstance();
