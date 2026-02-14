@@ -4,9 +4,6 @@
 #include "expression_parser.h"
 #include "graph_limits.h"
 
-#include <thread>
-#include <condition_variable>
-
 namespace kubvc::math {
     class Expression {
         public:
