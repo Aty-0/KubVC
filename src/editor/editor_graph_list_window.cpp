@@ -12,7 +12,7 @@ namespace kubvc::editor {
         }
 
         // Update cursor position 
-        auto expr = *static_cast<std::shared_ptr<kubvc::math::Expression>*>(data->UserData);
+        auto expr = static_cast<kubvc::math::Expression*>(data->UserData);
         expr->setCursor(data->CursorPos);
         
         return 0;
