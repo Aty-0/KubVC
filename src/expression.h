@@ -36,16 +36,9 @@ namespace kubvc::math {
             // Evaluate current expression 
             void eval(const GraphLimits& limits, std::int32_t maxPointCount = MAX_PLOT_BUFFER_SIZE);
         private:
+            void evalImpl(const GraphLimits& limits, std::int32_t maxPointCount);
             void setRandomColor();
 
-            struct EvalFuncImplParams {
-                GraphLimits limits;
-                std::int32_t maxPointCount;
-            };
-            using Params = EvalFuncImplParams;
-
-
-            void evalImpl(const Params& params);
 
             // Show expression on graph 
             bool m_visible;

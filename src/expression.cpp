@@ -6,7 +6,7 @@
 namespace kubvc::math {
     std::vector<std::shared_ptr<Expression>> ExpressionController::Expressions = { };  
     std::shared_ptr<Expression> ExpressionController::Selected = nullptr;
-    
+        
     Expression::Expression()  : 
         m_id(-1), m_visible(true), 
         m_cursor(0), m_tree(), 
@@ -24,7 +24,7 @@ namespace kubvc::math {
 
     Expression::~Expression() {
         KUB_DEBUG("Destroy expression id {} ...", m_id);
-
+        
         m_visible = false;
         m_valid = false;
         m_tree.clear();
@@ -35,11 +35,7 @@ namespace kubvc::math {
         m_plotBuffer.shrink_to_fit();
     }
 
-    // TODO: Rework    
-    void Expression::evalImpl(const Expression::Params& params) {
-        if (!isValid())
-            return;     
-
+    void Expression::evalImpl(const GraphLimits& limits, std::int32_t maxPointCount) {
         auto root = m_tree.getRoot();
         KUB_ASSERT(root != nullptr, "Root is nullptr, wtf");
         static const auto f = [](algorithm::NodePtr<algorithm::NodeTypes::Root> root, double x) {
@@ -48,21 +44,20 @@ namespace kubvc::math {
             return out;
         };
         
-        for (std::int32_t i = 0; i < params.maxPointCount; ++i) {
-            const auto x0 = std::lerp(params.limits.xMin, params.limits.xMax, static_cast<double>(i) / (params.maxPointCount - 1));
+        for (std::int32_t i = 0; i < maxPointCount; ++i) {
+            const auto x0 = std::lerp(limits.xMin, limits.xMax, static_cast<double>(i) / (maxPointCount - 1));
             auto y0 = f(root, x0);
             m_plotBuffer[i] = { x0, y0 };
         }
     }   
     
-    void Expression::eval(const GraphLimits& limits, std::int32_t maxPointCount) {          
-        auto params = Params { limits, maxPointCount};
-        static const auto taskManager = utility::TaskManager::getInstance();
-        taskManager->add([this, params] { 
-            evalImpl(params);
-        });
-        // Pre set random graph color  
-        setRandomColor();
+    void Expression::eval(const GraphLimits& limits, std::int32_t maxPointCount) {   
+        static const auto taskManager = utility::TaskManager::getInstance();        
+        if (!isValid())
+            return;  
+        taskManager->add([this, limits, maxPointCount] { 
+            evalImpl(limits, maxPointCount);
+        });        
     }
 
     void Expression::setRandomColor() {
@@ -79,8 +74,17 @@ namespace kubvc::math {
 
     void Expression::parseThenEval(const GraphLimits& limits) {
         static const auto parser = kubvc::algorithm::Parser::getInstance(); 
-        parser->parse(m_tree, m_textBuffer.data());            
-        m_valid = m_tree.isValid();
-        eval(limits);    
+        static const auto taskManager = utility::TaskManager::getInstance();        
+
+        taskManager->add([this, limits] {
+            parser->parse(m_tree, m_textBuffer.data());
+            m_valid = m_tree.isValid();                         
+            if (m_valid) {
+                evalImpl(limits, MAX_PLOT_BUFFER_SIZE); 
+            }            
+        }); 
+
+        // Pre set random graph color  
+        setRandomColor();           
     }
 }
