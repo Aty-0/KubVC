@@ -23,7 +23,7 @@ namespace kubvc::editor {
         m_windows.clear();
     }
             
-    void Editor::render(kubvc::render::GUI* gui) {
+    void Editor::render(kubvc::render::GUI& gui) {
         for (auto window : m_windows) {
             window->render(gui);
         }

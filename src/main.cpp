@@ -26,7 +26,7 @@ int main() {
         gui->begin();
         gui->beginDockspace(); 
         {
-            editor->render(gui);
+            editor->render(*gui);
         }
         
         gui->endDockspace();

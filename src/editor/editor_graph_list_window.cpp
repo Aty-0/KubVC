@@ -15,10 +15,11 @@ namespace kubvc::editor {
         auto expr = static_cast<kubvc::math::Expression*>(data->UserData);
         expr->setCursor(data->CursorPos);
         
+        
         return 0;
     }
 
-    void EditorGraphListWindow::drawGraphList(kubvc::render::GUI* gui) {
+    void EditorGraphListWindow::drawGraphList(kubvc::render::GUI& gui) {
         std::int32_t expressionIndex = 0;
         for (auto expr : kubvc::math::ExpressionController::Expressions) {
             if (expr != nullptr) {
@@ -28,9 +29,9 @@ namespace kubvc::editor {
         }
     }
 
-    void EditorGraphListWindow::drawGraphPanel(kubvc::render::GUI* gui, std::shared_ptr<kubvc::math::Expression> expr, 
-        const std::int32_t& id, const std::int32_t& index) {
-        static const auto fontBig = gui->getDefaultFontMathSize();
+    void EditorGraphListWindow::drawGraphPanel(kubvc::render::GUI& gui, std::shared_ptr<kubvc::math::Expression> expr, 
+        std::int32_t id, std::int32_t index) {
+        static const auto fontBig = gui.getDefaultFontMathSize();
         auto& selected = kubvc::math::ExpressionController::Selected;
 
         ImGui::BeginGroup();
@@ -56,7 +57,7 @@ namespace kubvc::editor {
             ImGui::SameLine();
         }
 
-        ImGui::PushFont(gui->getMathFont());
+        ImGui::PushFont(gui.getMathFont());
         
         if (!expr->isValid())
             ImGui::PushStyleColor(ImGuiCol_Border, INVALID_COLOR);
@@ -92,7 +93,7 @@ namespace kubvc::editor {
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.3f, 0.3f, 0.3f, 0.3f));
         
-        ImGui::PushFont(gui->getIconFont());
+        ImGui::PushFont(gui.getIconFont());
         
         ImGui::PushID(("##" + idStr + "_ExprRadioButton").c_str());    
         auto visible = expr->isVisible();
@@ -185,7 +186,7 @@ namespace kubvc::editor {
         // TODO: Undo redo buttons
     }
 
-    void EditorGraphListWindow::onRender(kubvc::render::GUI* gui) {
+    void EditorGraphListWindow::onRender(kubvc::render::GUI& gui) {
         const auto childFlags = ImGuiChildFlags_::ImGuiChildFlags_Borders;
         const auto childWindowFlags = ImGuiWindowFlags_::ImGuiWindowFlags_HorizontalScrollbar |  ImGuiWindowFlags_::ImGuiWindowFlags_AlwaysUseWindowPadding;
 

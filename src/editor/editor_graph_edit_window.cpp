@@ -265,13 +265,13 @@ namespace kubvc::editor {
         }
     }
     
-    static inline void drawIcon(kubvc::render::GUI* gui, std::string_view icon) {
-        ImGui::PushFont(gui->getIconFont());
+    static inline void drawIcon(const kubvc::render::GUI& gui, std::string_view icon) {
+        ImGui::PushFont(gui.getIconFont());
         ImGui::Text(icon.data());
         ImGui::PopFont();
     }
 
-    void EditorEditGraphWindow::onRender(kubvc::render::GUI* gui) {
+    void EditorEditGraphWindow::onRender(kubvc::render::GUI& gui) {
         ImGui::TextDisabled("Current graph settings");
         ImGui::Separator();
         

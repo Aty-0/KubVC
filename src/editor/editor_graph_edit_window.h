@@ -4,7 +4,7 @@
 namespace kubvc::editor {
     struct EditorEditGraphWindow : public EditorWindow {
         EditorEditGraphWindow();
-        virtual void onRender(kubvc::render::GUI* gui) final;       
+        virtual void onRender(kubvc::render::GUI& gui) final;       
 
         private:
             void drawLineColorPicker();

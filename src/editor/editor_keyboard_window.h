@@ -4,7 +4,7 @@
 namespace kubvc::editor {
     struct EditorKeyboardWindow : public EditorWindow {
         EditorKeyboardWindow();
-        virtual void onRender(kubvc::render::GUI* gui) final;       
+        virtual void onRender(kubvc::render::GUI& gui) final;       
 
         private:
             void drawOperators();

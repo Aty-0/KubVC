@@ -14,7 +14,7 @@ namespace kubvc::editor {
         expr->eval(math::GraphLimits::Limits);
     }
 
-    void EditorPlotterWindow::onRender(kubvc::render::GUI* gui) {
+    void EditorPlotterWindow::onRender(kubvc::render::GUI& gui) {
         static constexpr auto vecStride = 2 * sizeof(double);
         auto size = ImGui::GetContentRegionAvail();
         const auto plotFlags = ImPlotFlags_::ImPlotFlags_NoTitle | ImPlotFlags_::ImPlotFlags_Crosshairs;

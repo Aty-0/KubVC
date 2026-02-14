@@ -7,7 +7,7 @@
 #include "../logger.h"
 
 namespace kubvc::editor {
-    void EditorMenuBar::render(kubvc::render::GUI* gui) {
+    void EditorMenuBar::render(kubvc::render::GUI& gui) {
         if (ImGui::BeginMainMenuBar()) {
             if (ImGui::BeginMenu("File")) {
                 if (ImGui::MenuItem("Open (.graphlist, .txt)")) {
@@ -45,16 +45,16 @@ namespace kubvc::editor {
 
                 if (ImGui::BeginMenu("Themes")) {
                     if (ImGui::MenuItem("Kub Dark Theme"))        
-                        gui->applyDefaultKubDarkTheme();
+                        gui.applyDefaultKubDarkTheme();
 
                     if (ImGui::MenuItem("ImGui Dark Theme"))        
-                        gui->applyImGuiDarkTheme();
+                        gui.applyImGuiDarkTheme();
 
                     if (ImGui::MenuItem("ImGui White Theme"))        
-                        gui->applyImGuiWhiteTheme();
+                        gui.applyImGuiWhiteTheme();
 
                     if (ImGui::MenuItem("ImGui Classic Theme"))        
-                        gui->applyImGuiClassicTheme();
+                        gui.applyImGuiClassicTheme();
 
                     ImGui::EndMenu();
                 }

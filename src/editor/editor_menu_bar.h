@@ -3,6 +3,6 @@
 
 namespace kubvc::editor {
     struct EditorMenuBar : public EditorDrawable {
-        virtual void render(kubvc::render::GUI* gui) final;        
+        virtual void render(kubvc::render::GUI& gui) final;        
     };
 }
