@@ -71,7 +71,7 @@ namespace kubvc::editor {
         ImGui::SetNextItemWidth(textBoxWidth);
         if (ImGui::InputText(("##" + idStr + "_ExprInputText").c_str(), expr->getTextBuffer().data(), expr->getTextBuffer().size(), 
                 ImGuiInputTextFlags_::ImGuiInputTextFlags_CallbackAlways, 
-                EditorGraphListWindow::handleExpressionCursorPosCallback, &expr)) {
+                EditorGraphListWindow::handleExpressionCursorPosCallback, expr.get())) {
             expr->parseThenEval(math::GraphLimits::Limits);
         }
 
