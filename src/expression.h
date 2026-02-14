@@ -36,18 +36,16 @@ namespace kubvc::math {
             // Evaluate current expression 
             void eval(const GraphLimits& limits, std::int32_t maxPointCount = MAX_PLOT_BUFFER_SIZE);
         private:
-            void worker();
+            void setRandomColor();
 
             struct EvalFuncImplParams {
                 GraphLimits limits;
                 std::int32_t maxPointCount;
             };
-
             using Params = EvalFuncImplParams;
 
-            void evalImpl(const Params& params);
 
-            Params m_currentEvalParams;
+            void evalImpl(const Params& params);
 
             // Show expression on graph 
             bool m_visible;
@@ -71,12 +69,6 @@ namespace kubvc::math {
                 bool changeColor;
                 bool isRandomColorSetted;    
             };     
-
-            std::thread m_workerThread;
-            std::mutex m_mutex;
-            std::condition_variable m_cv;
-            std::atomic<bool> m_taskAvailable;
-            std::atomic<bool> m_workerStop;
 
         public:
             // Actually can be changed anywhere-anytime
