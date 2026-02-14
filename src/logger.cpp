@@ -4,7 +4,7 @@
 #define KUB_USE_ANSI_COLORS
 
 namespace kubvc::utility {       
-    static inline std::string_view levelToStr(const Logger::LogLevel& level) {
+    static inline std::string_view levelToStr(Logger::LogLevel level) {
         switch (level) {
             case Logger::LogLevel::Debug:
                 return "debug";
@@ -19,7 +19,7 @@ namespace kubvc::utility {
     }
 
 #ifdef KUB_USE_ANSI_COLORS
-    static inline std::string_view levelToColorStr(const Logger::LogLevel& level) {
+    static inline std::string_view levelToColorStr(Logger::LogLevel level) {
         switch (level) {
             case Logger::LogLevel::Debug:
                 return "37";
@@ -42,7 +42,7 @@ namespace kubvc::utility {
         }
     }
 
-    void Logger::printImpl(const Logger::LogLevel& level, const std::source_location source, std::string_view text) {
+    void Logger::printImpl(Logger::LogLevel level, const std::source_location source, std::string_view text) {
         const auto line = std::format("[{}] [{} line: {}]: {}\n", levelToStr(level), source.function_name(), source.line(), text.data());
         m_buffer.sputn(line.data(), line.size());
 

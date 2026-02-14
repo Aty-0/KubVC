@@ -19,19 +19,19 @@ namespace kubvc::utility {
 
 
             template<typename... Args>
-            void print(const Logger::LogLevel& level, const std::source_location source, std::string_view text, Args&&... args);        
+            void print(Logger::LogLevel level, const std::source_location source, std::string_view text, Args&&... args);        
 
             void save(std::string_view path);
 
         private:
-            void printImpl(const Logger::LogLevel& level, const std::source_location source, std::string_view text);   
+            void printImpl(Logger::LogLevel level, const std::source_location source, std::string_view text);   
             
             std::ofstream m_file;     
             std::basic_stringbuf<char> m_buffer;        
     };
     
     template<typename... Args>
-    inline void Logger::print(const Logger::LogLevel& level, const std::source_location source, 
+    inline void Logger::print(Logger::LogLevel level, const std::source_location source, 
         std::string_view text, Args&&... args) {
         auto format_args = std::make_format_args(
             [](auto&& arg) -> decltype(auto) {
