@@ -62,26 +62,36 @@ namespace kubvc::utility {
         ++m_size;
     }
 
-    inline void TaskManager::worker() {         
-        while (true) {
-            std::unique_lock<std::mutex> lock(m_mutex);
-            m_conditionVariable.wait(lock, [this]() { 
-                return !m_tasks.empty() || m_stopThreads;
-            });
+    inline void TaskManager::worker() {      
+        while (true) {            
+            std::function<void()> task = nullptr;   
+            {
+                std::unique_lock<std::mutex> lock(m_mutex);
+                m_conditionVariable.wait(lock, [this]() { 
+                    return !m_tasks.empty() || m_stopThreads;
+                });
+             
+                // first we are checking need we stop thread               
+                if (m_stopThreads) {
+                    KUB_DEBUG("thread is stopped");
+                    return;
+                }            
+                else if (m_tasks.empty()) { // else we are waiting for new task 
+                    continue;
+                } 
 
-            // first we are checking need we stop thread               
-            if (m_stopThreads) {
-                KUB_DEBUG("thread is stopped");
-                return;
-            }            
-            else if (m_tasks.empty()) { // else we are waiting for new task 
-                continue;
-            } 
+                task = std::move(m_tasks.front());
+                m_tasks.pop();
+            }
 
-            auto task = std::move(m_tasks.front());
-            m_tasks.pop();                                            
             if (task != nullptr) {
-                task();
+                try {
+                    task();
+                } catch (const std::exception& ex) {
+                    KUB_FATAL("tasks: catched exception {}", ex.what());
+                } catch (...) {
+                    KUB_FATAL("tasks: catched unknown exception");
+                }
                 --m_size;
             }
         }
