@@ -92,8 +92,8 @@ namespace kubvc::algorithm {
                 const auto prevIsDigit = algorithm::Helpers::isDigit(prevChar);
                 const auto currIsDigit = algorithm::Helpers::isDigit(chr);                
                 const auto prevIsLetterOrUnderscore = kubvc::algorithm::Helpers::isLetter(prevChar) || prevChar == '_';                
-                if ((prevIsDigit && !currIsDigit && std::isalpha(chr)) || 
-                    (prevIsLetterOrUnderscore && (currIsDigit || std::isalpha(chr)))) {
+                if ((prevIsDigit && !currIsDigit && algorithm::Helpers::isLetter(chr)) || 
+                    (prevIsLetterOrUnderscore && (currIsDigit || algorithm::Helpers::isLetter(chr)))) {
                     newText += '*';
                 }
             }
