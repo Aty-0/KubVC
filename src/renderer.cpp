@@ -9,7 +9,7 @@ namespace kubvc::render {
     void Renderer::init() {
         auto initStatus = glewInit();
         if (initStatus != GLEW_OK) {
-            const auto errStr = glewGetErrorString(initStatus);
+            auto errStr = std::string_view(reinterpret_cast<const char*>(glewGetErrorString(initStatus)));
             KUB_FATAL("GLEW initialization failed! {}", errStr);
         }
 
