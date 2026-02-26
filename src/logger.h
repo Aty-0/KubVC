@@ -19,7 +19,6 @@ namespace kubvc::utility {
 
 
             template<typename... Args>
-            void print(Logger::LogLevel level, const std::source_location source, std::string_view text, Args&&... args);        
             void print(Logger::LogLevel level, const std::source_location source, std::format_string<Args...> fmt, Args&&... args);        
 
             void save(std::string_view path);
