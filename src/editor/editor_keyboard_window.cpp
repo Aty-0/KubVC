@@ -10,8 +10,8 @@ namespace kubvc::editor {
         setVisible(false);
     }
 
-    static bool drawPickElementButton(const std::string& text, const ImVec2& size) {
-        auto cText = text.c_str();
+    static bool drawPickElementButton(std::string_view text, const ImVec2& size) {
+        auto cText = text.data();
     
         if (ImGui::Button(cText, size)) {
             auto selected = kubvc::math::ExpressionController::Selected;

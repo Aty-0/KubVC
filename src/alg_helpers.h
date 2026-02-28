@@ -17,7 +17,7 @@ namespace kubvc::algorithm {
             }
 
             static inline double computeFunction(std::string_view name, double x) { 
-                auto result = math::containers::Functions.get(name);
+                auto result = utility::container::get(math::containers::Functions, name);
                 if (!result.has_value()) {
                     return 0;
                 }

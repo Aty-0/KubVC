@@ -62,7 +62,7 @@ namespace kubvc::math {
     }
     
     namespace containers {
-        static const kubvc::utility::Container<double> Constants = { {
+        static const std::vector<std::pair<std::string_view, double>> Constants = { {
                 { "invPi", std::numbers::inv_pi_v<double>  },
                 { "pi", std::numbers::pi_v<double>  },
                 { "e", std::numbers::e_v<double>  },
@@ -72,7 +72,7 @@ namespace kubvc::math {
         };
 
         // List of generic math functions 
-        static const kubvc::utility::Container<std::function<double(double)>> Functions = { {        
+        static const std::vector<std::pair<std::string_view, std::function<double(double)>>> Functions = { {        
                 { "sin", DISAMBIGUATE_MATH_F(glm::sin) },
                 { "cos", DISAMBIGUATE_MATH_F(glm::cos) },
                 { "tg",  DISAMBIGUATE_MATH_F(glm::tan) },

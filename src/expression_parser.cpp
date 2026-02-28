@@ -146,7 +146,7 @@ namespace kubvc::algorithm {
             const auto outSize = out.size();
             KUB_ASSERT(outSize != 0, "Output has a zero size");                        
             // Find a constant name in container, if found it, we are create number node with constant value 
-            auto constResult = math::containers::Constants.get(out);
+            auto constResult = utility::container::get(math::containers::Constants, out);
             if (constResult.has_value()) {
                 KUB_PARSER_DEBUG("[parseElement] Is constant, create number node with constant value");
                 return tree.createNumberNode(constResult.value());
