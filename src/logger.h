@@ -37,22 +37,22 @@ namespace kubvc::utility {
     }
 
     static inline auto log = kubvc::utility::Logger::getInstance();
+
+    template<typename... Args>
+    inline static void Assert(bool condition, std::format_string<Args...> fmt, Args&&... args) {
+        if (!(condition)) {
+            log->print(Logger::LogLevel::Fatal, std::source_location::current(), 
+                "Assertion Failed: {}", std::format(fmt, std::forward<Args>(args)...));         
+        }
+    }
 }
-
-// TODO: Rework
-#define KUB_ASSERT(cond, fmt, ...) do {                                                                                                   \
-        if (!(cond))                                                                                                                    \
-        {                                                                                                                             \
-            KUB_ERROR("Assertion failed: ");                                                                                              \
-            kubvc::utility::log->print(kubvc::utility::Logger::LogLevel::Fatal, std::source_location::current(), fmt, ##__VA_ARGS__); \
-        } } while(false)                                                                                                                      
-
-
 
 #define KUB_EXPLICIT_DEF_DEBUG
 #if defined(DEBUG) || defined(_DEBUG) || defined(KUB_EXPLICIT_DEF_DEBUG)
     #define KUB_IS_DEBUG 
 #endif
+
+#define KUB_ASSERT(cond, fmt, ...) kubvc::utility::Assert(cond, fmt, ##__VA_ARGS__)                                                                                                                    
 
 #ifdef KUB_IS_DEBUG
     #define KUB_DEBUG(fmt, ...) kubvc::utility::log->print(kubvc::utility::Logger::LogLevel::Debug, std::source_location::current(), fmt, ##__VA_ARGS__)
