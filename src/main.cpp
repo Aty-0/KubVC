@@ -8,8 +8,14 @@
 
 int main() {
     // Initialize main application components
+#ifdef KUB_IS_DEBUG
+    constexpr std::string_view windowName = "KubVC (Debug)";
+#else 
+    constexpr std::string_view windowName = "KubVC";
+#endif 
+
     const auto window = kubvc::application::Window::getInstance();
-    window->createWindow(1920, 1080, 0, 0, "KubVC");
+    window->createWindow(1920, 1080, 0, 0, windowName);
     
     const auto render = kubvc::render::Renderer::getInstance();
     render->init();
