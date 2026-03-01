@@ -2,6 +2,7 @@
 #include <glfw/glfw3.h>
 #include "Singleton.h"
 #include <cstdint>
+#include <string>
 
 namespace kubvc::application {
     class Window : public utility::Singleton<Window> {
