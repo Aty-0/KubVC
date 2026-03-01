@@ -31,12 +31,12 @@ FetchContent_Declare(
 	GIT_TAG 	"3.4"
 )
 
-FetchContent_MakeAvailable(glfw)
-
 # Disable some things from glfw
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+
+FetchContent_MakeAvailable(glfw)
 
 # Get opengl package
 find_package(OpenGL REQUIRED)
