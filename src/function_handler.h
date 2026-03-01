@@ -1,6 +1,7 @@
 #pragma once
 #include <type_traits>
 #include <functional>
+#include <concepts>
 
 namespace kubvc::utility
 {
@@ -9,8 +10,11 @@ namespace kubvc::utility
         public:
             constexpr FunctionHandler() noexcept { }
             constexpr FunctionHandler(std::nullptr_t) noexcept : m_functor(nullptr)  { }
-            constexpr FunctionHandler(Func&& func) : m_functor(std::forward<Func>(func)) { }
             constexpr FunctionHandler(const Func& func) : m_functor(func) { }        
+            constexpr FunctionHandler(Func&& func)
+                requires std::convertible_to<decltype(func), std::decay_t<Func>>
+            : m_functor(func) { }
+           
             template<typename... Args>
             constexpr auto operator ()(Args&&... args) const {
                 return std::invoke(m_functor, std::forward<Args>(args)...);
