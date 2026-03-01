@@ -10,9 +10,6 @@
 #include "window.h"
 #include "function_handler.h"
 
-// disambiguate overloaded functions 
-#define DISAMBIGUATE_MATH_F(x) (double(*)(double))(&x)
-
 namespace kubvc::math {
     namespace functions {
         static inline constexpr double ctg(double x) {
