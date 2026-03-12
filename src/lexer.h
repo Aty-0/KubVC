@@ -298,8 +298,12 @@ namespace kubvc::algorithm {
                     } else {
                         pos += wordSize;
                         current = peek(pos, str);
-                        KUB_DEBUG("[tokenize] maybe function {}", pos);
-                        if (algorithm::Helpers::isBracketStart(current)) { 
+                        KUB_DEBUG("[tokenize] maybe some keyword pos:{} word:{} current char:{}", pos, word, current);
+                        // First try to find function by name
+                        const auto findResult = utility::container::find(math::containers::Functions, word);
+                        // Then if we are find bracket and it's function we are trying to parse it
+                        if (findResult && algorithm::Helpers::isBracketStart(current)) { 
+                            KUB_DEBUG("[tokenize] we are find function in list and bracket is open");
                             auto result = parseTextInBrackets(str.substr(pos, str.size()));
                             pos++; // Skip bracket
                             if (result.has_value()) {
@@ -330,6 +334,20 @@ namespace kubvc::algorithm {
 
                                 pos += bracketsBody.size() - 1;
                                 KUB_DEBUG("[tokenize] moved pos {} ; br size {}", pos, bracketsBody.size());
+                            }
+                        } else {
+                            const auto constResult = utility::container::get(math::containers::Constants, word);
+                            if (constResult.has_value()) {
+                                KUB_DEBUG("[tokenize] it's a constant");
+                                const auto token = Token {
+                                    Token::Types::Number,
+                                    std::to_string(constResult.value()),
+                                };   
+                                tokens.push_back(token);                                                             
+                            } else {
+                                // TODO: Actually we can check on implicit multiplication here
+                                KUB_ERROR("[tokenize] unknown keyword or brecket are not open {}", word);
+                                return std::nullopt;
                             }
                         }     
                     }
