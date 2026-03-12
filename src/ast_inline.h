@@ -129,12 +129,16 @@ namespace kubvc::algorithm {
     }
 
     inline void ASTree::clear()  {        
-        m_root.reset();
+        if (m_root != nullptr) {
+            clearFrom(m_root);
+            m_root = nullptr;
+        } else {
+            KUB_WARN("Can't clear ast because root is nullptr");
+        }
     }
 
     inline void ASTree::createRoot()  {
-        if (m_root != nullptr)
-        {
+        if (m_root != nullptr) {
             KUB_WARN("Root is already exist!");
             return;
         }
@@ -142,13 +146,69 @@ namespace kubvc::algorithm {
         m_root = createNode<NodeTypes::Root>();
     }   
 
+    inline void ASTree::clearFrom(std::shared_ptr<kubvc::algorithm::INode> start) {
+        if (start == nullptr) {
+            return;
+        }
+
+        const auto type = start->getType();
+        switch (type) {
+            case kubvc::algorithm::NodeTypes::Root: {
+                auto node = castToNodePtr<NodeTypes::Root>(start);
+                clearFrom(node->child);
+                node->child = nullptr;
+                break;
+            }
+            case kubvc::algorithm::NodeTypes::Operator: {
+                auto node = castToNodePtr<NodeTypes::Operator>(start);         
+                
+                // Recursively clear left and right subtrees
+                if (node->left != nullptr) {
+                    clearFrom(node->left);
+                    node->left = nullptr;
+                }
+
+                if (node->right != nullptr) {
+                    clearFrom(node->right);
+                    node->right = nullptr;
+                }
+                break;    
+            }
+            case kubvc::algorithm::NodeTypes::UnaryOperator: {
+                auto node = castToNodePtr<NodeTypes::UnaryOperator>(start);         
+                if (node->child != nullptr) {
+                    clearFrom(node->child);
+                    node->child = nullptr;
+                }
+                break;     
+            }
+            case kubvc::algorithm::NodeTypes::Function: {
+                auto node = castToNodePtr<NodeTypes::Function>(start);         
+                if (node->argument != nullptr) {
+                    clearFrom(node->argument);
+                    node->argument = nullptr;
+                }
+                break;
+            }
+            case kubvc::algorithm::NodeTypes::Number:
+            case kubvc::algorithm::NodeTypes::Variable:
+            case kubvc::algorithm::NodeTypes::Invalid:
+                // Nothing to clear 
+                break;
+            default:
+                KUB_ASSERT(true, "Unknown type");
+                break;
+        }
+
+    }
+
     inline bool ASTree::isValidFrom(std::shared_ptr<kubvc::algorithm::INode> start) const {
         // We are reached the end of tree 
         if (start == nullptr) {
             return false;
         }
 
-        auto type = start->getType();
+        const auto type = start->getType();
         switch (type) {
             case kubvc::algorithm::NodeTypes::Root: {
                 auto node = castToNodePtr<NodeTypes::Root>(start);
