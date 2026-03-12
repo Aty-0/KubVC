@@ -12,39 +12,39 @@
 
 namespace kubvc::math {
     namespace functions {
-        static inline constexpr double ctg(double x) {
+        static inline double ctg(double x) {
             return glm::cos(x) / glm::sin(x);
         }
 
-        static inline constexpr double arcctg(double x) {
+        static inline double arcctg(double x) {
             return glm::acos(x / glm::sqrt(1 + glm::pow(x, 2)));
         }
 
-        static inline constexpr double fact(double x) {            
+        static inline double fact(double x) {            
             return std::tgamma(x + 1);
         }
 
-        static inline constexpr double sh(double x) {
+        static inline double sh(double x) {
             return (glm::exp(x) - glm::exp(-x)) / 2;
         }
 
-        static inline constexpr double ch(double x) {
+        static inline double ch(double x) {
             return (glm::exp(x) + glm::exp(-x)) / 2;
         }
 
-        static inline constexpr double th(double x) {
+        static inline double th(double x) {
             return (glm::exp(x) - glm::exp(-x)) / (glm::exp(x) + glm::exp(-x));
         }
 
-        static inline constexpr double cth(double x) {
+        static inline double cth(double x) {
             return 1 / th(x);
         }
 
-        static inline constexpr double sch(double x) {
+        static inline double sch(double x) {
             return 1 / ch(x);
         }
 
-        static inline constexpr double csch(double x) {
+        static inline double csch(double x) {
             return 1 / sh(x);
         }
 
