@@ -164,6 +164,7 @@ namespace kubvc::algorithm {
     class ASTree {
         public:                    
             void clear();
+            void clearFrom(std::shared_ptr<kubvc::algorithm::INode> start);
             void createRoot();
         
             NodePtr<NodeTypes::Variable> createVariableNode(char value);
