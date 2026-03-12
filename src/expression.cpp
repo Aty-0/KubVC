@@ -94,14 +94,7 @@ namespace kubvc::math {
                 }
             } else {
                 m_valid = false;
-            }
-
-            // TODO: Old, remove
-            //parser->parse(m_tree, m_textBuffer.data());
-            //m_valid = m_tree.isValid();                         
-            //if (m_valid) {
-            //    evalImpl(limits, MAX_PLOT_BUFFER_SIZE); 
-            //}            
+            }         
         }); 
 
         // Pre set random graph color  
