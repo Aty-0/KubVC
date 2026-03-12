@@ -154,29 +154,18 @@ namespace kubvc::algorithm {
     class ASTree {
         public:                    
             void clear();
-            void createRoot();
-        
-            [[nodiscard]] NodePtr<NodeTypes::Variable> createVariableNode(char value);
-            [[nodiscard]] NodePtr<NodeTypes::Number> createNumberNode(double value);
-            [[nodiscard]] NodePtr<NodeTypes::Operator> createOperatorNode(std::shared_ptr<INode> x,  std::shared_ptr<INode> y, char op);
-            [[nodiscard]] NodePtr<NodeTypes::UnaryOperator> createUnaryOperatorNode(std::shared_ptr<INode> x, char op);
-            [[nodiscard]] NodePtr<NodeTypes::Invalid> createInvalidNode(std::string_view name);
-            [[nodiscard]] NodePtr<NodeTypes::Function> createFunctionNode(std::string_view name);
+            void clearFrom(std::shared_ptr<kubvc::algorithm::INode> start);
 
+            [[nodiscard]] bool isRootExist() const { return m_root != nullptr; }
             // Start validating ast from root node
-            inline bool isValid() const { return isValidFrom(castToINodePtr<NodeTypes::Root>(m_root)); }
-
+            [[nodiscard]] bool validate() const;
             // Start validating ast from specific node
-            bool isValidFrom(std::shared_ptr<INode> start) const;
-
-            inline NodePtr<NodeTypes::Root> getRoot() const { return m_root; }
-
+            [[nodiscard]] bool validateFrom(std::shared_ptr<INode> start) const;
+            [[nodiscard]] NodePtr<NodeTypes::Root> getRoot() const { return m_root; }
+            void setRoot(NodePtr<NodeTypes::Root> root) { m_root = root; }
+            
         private:
             NodePtr<NodeTypes::Root> m_root;
-
-            // Create node object 
-            template <NodeTypes NodeType>
-            NodePtr<NodeType> createNode() const;
     };
 }
 

@@ -18,7 +18,6 @@ namespace kubvc::math {
         m_textBuffer(std::vector<char>(MAX_BUFFER_SIZE)),
         m_plotBuffer(std::vector<glm::dvec2>(MAX_PLOT_BUFFER_SIZE)),
         Settings({{1,1,1,1}, 1.0f, false, false, false}) {
-        m_tree.createRoot();
     
         // Dummy id set
         static std::int32_t globalId = 0;
