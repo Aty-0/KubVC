@@ -71,6 +71,10 @@ namespace kubvc::algorithm {
                 return chr == '(';
             }
 
+            static inline bool isComma(uchar chr) {
+                return chr == ',';
+            }
+
             static inline bool isBracketEnd(uchar chr) {
                 return chr == ')';
             }

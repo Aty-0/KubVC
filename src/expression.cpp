@@ -3,6 +3,10 @@
 #include <random>
 #include "task_manager.h"
 
+// TODO: Remove
+#include "lexer.h"
+#include "ast_builder.h"
+
 namespace kubvc::math {
     std::vector<std::shared_ptr<Expression>> ExpressionController::Expressions = { };  
     std::shared_ptr<Expression> ExpressionController::Selected = nullptr;
@@ -73,15 +77,30 @@ namespace kubvc::math {
 
 
     void Expression::parseThenEval(const GraphLimits& limits) {
-        static const auto parser = kubvc::algorithm::Parser::getInstance(); 
+        //static const auto parser = kubvc::algorithm::Parser::getInstance(); 
         static const auto taskManager = utility::TaskManager::getInstance();        
 
+        static const auto lexer = kubvc::algorithm::Lexer::getInstance();
+        static const auto builder = kubvc::algorithm::ASTBuilder::getInstance();
+
         taskManager->add([this, limits] {
-            parser->parse(m_tree, m_textBuffer.data());
-            m_valid = m_tree.isValid();                         
-            if (m_valid) {
-                evalImpl(limits, MAX_PLOT_BUFFER_SIZE); 
-            }            
+            // TODO: Remove all parse; tree code 
+            const auto result = lexer->tokenize(m_textBuffer.data());
+
+            if (result.has_value()) {
+                lexer->print(result.value());
+                m_valid = builder->build(m_tree, result.value());
+                if (m_valid) {
+                    evalImpl(limits, MAX_PLOT_BUFFER_SIZE); 
+                }
+            }
+
+            // TODO: Old, remove
+            //parser->parse(m_tree, m_textBuffer.data());
+            //m_valid = m_tree.isValid();                         
+            //if (m_valid) {
+            //    evalImpl(limits, MAX_PLOT_BUFFER_SIZE); 
+            //}            
         }); 
 
         // Pre set random graph color  

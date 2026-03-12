@@ -6,19 +6,9 @@
 
 #include "logger.h"
 #include "alg_helpers.h"
+#include "nodeTypes.h"
 
 namespace kubvc::algorithm {
-    enum class NodeTypes {
-        None,
-        Root,
-        Number, 
-        Variable,
-        Function,
-        Operator,           
-        UnaryOperator,           
-        Invalid,           
-    };
-
     enum class Operators {
         Plus, 
         Minus,
@@ -166,12 +156,12 @@ namespace kubvc::algorithm {
             void clear();
             void createRoot();
         
-            NodePtr<NodeTypes::Variable> createVariableNode(char value);
-            NodePtr<NodeTypes::Number> createNumberNode(double value);
-            NodePtr<NodeTypes::Operator> createOperatorNode(std::shared_ptr<INode> x,  std::shared_ptr<INode> y, char op);
-            NodePtr<NodeTypes::UnaryOperator> createUnaryOperatorNode(std::shared_ptr<INode> x, char op);
-            NodePtr<NodeTypes::Invalid> createInvalidNode(std::string_view name);
-            NodePtr<NodeTypes::Function> createFunctionNode(std::string_view name);
+            [[nodiscard]] NodePtr<NodeTypes::Variable> createVariableNode(char value);
+            [[nodiscard]] NodePtr<NodeTypes::Number> createNumberNode(double value);
+            [[nodiscard]] NodePtr<NodeTypes::Operator> createOperatorNode(std::shared_ptr<INode> x,  std::shared_ptr<INode> y, char op);
+            [[nodiscard]] NodePtr<NodeTypes::UnaryOperator> createUnaryOperatorNode(std::shared_ptr<INode> x, char op);
+            [[nodiscard]] NodePtr<NodeTypes::Invalid> createInvalidNode(std::string_view name);
+            [[nodiscard]] NodePtr<NodeTypes::Function> createFunctionNode(std::string_view name);
 
             // Start validating ast from root node
             inline bool isValid() const { return isValidFrom(castToINodePtr<NodeTypes::Root>(m_root)); }
