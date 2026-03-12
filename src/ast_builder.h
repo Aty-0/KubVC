@@ -50,7 +50,7 @@ namespace kubvc::algorithm {
                     nodeStack.pop();
 
                     const auto value = token.value;
-                    const auto node = tree.createOperatorNode(arg1, arg2, value.at(0));
+                    const auto node = tree.createOperatorNode(arg2, arg1, value.at(0));
                     nodeStack.push(node);
                     break;
                 }
