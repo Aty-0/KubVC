@@ -14,6 +14,15 @@
 #include <stack>
 #include <map>
 
+//#define KUB_LEXER_DEBUG_ENABLE_TOKEN_PRINT
+//#define KUB_ENABLE_LEXER_DEBUG_LOG
+
+#ifdef KUB_ENABLE_LEXER_DEBUG_LOG
+    #define KUB_LEXER_DEBUG(fmt, ...) KUB_DEBUG(fmt, ##__VA_ARGS__)
+#else 
+    #define KUB_LEXER_DEBUG(fmt, ...)
+#endif
+
 namespace kubvc::algorithm {
     struct Token {
         enum class Types {
@@ -230,6 +239,7 @@ namespace kubvc::algorithm {
     }  
 
     inline void Lexer::print(const std::vector<Token>& tokens) {
+#ifdef KUB_LEXER_DEBUG_ENABLE_TOKEN_PRINT
         std::stringstream stream;
         stream << tokens.size() << " ";               
         stream << "[";               
@@ -238,26 +248,27 @@ namespace kubvc::algorithm {
         }
         stream << "]";        
 
-        KUB_DEBUG("{}", stream.str());
+        KUB_LEXER_DEBUG("{}", stream.str());
         stream.clear();
+#endif
     }
 
     inline std::optional<std::vector<Token>> Lexer::tokenize(std::string_view str, bool useShuntingYard, std::size_t startFromPos) {
         if (str.empty()) {
-            KUB_DEBUG("[tokenize] input string is empty");
+            KUB_LEXER_DEBUG("[tokenize] input string is empty");
             return std::nullopt;
         }
 
-        KUB_DEBUG("[tokenize] try to tokenize: {}", str);
+        KUB_LEXER_DEBUG("[tokenize] try to tokenize: {}", str);
         std::vector<Token> tokens = { };
         bool isOperatorOpen = false;
         std::int32_t isBracketOpen = 0;    
         std::size_t pos = startFromPos;
         while (pos < str.size()) {
             auto current = peek(pos, str);
-            KUB_DEBUG("[tokenize] current character is {} pos:{}", std::string(1, current), pos);
+            KUB_LEXER_DEBUG("[tokenize] current character is {} pos:{}", std::string(1, current), pos);
             if (algorithm::Helpers::isWhiteSpace(current)) {
-                KUB_DEBUG("[tokenize] skip whitespace");
+                KUB_LEXER_DEBUG("[tokenize] skip whitespace");
                 pos++;
                 continue;
             }
@@ -274,7 +285,7 @@ namespace kubvc::algorithm {
                         number,
                     };
                     tokens.push_back(token);
-                    KUB_DEBUG("[tokenize] parserd number is {}", number);
+                    KUB_LEXER_DEBUG("[tokenize] parserd number is {}", number);
                 } else {
                     KUB_ERROR("[tokenize] failed to parse number");
                     return std::nullopt;
@@ -294,16 +305,16 @@ namespace kubvc::algorithm {
                         tokens.push_back(token);
                         pos++;
 
-                        KUB_DEBUG("[tokenize] parserd variable is {}", word);
+                        KUB_LEXER_DEBUG("[tokenize] parserd variable is {}", word);
                     } else {
                         pos += wordSize;
                         current = peek(pos, str);
-                        KUB_DEBUG("[tokenize] maybe some keyword pos:{} word:{} current char:{}", pos, word, current);
+                        KUB_LEXER_DEBUG("[tokenize] maybe some keyword pos:{} word:{} current char:{}", pos, word, current);
                         // First try to find function by name
                         const auto findResult = utility::container::find(math::containers::Functions, word);
                         // Then if we are find bracket and it's function we are trying to parse it
                         if (findResult && algorithm::Helpers::isBracketStart(current)) { 
-                            KUB_DEBUG("[tokenize] we are find function in list and bracket is open");
+                            KUB_LEXER_DEBUG("[tokenize] we are find function in list and bracket is open");
                             auto result = parseTextInBrackets(str.substr(pos, str.size()));
                             pos++; // Skip bracket
                             if (result.has_value()) {
@@ -316,11 +327,11 @@ namespace kubvc::algorithm {
                                     funcName,
                                 };
                                 // Add function token                                 
-                                KUB_DEBUG("[tokenize] parsed func is {}", token.value);
+                                KUB_LEXER_DEBUG("[tokenize] parsed func is {}", token.value);
                                 tokens.push_back(token);  
                                 // tokenize function body and add function tokens to main token pool 
                                 const auto bracketsBody = result.value();
-                                KUB_DEBUG("[tokenize] body func is {}", bracketsBody);
+                                KUB_LEXER_DEBUG("[tokenize] body func is {}", bracketsBody);
                                 const auto bodyTokensResult = tokenize(bracketsBody, false);
                                 if (bodyTokensResult.has_value()) {
                                     const auto bodyTokens = bodyTokensResult.value();
@@ -333,12 +344,12 @@ namespace kubvc::algorithm {
                                 }
 
                                 pos += bracketsBody.size() - 1;
-                                KUB_DEBUG("[tokenize] moved pos {} ; br size {}", pos, bracketsBody.size());
+                                KUB_LEXER_DEBUG("[tokenize] moved pos {} ; br size {}", pos, bracketsBody.size());
                             }
                         } else {
                             const auto constResult = utility::container::get(math::containers::Constants, word);
                             if (constResult.has_value()) {
-                                KUB_DEBUG("[tokenize] it's a constant");
+                                KUB_LEXER_DEBUG("[tokenize] it's a constant");
                                 const auto token = Token {
                                     Token::Types::Number,
                                     std::to_string(constResult.value()),
@@ -357,7 +368,7 @@ namespace kubvc::algorithm {
                 }
 
             } else if (algorithm::Helpers::isComma(current)) {
-                KUB_DEBUG("[tokenize] is comma");
+                KUB_LEXER_DEBUG("[tokenize] is comma");
                 // TODO: Protection of double comma -> ,,1,
                 if (isBracketOpen == 0) {
                     KUB_ERROR("[tokenize] trying to use comma not in function");
@@ -371,7 +382,7 @@ namespace kubvc::algorithm {
                 tokens.push_back(token);  
                 pos++;                                     
             } else if (algorithm::Helpers::isOperator(current)) {
-                KUB_DEBUG("[tokenize] is operator");
+                KUB_LEXER_DEBUG("[tokenize] is operator");
                 bool isUnary = false;
                 const auto size = tokens.size(); 
 
@@ -389,7 +400,7 @@ namespace kubvc::algorithm {
                         isUnary = true;
                     }
                 }
-                KUB_DEBUG("[tokenize] is unary {}", isUnary);
+                KUB_LEXER_DEBUG("[tokenize] is unary {}", isUnary);
 
                 const auto token = Token {
                     isUnary ? Token::Types::UnaryOperator : Token::Types::Operator,
@@ -401,7 +412,7 @@ namespace kubvc::algorithm {
                 pos++;             
                 isOperatorOpen = !isUnary;
             } else if (algorithm::Helpers::isBracketStart(current)) { 
-                KUB_DEBUG("[tokenize] is bracket start");
+                KUB_LEXER_DEBUG("[tokenize] is bracket start");
                 isOperatorOpen = false;
                 // Increment a bracket layer 
                 isBracketOpen++;
@@ -413,7 +424,7 @@ namespace kubvc::algorithm {
                 tokens.push_back(token);  
                 pos++;             
             } else if (algorithm::Helpers::isBracketEnd(current)) {
-                KUB_DEBUG("[tokenize] is bracket end");
+                KUB_LEXER_DEBUG("[tokenize] is bracket end");
                 if (isBracketOpen == 0) {
                     KUB_ERROR("[tokenize] found end bracket but isBracketOpen = false");
                     return std::nullopt;
@@ -442,7 +453,7 @@ namespace kubvc::algorithm {
             return std::nullopt;
         }
 
-        KUB_DEBUG("[tokenize] finished, see next line for result");
+        KUB_LEXER_DEBUG("[tokenize] finished, see next line for result");
         print(tokens);
 
         if (tokens.size() == 0) {
