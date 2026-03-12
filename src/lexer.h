@@ -292,7 +292,7 @@ namespace kubvc::algorithm {
                 }
 
             } else if (algorithm::Helpers::isLetter(current)) {
-                const auto result = parseWhile(str.substr(pos, str.size()), [](algorithm::Helpers::uchar chr) { return algorithm::Helpers::isLetter(chr); });
+                const auto result = parseWhile(str.substr(pos, str.size()), [](algorithm::Helpers::uchar chr) { return algorithm::Helpers::isLetter(chr) || algorithm::Helpers::isDigit(chr); });
                 isOperatorOpen = false;
                 if (result.has_value()) {
                     const auto word = result.value();
