@@ -93,6 +93,8 @@ namespace kubvc::math {
                 if (m_valid) {
                     evalImpl(limits, MAX_PLOT_BUFFER_SIZE); 
                 }
+            } else {
+                m_valid = false;
             }
 
             // TODO: Old, remove
