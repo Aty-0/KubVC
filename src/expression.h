@@ -1,7 +1,6 @@
 #pragma once 
 #include "renderer.h"
 #include "ast.h"
-#include "expression_parser.h"
 #include "graph_limits.h"
 
 namespace kubvc::math {
