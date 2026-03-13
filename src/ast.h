@@ -66,11 +66,7 @@ namespace kubvc::algorithm {
     template<>
     struct NodeTraits<NodeTypes::Root> : INode {
         virtual NodeTypes getType() const final { return NodeTypes::Root; }
-        virtual void calculate(const double& n, double& result) { 
-            if (child == nullptr)
-                return;
-            child->calculate(n, result);            
-        }
+        virtual void calculate(const double& n, double& result) final;
 
         std::shared_ptr<INode> child;
     };

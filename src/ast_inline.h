@@ -2,6 +2,13 @@
 #include "ast.h"
 
 namespace kubvc::algorithm { 
+    inline void NodeTraits<NodeTypes::Root>::calculate(const double& n, double& result) {
+        if (child == nullptr)
+            return;
+            
+        child->calculate(n, result);            
+    }
+
     inline void NodeTraits<NodeTypes::Function>::calculate(const double& n, double& result) {
         if (argument == nullptr) {
             KUB_ERROR("[FunctionNode] Argument is null");
