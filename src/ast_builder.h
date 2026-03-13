@@ -110,8 +110,11 @@ namespace kubvc::algorithm {
                 case Token::Types::Operator: {
                     if (nodeStack.size() <= 1) {
                         KUB_ERROR("minimum size of stack is 2 for operator");
+                        
                         // Clear node
-                        nodeStack.pop();
+                        if (!nodeStack.empty()) {
+                            nodeStack.pop();
+                        }
                         return false;
                     }
                     const auto arg1 = nodeStack.top();
