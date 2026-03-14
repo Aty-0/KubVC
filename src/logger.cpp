@@ -1,6 +1,10 @@
 #include "logger.h"
 #include <stdexcept>
 
+#if defined(_WIN32) || defined(_WIN64)
+    #include <windows.h>
+#endif
+
 #define KUB_USE_ANSI_COLORS
 
 namespace kubvc::utility {       
@@ -51,6 +55,13 @@ namespace kubvc::utility {
 #else
         std::printf(line.data());
 #endif
+        
+        #if defined(_WIN32) || defined(_WIN64)
+            {
+                auto lineStr = line.data();
+                OutputDebugStringA(lineStr);
+            }
+        #endif
 
         // Throw error if we are get a fatal log level 
         if (level == Logger::LogLevel::Fatal) {
