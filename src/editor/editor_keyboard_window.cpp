@@ -1,9 +1,12 @@
 #include "editor_keyboard_window.h"
+#include "expression_controller.h"
+
 #include <string>
-#include <cstring>
-#include "../expression.h"
+#include <cstring> // TODO: Why
 
 namespace kubvc::editor {
+    static const auto controller = math::ExpressionController::getInstance();
+
     EditorKeyboardWindow::EditorKeyboardWindow() {
         setName("Keyboard");
         m_disableVisibleToggle = true;
@@ -14,18 +17,20 @@ namespace kubvc::editor {
         auto cText = text.data();
     
         if (ImGui::Button(cText, size)) {
-            auto selected = kubvc::math::ExpressionController::Selected;
+            const auto selected = controller->getSelected();
             if (selected != nullptr) {
+                auto& textBuffer = selected->getTextBuffer();
+
                 const auto len = std::strlen(cText);
                 auto end = cText + len;
-                auto& buffer = selected->getTextBuffer();
+                auto& buffer = textBuffer.getBuffer();
                 // Find last empty character in buffer 
-                auto beg = buffer.begin() + selected->getCursor();
+                auto beg = buffer.begin() + textBuffer.getCursor();
                 
                 buffer.insert(beg, cText, end);
                 
-                selected->setCursor(selected->getCursor() + len);        
-                selected->parseThenEval(math::GraphLimits::Limits);
+                textBuffer.setCursor(textBuffer.getCursor() + len);        
+                selected->parseThenEvaluate(math::GraphLimits::Limits);
             }
     
             return true;
@@ -109,19 +114,24 @@ namespace kubvc::editor {
 
         ImGui::SameLine();
         if (ImGui::Button("<-", opButtonSize)) {
-            auto selected = kubvc::math::ExpressionController::Selected;
-            auto cursor = selected->getCursor();
+            const auto selected = controller->getSelected();
+            if (selected == nullptr) {
+                return;
+            }
+
+            auto& textBuffer = selected->getTextBuffer();
+            const auto cursor = textBuffer.getCursor();
 
             if (cursor > 0) {
                 // Remove character by cursor from text buffer 
-                auto& buffer = selected->getTextBuffer();
+                auto& buffer = textBuffer.getBuffer();
                 auto begin = buffer.begin() + cursor;
                 buffer.erase(begin - 1, begin);
 
-                selected->setCursor(cursor - 1);
+                textBuffer.setCursor(cursor - 1);
 
                 // Update  
-                selected->parseThenEval(math::GraphLimits::Limits);
+                selected->parseThenEvaluate(math::GraphLimits::Limits);
             }
         }
 

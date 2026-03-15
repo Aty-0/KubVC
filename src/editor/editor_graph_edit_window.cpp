@@ -1,15 +1,17 @@
 #include "editor_graph_edit_window.h"
 #include "vec_convert.h"
-#include "expression.h"
+#include "expression_controller.h"
 #include "logger.h"
 #include <fstream>
 
-#define SHOW_DEBUG_TOOLS_ON_RELEASE
-extern ImVec4 operator*(const ImVec4& l, std::int32_t r) {
+//#define SHOW_DEBUG_TOOLS_ON_RELEASE
+inline static ImVec4 operator*(const ImVec4& l, std::int32_t r) {
     return { l.x * r, l.y * r, l.z * r, l.w * r, }; 
 }
 
-namespace kubvc::editor {    
+namespace kubvc::editor { 
+    static const auto controller = math::ExpressionController::getInstance();
+
     EditorEditGraphWindow::EditorEditGraphWindow() {
         setName("Edit Graph");
     }
@@ -233,17 +235,18 @@ namespace kubvc::editor {
 
     static void drawDebugAST() {
         if (ImGui::CollapsingHeader("AST")) {
-            auto selected = kubvc::math::ExpressionController::Selected;
+            const auto selected = controller->getSelected();
             if (selected != nullptr) {
-                ImGui::Text("Current tree is %s", selected->getTextBuffer().data());   
+                ImGui::Text("Current tree is %s", selected->getTextBuffer().getBuffer().data());   
 
                 static bool listStyleTree = false;
                 ImGui::Checkbox("List style for tree", &listStyleTree);
+                const auto tree = selected->getExpression().getTree();
                 if (listStyleTree) {
-                    showTreeList(selected->getTree().getRoot());
+                    showTreeList(tree.getRoot());
                 }
                 else {
-                    showTreeVisual(selected->getTree());
+                    showTreeVisual(tree);
                 }
             }
             else {
@@ -259,9 +262,13 @@ namespace kubvc::editor {
 #endif
 
     void EditorEditGraphWindow::drawLineColorPicker() {
-        auto selected = kubvc::math::ExpressionController::Selected;
-        if (selected != nullptr && selected->Settings.changeColor) {
-            ImGui::ColorPicker4("##_CurrentExprColorPicker", &selected->Settings.color.x, ImGuiColorEditFlags_::ImGuiColorEditFlags_NoLabel);
+        const auto selected = controller->getSelected();
+        if (selected != nullptr && selected->getSettings().getChangeColor()) {
+            auto& settings = selected->getSettings();
+            auto color = settings.getColor();
+            if (ImGui::ColorPicker4("##_CurrentExprColorPicker", &color.x, ImGuiColorEditFlags_::ImGuiColorEditFlags_NoLabel)) {
+                settings.setColor(color);
+            }
         }
     }
     
@@ -275,12 +282,12 @@ namespace kubvc::editor {
         ImGui::TextDisabled("Current graph settings");
         ImGui::Separator();
         
-        auto selected = kubvc::math::ExpressionController::Selected;
+        const auto selected = controller->getSelected();
         if (selected != nullptr) {
             ImGui::Dummy(ImVec2(0, 5.0f));
             drawIcon(gui, ICON_FA_WAVE_SQUARE);
             ImGui::SameLine(0, 10.0f);
-            ImGui::TextDisabled("Graph: %s", selected->getTextBuffer().data());
+            ImGui::TextDisabled("Graph: %s", selected->getTextBuffer().getBuffer().data());
             ImGui::Dummy(ImVec2(0, 15.0f));
 
             // Style settings block
@@ -292,9 +299,12 @@ namespace kubvc::editor {
             drawIcon(gui, ICON_FA_EYE);
             ImGui::SameLine(0, 10.0f);
             ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 1.0f);
-            bool visible = selected->isVisible();
+            
+
+            auto& settings = selected->getSettings();
+            auto visible = settings.getVisible();
             if (ImGui::Checkbox("Visible##OptionsGraphVisibleCheckBox", &visible)) {
-                selected->setVisible(visible);
+                settings.setVisible(visible);
             }
             
             // Shaded toggle
@@ -302,22 +312,24 @@ namespace kubvc::editor {
             drawIcon(gui, ICON_FA_CIRCLE_HALF_STROKE);
             ImGui::SameLine(0, 10.0f);
             ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 1.0f);
-            ImGui::Checkbox("Shaded##OptionsGraphShadedCheckBox", &selected->Settings.shaded);
+
+            auto shaded = settings.getShaded();
+            if (ImGui::Checkbox("Shaded##OptionsGraphShadedCheckBox", &shaded)) {
+                settings.setShaded(shaded);   
+            }
             
             // Color picker
-            if (selected->Settings.isRandomColorSetted) {
-                ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 5.0f);
-                drawIcon(gui, ICON_FA_PALETTE);
-                ImGui::SameLine(0, 10.0f);
-                ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 1.0f);
-                auto color = kubvc::utility::toImVec4(selected->Settings.color);
-                if (ImGui::ColorButton("##OptionsGraphColorPicker", color, ImGuiColorEditFlags_NoBorder, ImVec2(25, 25))) {
-                    selected->Settings.color = kubvc::utility::toGlmVec4(color);
-                    selected->Settings.changeColor = !selected->Settings.changeColor;
-                }
-                ImGui::SameLine();
-                ImGui::Text("Color");
+            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 5.0f);
+            drawIcon(gui, ICON_FA_PALETTE);
+            ImGui::SameLine(0, 10.0f);
+            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 1.0f);
+            auto color = kubvc::utility::toImVec4(settings.getColor());
+            if (ImGui::ColorButton("##OptionsGraphColorPicker", color, ImGuiColorEditFlags_NoBorder, ImVec2(25, 25))) {
+                settings.setChangeColor(!settings.getChangeColor());
             }
+            ImGui::SameLine();
+            ImGui::Text("Color");
+            
             drawLineColorPicker();
 
             // Line thickness
@@ -328,13 +340,10 @@ namespace kubvc::editor {
             ImGui::SameLine(0, 10.0f);
             ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 3.0f);
             ImGui::SetNextItemWidth(ImGui::GetWindowWidth() - 70.0f);
-            if (ImGui::SliderFloat("##OptionsGraphThicknessDrag", &selected->Settings.thickness, THICKNESS_MIN, THICKNESS_MAX, "%.1f")) {
-                if (selected->Settings.thickness > THICKNESS_MAX) {
-                    selected->Settings.thickness = THICKNESS_MAX;
-                } 
-                else if (selected->Settings.thickness < THICKNESS_MIN) {
-                    selected->Settings.thickness = THICKNESS_MIN;
-                }     
+            auto thickness = settings.getThickness();
+            if (ImGui::SliderFloat("##OptionsGraphThicknessDrag", &thickness, THICKNESS_MIN, 
+                THICKNESS_MAX, "%.1f", ImGuiSliderFlags_::ImGuiSliderFlags_ClampOnInput)) {
+                settings.setThickness(thickness);
             }
 
 #if defined(KUB_IS_DEBUG) || defined(SHOW_DEBUG_TOOLS_ON_RELEASE)  
@@ -343,7 +352,7 @@ namespace kubvc::editor {
             ImGui::SameLine();        
             ImGui::TextDisabled("Debug");
             drawDebugAST();
-            const auto points = selected->getPlotBuffer();
+            const auto points = selected->getExpression().getPlotBuffer();
             ImGui::Text("Count: %i", points.size());
             if (ImGui::CollapsingHeader("Points")) {
                 if (ImGui::Button("Dump points to file")) {
@@ -366,7 +375,7 @@ namespace kubvc::editor {
                     filepoints.close();
                 }
                 ImGui::Separator();
-                for (auto point : selected->getPlotBuffer()) {
+                for (auto point : selected->getExpression().getPlotBuffer()) {
                     if (glm::isnan(point.x) || glm::isnan(point.y)) {
                         ImGui::TextColored(ImVec4(1,0,0,1), "x:%f y:%f", point.x, point.y);
                     }

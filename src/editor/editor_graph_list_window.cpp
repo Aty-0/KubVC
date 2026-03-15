@@ -1,10 +1,13 @@
 #include "editor_graph_list_window.h"
+#include "expression_controller.h"
 
 namespace kubvc::editor {
+    static const auto controller = kubvc::math::ExpressionController::getInstance();
+    
     EditorGraphListWindow::EditorGraphListWindow() {
         setName("Graph List");
     }
-
+    
     // Save current cursor position for expression
     std::int32_t EditorGraphListWindow::handleExpressionCursorPosCallback(ImGuiInputTextCallbackData* data) {
         if (data == nullptr || data->UserData == nullptr) {        
@@ -12,27 +15,30 @@ namespace kubvc::editor {
         }
 
         // Update cursor position 
-        auto expr = static_cast<kubvc::math::Expression*>(data->UserData);
-        expr->setCursor(data->CursorPos);
-        
+        auto expr = static_cast<kubvc::math::ExpressionTextBuffer*>(data->UserData);
+        expr->setCursor(data->CursorPos);        
         
         return 0;
     }
 
     void EditorGraphListWindow::drawGraphList(kubvc::render::GUI& gui) {
         std::int32_t expressionIndex = 0;
-        for (auto expr : kubvc::math::ExpressionController::Expressions) {
-            if (expr != nullptr) {
+        for (auto model : controller->getExpressions()) {
+            if (model != nullptr) {
                 expressionIndex++;
-                drawGraphPanel(gui, expr, expr->getId(), expressionIndex);
+                drawGraphPanel(gui, model, expressionIndex);
             }
         }
     }
 
-    void EditorGraphListWindow::drawGraphPanel(kubvc::render::GUI& gui, std::shared_ptr<kubvc::math::Expression> expr, 
-        std::int32_t id, std::int32_t index) {
-        static const auto fontBig = gui.getDefaultFontMathSize();
-        auto& selected = kubvc::math::ExpressionController::Selected;
+    void EditorGraphListWindow::drawGraphPanel(kubvc::render::GUI& gui, std::shared_ptr<math::ExpressionModel> model, std::int32_t index) {
+        static const auto fontBig = gui.getDefaultFontMathSize();        
+
+        const auto selectedModel = controller->getSelected();
+
+        auto& currentExpression = model->getExpression();
+        auto& currentSettings = model->getSettings();
+        const auto currentModelId = model->getId();
 
         ImGui::BeginGroup();
 
@@ -43,7 +49,8 @@ namespace kubvc::editor {
         ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(12 * scale, 7 * scale));
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8 * scale, 8 * scale));
 
-        ImGui::BeginChild(("##panel_" + std::to_string(id)).c_str(), ImVec2(0, panelHeight), true);
+        const auto idStr = std::to_string(currentModelId);
+        ImGui::BeginChild(("##panel_" + idStr).c_str(), ImVec2(0, panelHeight), true);
         
         const auto frameHeight = ImGui::GetFrameHeight();
         const auto verticalOffset = (panelHeight - frameHeight) * 0.5f;
@@ -58,34 +65,34 @@ namespace kubvc::editor {
         }
 
         ImGui::PushFont(gui.getMathFont());
-        
-        if (!expr->isValid())
+        const auto currentExpressionIsSelected = selectedModel == nullptr ? false : currentModelId == selectedModel->getId();
+        if (!currentExpression.isValid())
             ImGui::PushStyleColor(ImGuiCol_Border, INVALID_COLOR);
-        else if (expr == selected)
+        else if (currentExpressionIsSelected)
             ImGui::PushStyleColor(ImGuiCol_Border, SELECTED_COLOR);
 
-        const auto idStr = std::to_string(id);
                 
+        
         const auto availableWidth = ImGui::GetContentRegionAvail().x;
         const auto textBoxWidth = availableWidth * 0.5f;
-        
+        auto& currentTextBuffer = model->getTextBuffer(); 
         ImGui::SetNextItemWidth(textBoxWidth);
-        if (ImGui::InputText(("##" + idStr + "_ExprInputText").c_str(), expr->getTextBuffer().data(), expr->getTextBuffer().size(), 
-                ImGuiInputTextFlags_::ImGuiInputTextFlags_CallbackAlways, 
-                EditorGraphListWindow::handleExpressionCursorPosCallback, expr.get())) {
-            expr->parseThenEval(math::GraphLimits::Limits);
+        if (ImGui::InputText(("##" + idStr + "_ExprInputText").c_str(), currentTextBuffer.getBuffer().data(), 
+            currentTextBuffer.getBuffer().size(), ImGuiInputTextFlags_::ImGuiInputTextFlags_CallbackAlways, 
+                EditorGraphListWindow::handleExpressionCursorPosCallback, &currentTextBuffer)) {            
+            model->parseThenEvaluate(math::GraphLimits::Limits);
         }
 
         ImGui::PopFont();
 
 
         // Revert color changes
-        auto popColor = static_cast<std::int32_t>(expr == selected || !expr->isValid());
+        const auto popColor = static_cast<std::int32_t>(currentExpressionIsSelected || !currentExpression.isValid());
         ImGui::PopStyleColor(popColor);
 
         // Set current expression by clicking on textbox 
         if (ImGui::IsItemActive() && ImGui::IsItemClicked()) {
-            selected = expr;
+            controller->setSelected(model);
         }
 
         ImGui::SameLine();
@@ -96,12 +103,12 @@ namespace kubvc::editor {
         ImGui::PushFont(gui.getIconFont());
         
         ImGui::PushID(("##" + idStr + "_ExprRadioButton").c_str());    
-        auto visible = expr->isVisible();
+        const auto visible = currentSettings.getVisible();
         ImGui::PushStyleColor(ImGuiCol_Text, visible ? 
             ImVec4(0.4f, 0.8f, 0.4f, 1.0f) : ImVec4(0.6f, 0.6f, 0.6f, 0.7f));
         
         if (ImGui::Button(!visible ? ICON_FA_EYE_SLASH : ICON_FA_EYE)) {
-            expr->setVisible(!visible);
+            currentSettings.setVisible(!visible);
         }
         ImGui::PopStyleColor();
         ImGui::PopID();
@@ -127,13 +134,9 @@ namespace kubvc::editor {
         ImGui::PushID(("##" + idStr + "_ExprButton").c_str());
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.9f, 0.3f, 0.3f, 1.0f));
         if (ImGui::Button(ICON_FA_TRASH)) {
-            auto& exprs = kubvc::math::ExpressionController::Expressions;
-            auto it = exprs.erase(std::remove_if(exprs.begin(), exprs.end(), [expr](auto it) { return it->getId() == expr->getId(); }));
-
-            // Set as nullptr to avoid some weird behaviour
-            if (it == exprs.end() && selected == expr) {
-                selected.reset();
-                selected = nullptr;
+            const auto result = controller->removeById(currentModelId);
+            if (result && selectedModel == model) {
+                controller->resetSelected();
             }
         }
         ImGui::PopStyleColor();
@@ -152,7 +155,7 @@ namespace kubvc::editor {
         ImGui::EndGroup();
 
         if (ImGui::IsItemClicked() && !ImGui::IsAnyItemActive()) {
-            selected = expr;
+            controller->setSelected(model);
         }
 
         ImGui::Spacing();
@@ -163,8 +166,7 @@ namespace kubvc::editor {
 
         const auto buttonSize = ImVec2(0, region.y);
         if (ImGui::Button("Add", buttonSize)) {
-            auto expr = std::make_shared<kubvc::math::Expression>();
-            kubvc::math::ExpressionController::Expressions.push_back(expr);
+            controller->create();
         }
 
         if (ImGui::IsItemHovered(ImGuiHoveredFlags_::ImGuiHoveredFlags_AllowWhenDisabled)) {
@@ -175,9 +177,7 @@ namespace kubvc::editor {
         ImGui::SetNextItemWidth(region.x - 55.0f);
 
         if (ImGui::Button("Clear All", buttonSize)) {
-            kubvc::math::ExpressionController::Selected = nullptr;
-            kubvc::math::ExpressionController::Expressions.clear();
-            kubvc::math::ExpressionController::Expressions.shrink_to_fit();
+            controller->clear();
         }
 
         if (ImGui::IsItemHovered(ImGuiHoveredFlags_::ImGuiHoveredFlags_AllowWhenDisabled)) {

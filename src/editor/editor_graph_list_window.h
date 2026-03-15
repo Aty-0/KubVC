@@ -1,6 +1,6 @@
 #pragma once 
 #include "editor/editor.h"
-#include "expression.h"
+#include "expression_model.h"
 
 namespace kubvc::editor {
     struct EditorGraphListWindow : public EditorWindow {
@@ -13,8 +13,7 @@ namespace kubvc::editor {
 
             static std::int32_t handleExpressionCursorPosCallback(ImGuiInputTextCallbackData* data);
             
-            void drawGraphPanel(kubvc::render::GUI& gui, std::shared_ptr<kubvc::math::Expression> expr, 
-                std::int32_t id, std::int32_t index);
+            void drawGraphPanel(kubvc::render::GUI& gui, std::shared_ptr<math::ExpressionModel> model, std::int32_t index);
             void drawGraphList(kubvc::render::GUI& gui);            
             void drawGraphListHeader();            
     };
