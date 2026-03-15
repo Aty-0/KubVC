@@ -1,6 +1,10 @@
 #include "ast.h"
 
 namespace kubvc::algorithm { 
+    ASTree::~ASTree() {
+        clear();
+    }
+
     void ASTree::clear()  {        
         if (isRootExist()) {
             clearFrom(m_root);

@@ -12,7 +12,10 @@ namespace kubvc::algorithm {
     inline static NodePtr<Type> castToNodePtr(std::shared_ptr<INode> ptr) { return std::dynamic_pointer_cast<NodeTraits<Type>>(ptr); }
 
     class ASTree {
-        public:                    
+        public:
+            ASTree() = default;                    
+            ~ASTree();
+            
             void clear();
             void clearFrom(std::shared_ptr<kubvc::algorithm::INode> start);
 
