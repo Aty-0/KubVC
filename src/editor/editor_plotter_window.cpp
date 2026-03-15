@@ -1,17 +1,14 @@
 #include "editor_plotter_window.h"
-#include "expression.h"
+#include "expression_controller.h"
 #include "vec_convert.h"
 
 //#define SHOW_DEBUG_LIMITS 
 
 namespace kubvc::editor {
+    static const auto controller = math::ExpressionController::getInstance();
+
     EditorPlotterWindow::EditorPlotterWindow() {
         setName("Viewer");
-    }
-
-    static void updateExpressionByPlotLimits(std::shared_ptr<kubvc::math::Expression> expr) {
-        math::GraphLimits::Limits = ImPlot::GetPlotLimits();                 
-        expr->eval(math::GraphLimits::Limits);
     }
 
     void EditorPlotterWindow::onRender(kubvc::render::GUI& gui) {
@@ -19,28 +16,28 @@ namespace kubvc::editor {
         auto size = ImGui::GetContentRegionAvail();
         const auto plotFlags = ImPlotFlags_::ImPlotFlags_NoTitle | ImPlotFlags_::ImPlotFlags_Crosshairs;
         if (ImPlot::BeginPlot("##PlotViewer", size, plotFlags)) {
-            static bool savedFirstLimits = false; 
+            static bool saveLimitsFirstTime = false; 
 
             // Draw axis notes 
             ImPlot::SetupAxis(ImAxis_X1, "X-Axis", ImPlotAxisFlags_::ImPlotAxisFlags_Foreground);
             ImPlot::PushStyleColor(ImPlotCol_::ImPlotCol_AxisBgActive, ImVec4(255,0,0,255));
             ImPlot::SetupAxis(ImAxis_Y1, "Y-Axis", ImPlotAxisFlags_::ImPlotAxisFlags_Foreground);
     
-            static bool updateExpr = false;
+            static bool updateExpressions = false;
             if (ImPlot::IsPlotHovered()) {
                 static auto prevPos = ImPlotPoint(0, 0);
-                auto pos = ImPlot::GetPlotLimits().Min(); 
-    
+
+                const auto pos = ImPlot::GetPlotLimits().Min(); 
                 if (prevPos.x != pos.x || prevPos.y != pos.y) {
-                    updateExpr = true;
+                    updateExpressions = true;
                 }
                 
                 prevPos = pos;
             }
             
-            if (!savedFirstLimits) {
+            if (!saveLimitsFirstTime) {
                 math::GraphLimits::Limits = ImPlot::GetPlotLimits(); 
-                savedFirstLimits = true;
+                saveLimitsFirstTime = true;
             }	
 #ifdef SHOW_DEBUG_LIMITS
             const auto limits = ImPlot::GetPlotLimits();    
@@ -53,28 +50,30 @@ namespace kubvc::editor {
 #endif
 
             // Draw our functions 
-            for (auto expr : kubvc::math::ExpressionController::Expressions) {                    
-                if (expr != nullptr) {
-                    if (expr->isVisible() && expr->isValid()) { 
-                        if (updateExpr) {
-                            updateExpressionByPlotLimits(expr);        
-                        }
-    
-                        auto buffer = expr->getPlotBuffer(); 
-                        if (buffer.size() > 0) {
-                            // Apply plot style from expression                                                   
-                            ImPlot::SetNextLineStyle(kubvc::utility::toImVec4(expr->Settings.color), expr->Settings.thickness);    
-
-                            const auto shaded = expr->Settings.shaded ? ImPlotLineFlags_::ImPlotLineFlags_Shaded : ImPlotLineFlags_::ImPlotLineFlags_None;
-                            const auto plotLineFlags = ImPlotLineFlags_::ImPlotLineFlags_NoClip | shaded;
-    
-                            ImPlot::PlotLine(expr->getTextBuffer().data(), &buffer[0].x, &buffer[0].y, buffer.size(), plotLineFlags, 0, vecStride);      
-                            //ImPlot::PlotScatter(expr->textBuffer.data(), &expr->plotBuffer[0].x, &expr->plotBuffer[0].y, expr->plotBuffer.size(), plotLineFlags, 0, stride);                                  
-                        }
+            for (auto model : controller->getExpressions()) {                    
+                auto& settings = model->getSettings(); 
+                auto& textBuffer = model->getTextBuffer(); 
+                auto& expression = model->getExpression();
+                if (settings.getVisible() && expression.isValid()) { 
+                    if (updateExpressions) {
+                        math::GraphLimits::Limits = ImPlot::GetPlotLimits();                 
+                        expression.eval(math::GraphLimits::Limits);     
                     }
-                }    
-            }                        
-            updateExpr = false;
+
+                    const auto buffer = expression.getPlotBuffer(); 
+                    if (buffer.size() > 0) {
+                        // Apply plot style from expression                                                   
+                        ImPlot::SetNextLineStyle(kubvc::utility::toImVec4(settings.getColor()), settings.getThickness());    
+                        const auto isShaded = settings.getShaded() ? ImPlotLineFlags_::ImPlotLineFlags_Shaded : ImPlotLineFlags_::ImPlotLineFlags_None;
+                        const auto flags = ImPlotLineFlags_::ImPlotLineFlags_NoClip | isShaded;
+
+                        ImPlot::PlotLine(textBuffer.getBuffer().data(), &buffer[0].x, &buffer[0].y, buffer.size(), flags, 0, vecStride);      
+                        //ImPlot::PlotScatter(expr->getTextBuffer().data(), &buffer[0].x, &buffer[0].y, buffer.size(), flags, 0, vecStride);                                  
+                    }
+                }                    
+            }                
+
+            updateExpressions = false;
             ImPlot::EndPlot();
         }
     }

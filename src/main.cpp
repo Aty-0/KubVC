@@ -40,9 +40,6 @@ int main() {
         window->swapAndPool();
     }
     
-    kubvc::math::ExpressionController::Expressions.clear();
-    kubvc::math::ExpressionController::Expressions.shrink_to_fit();
-
     // Destroy application components
     gui->destroy();
     window->destroy();
