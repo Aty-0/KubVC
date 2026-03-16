@@ -5,7 +5,7 @@
 namespace kubvc::math {
     class ExpressionTextBuffer {
         public:
-            static constexpr std::size_t MAX_BUFFER_SIZE = 512;
+            static constexpr std::size_t MAX_BUFFER_SIZE = 256;
             
             ExpressionTextBuffer();
             ~ExpressionTextBuffer();
