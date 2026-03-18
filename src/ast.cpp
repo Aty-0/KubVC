@@ -22,14 +22,13 @@ namespace kubvc::algorithm {
         const auto type = start->getType();
         switch (type) {
             case kubvc::algorithm::NodeTypes::Root: {
-                auto node = castToNodePtr<NodeTypes::Root>(start);
+                const auto node = castToNodePtr<NodeTypes::Root>(start);
                 clearFrom(node->child);
                 node->child = nullptr;
                 break;
             }
             case kubvc::algorithm::NodeTypes::Operator: {
-                auto node = castToNodePtr<NodeTypes::Operator>(start);         
-                
+                const auto node = castToNodePtr<NodeTypes::Operator>(start);                  
                 // Recursively clear left and right subtrees
                 if (node->left != nullptr) {
                     clearFrom(node->left);
@@ -43,7 +42,7 @@ namespace kubvc::algorithm {
                 break;    
             }
             case kubvc::algorithm::NodeTypes::UnaryOperator: {
-                auto node = castToNodePtr<NodeTypes::UnaryOperator>(start);         
+                const auto node = castToNodePtr<NodeTypes::UnaryOperator>(start);         
                 if (node->child != nullptr) {
                     clearFrom(node->child);
                     node->child = nullptr;
@@ -51,7 +50,7 @@ namespace kubvc::algorithm {
                 break;     
             }
             case kubvc::algorithm::NodeTypes::Function: {
-                auto node = castToNodePtr<NodeTypes::Function>(start);         
+                const auto node = castToNodePtr<NodeTypes::Function>(start);         
                 if (node->argument != nullptr) {
                     clearFrom(node->argument);
                     node->argument = nullptr;
@@ -78,7 +77,6 @@ namespace kubvc::algorithm {
     }
 
     bool ASTree::validateFrom(std::shared_ptr<kubvc::algorithm::INode> start) const {
-        // We are reached the end of tree 
         if (start == nullptr) {
             return false;
         }
@@ -86,16 +84,16 @@ namespace kubvc::algorithm {
         const auto type = start->getType();
         switch (type) {
             case kubvc::algorithm::NodeTypes::Root: {
-                auto node = castToNodePtr<NodeTypes::Root>(start);
+                const auto node = castToNodePtr<NodeTypes::Root>(start);
                 return validateFrom(node->child);
             }
             case kubvc::algorithm::NodeTypes::Number:
             case kubvc::algorithm::NodeTypes::Variable:
                 return true;            
             case kubvc::algorithm::NodeTypes::Operator: {
-                auto node = castToNodePtr<NodeTypes::Operator>(start);         
-                bool resultLeft = true;
-                bool resultRight = true;
+                const auto node = castToNodePtr<NodeTypes::Operator>(start);         
+                bool resultLeft = false;
+                bool resultRight = false;
 
                 if (node->left != nullptr) {
                     resultLeft = validateFrom(node->left);
@@ -108,11 +106,11 @@ namespace kubvc::algorithm {
                 return resultLeft && resultRight;    
             }
             case kubvc::algorithm::NodeTypes::UnaryOperator: {
-                auto node = castToNodePtr<NodeTypes::UnaryOperator>(start);         
+                const auto node = castToNodePtr<NodeTypes::UnaryOperator>(start);         
                 return validateFrom(node->child);     
             }
             case kubvc::algorithm::NodeTypes::Function: {
-                auto node = castToNodePtr<NodeTypes::Function>(start);         
+                const auto node = castToNodePtr<NodeTypes::Function>(start);         
                 if (node->argument != nullptr) {
                     return validateFrom(node->argument);     
                 }
@@ -120,7 +118,6 @@ namespace kubvc::algorithm {
                     return false;
                 }
             }
-            case kubvc::algorithm::NodeTypes::Invalid:
             default:
                 return false;
         }
