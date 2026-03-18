@@ -315,8 +315,8 @@ namespace kubvc::algorithm {
                         // Then if we are find bracket and it's function we are trying to parse it
                         if (findResult && algorithm::Helpers::isBracketStart(current)) { 
                             KUB_LEXER_DEBUG("[tokenize] we are find function in list and bracket is open");
-                            auto result = parseTextInBrackets(str.substr(pos, str.size()));
-                            pos++; // Skip bracket
+                            // TODO: Not sure about text parsing                             
+                            const auto result = parseTextInBrackets(str.substr(pos, str.size()));
                             if (result.has_value()) {
                                 // Convert name to lower case to avoid mismatch 
                                 std::string funcName { word };
@@ -328,23 +328,10 @@ namespace kubvc::algorithm {
                                 };
                                 // Add function token                                 
                                 KUB_LEXER_DEBUG("[tokenize] parsed func is {}", token.value);
-                                tokens.push_back(token);  
-                                // tokenize function body and add function tokens to main token pool 
-                                const auto bracketsBody = result.value();
-                                KUB_LEXER_DEBUG("[tokenize] body func is {}", bracketsBody);
-                                const auto bodyTokensResult = tokenize(bracketsBody, false);
-                                if (bodyTokensResult.has_value()) {
-                                    const auto bodyTokens = bodyTokensResult.value();
-                                    for (const auto bodyToken : bodyTokens) {
-                                        tokens.push_back(bodyToken);
-                                    }
-                                } else {
-                                    KUB_ERROR("[tokenize] failed to tokenize function body!");
-                                    return std::nullopt;
-                                }
-
-                                pos += bracketsBody.size() - 1;
-                                KUB_LEXER_DEBUG("[tokenize] moved pos {} ; br size {}", pos, bracketsBody.size());
+                                tokens.push_back(token);      
+                            } else {
+                                KUB_ERROR("[tokenize] brackets parse failed");
+                                return std::nullopt;
                             }
                         } else {
                             const auto constResult = utility::container::get(math::containers::Constants, word);
