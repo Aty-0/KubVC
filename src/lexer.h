@@ -216,6 +216,7 @@ namespace kubvc::algorithm {
         // Find index of end bracket 
         std::size_t index = 0;
         std::int32_t bracketsCount = 0;
+
         for (const auto chr : str) {
             if (algorithm::Helpers::isBracketStart(chr)) {
                 bracketsCount++;
@@ -228,7 +229,7 @@ namespace kubvc::algorithm {
             index++;
         }
         
-        return std::string { str };
+        return std::nullopt;
     }
 
     inline algorithm::Helpers::uchar Lexer::peek(const std::size_t pos, std::string_view str) {
