@@ -164,6 +164,12 @@ namespace kubvc::algorithm {
                 }
             }
         }
+        
+        if (nodeStack.empty()) {
+            KUB_ERROR("Node stack is empty, can't create root");
+            return false;
+        }
+
         const auto root = createRoot(nodeStack.top());
         tree.setRoot(root);
         nodeStack.pop();
