@@ -38,17 +38,14 @@ namespace kubvc::algorithm {
     }
         
     inline void NodeTraits<NodeTypes::UnaryOperator>::calculate(const double& n, double& result) {
-        const bool isChildIsInvalid = child->getType() == NodeTypes::Invalid;
-        if (child == nullptr || isChildIsInvalid)
+        const bool isChildInvalid = child->getType() == NodeTypes::Invalid;
+        if (child == nullptr || isChildInvalid)
             return;
 
         child->calculate(n, result);
         
         auto op = getOperatorFrom(operation);
         switch(op) {
-            case Operators::Plus:
-                result = std::fabs(result);
-                break;
             case Operators::Minus:
                 result = -result;
                 break;
