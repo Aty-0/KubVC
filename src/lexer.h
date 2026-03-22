@@ -122,6 +122,8 @@ namespace kubvc::algorithm {
                             if (top.type == Token::Types::Operator || top.type == Token::Types::UnaryOperator) {
                                 const auto topOperator = top.value.at(0);
                                 const auto topOperatorPriority = utility::container::get(operatorPriority, currentOperator);
+                                const auto operatorIsPower = currentOperator == '^';
+                                
                                 // First we are check on unary, because it has a highest priority and we don't need to pop it
                                 // Second we are check on isOperatorIsPower because power is right associative, other operators is left associative
                                 const bool shouldPop = top.type != Token::Types::UnaryOperator && 
