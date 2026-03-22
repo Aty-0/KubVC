@@ -4,23 +4,23 @@
 #include <initializer_list>
 
 namespace kubvc::utility::container {  
-    template<typename T>
-    inline static constexpr std::optional<T> get(const std::initializer_list<std::pair<std::string_view, T>>& data,
-        std::string_view name) {
-            const auto result = std::find_if(data.begin(), data.end(), [name](std::pair<std::string_view, T> it) {
-                return it.first == name;
-            });
-            if (result == data.end()) {
-                return std::nullopt;
-            }
-            return result->second;
+    template<typename Key, typename T>
+    inline static constexpr std::optional<T> get(const std::initializer_list<std::pair<Key, T>>& data, Key key) {
+        const auto result = std::find_if(data.begin(), data.end(), [key](const auto& it) {
+            return it.first == key;
+        });
+        if (result == data.end()) {
+            return std::nullopt;
+        }
+        return result->second;
     }
     
-    template<typename T>
-    inline static constexpr bool find(const std::initializer_list<std::pair<std::string_view, T>>& data, 
-        std::string_view name) {
-            return std::find_if(data.begin(), data.end(), [name](std::pair<std::string_view, T> it) {
-                return it.first == name;
-            }) != data.end();
+    template<typename Key, typename T>
+    inline static constexpr bool find(const std::initializer_list<std::pair<Key, T>>& data, Key key) {
+        return std::find_if(data.begin(), data.end(), [key](const auto& it) {
+            return it.first == key;
+        }) != data.end();
     }
+
+    
 }

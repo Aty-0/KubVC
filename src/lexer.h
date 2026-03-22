@@ -4,6 +4,8 @@
 #include "alg_helpers.h"
 #include "logger.h"
 
+#include "container.h"
+
 // TODO:
 //#include "function_handler.h"
 #include <functional>
@@ -12,7 +14,6 @@
 #include <algorithm>
 #include <optional>
 #include <stack>
-#include <map>
 
 //#define KUB_LEXER_DEBUG_ENABLE_TOKEN_PRINT
 //#define KUB_ENABLE_LEXER_DEBUG_LOG
@@ -57,14 +58,14 @@ namespace kubvc::algorithm {
             
             algorithm::Helpers::uchar peek(const std::size_t pos, std::string_view str);
     };
-    
+
     inline std::vector<Token> Lexer::shuntingYardAlgorithm(const std::vector<Token>& in) {
         if (in.size() == 0) {
             KUB_FATAL("shuntingYardAlgorithm: size is zero");
             return in;
         }
         
-        static const std::map<char, std::uint8_t> operatorPriority = {
+        static constexpr std::initializer_list<std::pair<char, std::uint8_t>> operatorPriority = {
             { '+', 0 },
             { '-', 0 },
             { '*', 1 },
@@ -113,19 +114,19 @@ namespace kubvc::algorithm {
                 }
                 case Token::Types::Operator: {
                         const auto currentOperator = token.value.at(0);
+                        const auto currentOperatorPriority = utility::container::get(operatorPriority, currentOperator);
                         
                         while (!stack.empty()) {
                             const auto top = stack.top();                            
                             
                             if (top.type == Token::Types::Operator || top.type == Token::Types::UnaryOperator) {
                                 const auto topOperator = top.value.at(0);
-                                const auto isOperatorIsPower = currentOperator == '^';
-
+                                const auto topOperatorPriority = utility::container::get(operatorPriority, currentOperator);
                                 // First we are check on unary, because it has a highest priority and we don't need to pop it
                                 // Second we are check on isOperatorIsPower because power is right associative, other operators is left associative
                                 const bool shouldPop = top.type != Token::Types::UnaryOperator && 
-                                    (isOperatorIsPower ? operatorPriority.at(currentOperator) < operatorPriority.at(topOperator) 
-                                        : operatorPriority.at(currentOperator) <= operatorPriority.at(topOperator));                                                                
+                                    (operatorIsPower ? currentOperatorPriority < topOperatorPriority 
+                                    : currentOperatorPriority <= topOperatorPriority);                                                                
                                 if (shouldPop) {
                                     output.push_back(top);
                                     stack.pop();
@@ -312,7 +313,7 @@ namespace kubvc::algorithm {
                         current = peek(pos, str);
                         KUB_LEXER_DEBUG("[tokenize] maybe some keyword pos:{} word:{} current char:{}", pos, word, current);
                         // First try to find function by name
-                        const auto findResult = utility::container::find(math::containers::Functions, word);
+                        const auto findResult = utility::container::find(math::containers::Functions, std::string_view { word.data(), word.size() });
                         // Then if we are find bracket and it's function we are trying to parse it
                         if (findResult && algorithm::Helpers::isBracketStart(current)) { 
                             KUB_LEXER_DEBUG("[tokenize] we are find function in list and bracket is open");
@@ -335,7 +336,7 @@ namespace kubvc::algorithm {
                                 return std::nullopt;
                             }
                         } else {
-                            const auto constResult = utility::container::get(math::containers::Constants, word);
+                            const auto constResult = utility::container::get(math::containers::Constants, std::string_view { word.data(), word.size() });
                             if (constResult.has_value()) {
                                 KUB_LEXER_DEBUG("[tokenize] it's a constant");
                                 const auto token = Token {
