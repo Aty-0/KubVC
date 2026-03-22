@@ -391,6 +391,12 @@ namespace kubvc::algorithm {
                         isUnary = true;
                     }
                 }
+
+                if (!(isUnary && (current == '-' || current == '+'))) {
+                    KUB_ERROR("[tokenize] operator is marked as unary, but this operator can't be unary");
+                    return std::nullopt;
+                }
+
                 KUB_LEXER_DEBUG("[tokenize] is unary {}", isUnary);
 
                 const auto token = Token {
