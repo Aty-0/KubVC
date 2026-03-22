@@ -44,11 +44,9 @@ namespace kubvc::algorithm {
 
         child->calculate(n, result);
         
-        auto op = getOperatorFrom(operation);
-        switch(op) {
-            case Operators::Minus:
-                result = -result;
-                break;
+        const auto op = getOperatorFrom(operation);        
+        if (op == Operators::Minus) {
+            result = -result;
         }
     }
     
@@ -67,7 +65,6 @@ namespace kubvc::algorithm {
         const auto op = getOperatorFrom(operation);
         switch(op) {
             case Operators::Equal:
-                result = secondResult;
                 break;
             case Operators::Plus:
                 result = firstResult + secondResult;
