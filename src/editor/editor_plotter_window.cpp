@@ -13,16 +13,15 @@ namespace kubvc::editor {
 
     void EditorPlotterWindow::onRender(kubvc::render::GUI& gui) {
         static constexpr auto vecStride = 2 * sizeof(double);
-        auto size = ImGui::GetContentRegionAvail();
-        const auto plotFlags = ImPlotFlags_::ImPlotFlags_NoTitle | ImPlotFlags_::ImPlotFlags_Crosshairs;
+        static constexpr auto plotFlags = ImPlotFlags_::ImPlotFlags_NoTitle | ImPlotFlags_::ImPlotFlags_Crosshairs;
+        const auto size = ImGui::GetContentRegionAvail();
         if (ImPlot::BeginPlot("##PlotViewer", size, plotFlags)) {
             static bool saveLimitsFirstTime = false; 
 
             // Draw axis notes 
             ImPlot::SetupAxis(ImAxis_X1, "X-Axis", ImPlotAxisFlags_::ImPlotAxisFlags_Foreground);
-            ImPlot::PushStyleColor(ImPlotCol_::ImPlotCol_AxisBgActive, ImVec4(255,0,0,255));
             ImPlot::SetupAxis(ImAxis_Y1, "Y-Axis", ImPlotAxisFlags_::ImPlotAxisFlags_Foreground);
-    
+            
             static bool updateExpressions = false;
             if (ImPlot::IsPlotHovered()) {
                 static auto prevPos = ImPlotPoint(0, 0);
@@ -50,7 +49,9 @@ namespace kubvc::editor {
 #endif
 
             // Draw our functions 
-            for (auto model : controller->getExpressions()) {                    
+            for (auto model : controller->getExpressions()) {
+                KUB_ASSERT(model != nullptr, "Some model in expression list are nullptr");          
+
                 auto& settings = model->getSettings(); 
                 auto& textBuffer = model->getTextBuffer(); 
                 auto& expression = model->getExpression();
@@ -61,7 +62,7 @@ namespace kubvc::editor {
                     }
 
                     const auto buffer = expression.getPlotBuffer(); 
-                    if (buffer.size() > 0) {
+                    if (!buffer.empty()) {
                         // Apply plot style from expression                                                   
                         ImPlot::SetNextLineStyle(kubvc::utility::toImVec4(settings.getColor()), settings.getThickness());    
                         const auto isShaded = settings.getShaded() ? ImPlotLineFlags_::ImPlotLineFlags_Shaded : ImPlotLineFlags_::ImPlotLineFlags_None;
@@ -75,6 +76,7 @@ namespace kubvc::editor {
 
             updateExpressions = false;
             ImPlot::EndPlot();
+
         }
     }
 }
