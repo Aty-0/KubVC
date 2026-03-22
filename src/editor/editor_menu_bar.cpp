@@ -29,7 +29,7 @@ namespace kubvc::editor {
                 ImGui::EndMenu();
             }
             if (ImGui::BeginMenu("View")) {
-                const auto editor = Editor::getInstance();
+                static const auto editor = Editor::getInstance();
 
                 if (ImGui::MenuItem("Keyboard")) {
                     static const auto window = editor->get<EditorKeyboardWindow>();
