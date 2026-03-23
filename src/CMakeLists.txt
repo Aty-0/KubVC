@@ -8,14 +8,24 @@ target_include_directories(KubVcApp
 )
 
 target_compile_features(KubVcApp PRIVATE cxx_std_20)
-#add_compile_definitions(KubVcApp DEBUG)
 target_link_libraries(KubVcApp
     glm::glm
     glfw
     libglew_static
 )
 
-target_compile_definitions(KubVcApp PRIVATE GLEW_STATIC)
+if (CMAKE_BUILD_TYPE STREQUAL "Debug") 
+    target_compile_definitions(KubVcApp PRIVATE 
+        GLEW_STATIC
+        DEBUG
+        KUB_LEXER_DEBUG_ENABLE_TOKEN_PRINT
+        KUB_ENABLE_LEXER_DEBUG_LOG
+    )
+else()
+    target_compile_definitions(KubVcApp PRIVATE 
+        GLEW_STATIC
+    )
+endif()
 
 # Add fonts to builded application
 file(GLOB_RECURSE RES_FONTS resources/*.ttf)

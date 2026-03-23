@@ -47,8 +47,7 @@ namespace kubvc::utility {
     }
 }
 
-#define KUB_EXPLICIT_DEF_DEBUG
-#if defined(DEBUG) || defined(_DEBUG) || defined(KUB_EXPLICIT_DEF_DEBUG)
+#if defined(DEBUG) || defined(_DEBUG)
     #define KUB_IS_DEBUG 
 #endif
 

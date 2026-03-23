@@ -15,9 +15,6 @@
 #include <optional>
 #include <stack>
 
-//#define KUB_LEXER_DEBUG_ENABLE_TOKEN_PRINT
-//#define KUB_ENABLE_LEXER_DEBUG_LOG
-
 #ifdef KUB_ENABLE_LEXER_DEBUG_LOG
     #define KUB_LEXER_DEBUG(fmt, ...) KUB_DEBUG(fmt, ##__VA_ARGS__)
 #else 
