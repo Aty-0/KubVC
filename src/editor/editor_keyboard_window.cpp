@@ -30,7 +30,7 @@ namespace kubvc::editor {
                 buffer.insert(beg, cText, end);
                 
                 textBuffer.setCursor(textBuffer.getCursor() + len);        
-                selected->parseThenEvaluate(math::GraphLimits::Limits);
+                selected->parseThenEvaluate(math::GraphLimits::GlobalLimits);
             }
     
             return true;
@@ -131,7 +131,7 @@ namespace kubvc::editor {
                 textBuffer.setCursor(cursor - 1);
 
                 // Update  
-                selected->parseThenEvaluate(math::GraphLimits::Limits);
+                selected->parseThenEvaluate(math::GraphLimits::GlobalLimits);
             }
         }
 

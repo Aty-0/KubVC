@@ -35,7 +35,7 @@ namespace kubvc::editor {
             }
             
             if (!saveLimitsFirstTime) {
-                math::GraphLimits::Limits = ImPlot::GetPlotLimits(); 
+                math::GraphLimits::GlobalLimits = ImPlot::GetPlotLimits(); 
                 saveLimitsFirstTime = true;
             }	
 #ifdef SHOW_DEBUG_LIMITS
@@ -57,8 +57,8 @@ namespace kubvc::editor {
                 auto& expression = model->getExpression();
                 if (settings.getVisible() && expression.isValid()) { 
                     if (updateExpressions) {
-                        math::GraphLimits::Limits = ImPlot::GetPlotLimits();                 
-                        expression.eval(math::GraphLimits::Limits);     
+                        math::GraphLimits::GlobalLimits = ImPlot::GetPlotLimits();                 
+                        expression.eval(math::GraphLimits::GlobalLimits);     
                     }
 
                     const auto buffer = expression.getPlotBuffer(); 
