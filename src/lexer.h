@@ -388,8 +388,8 @@ namespace kubvc::algorithm {
                         isUnary = true;
                     }
                 }
-
-                if (!(isUnary && (current == '-' || current == '+'))) {
+                const bool currentCharIsUnary = (current == '-' || current == '+');
+                if (isUnary && !currentCharIsUnary) {
                     KUB_ERROR("[tokenize] operator is marked as unary, but this operator can't be unary");
                     return std::nullopt;
                 }
