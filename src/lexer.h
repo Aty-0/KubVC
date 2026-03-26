@@ -438,6 +438,8 @@ namespace kubvc::algorithm {
                     KUB_ERROR("[tokenize] operator is open, but we are pass all cases");
                     return std::nullopt;                
                 }
+                // Continue
+                pos++;
             }
         }
 
