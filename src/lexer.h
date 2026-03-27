@@ -263,11 +263,13 @@ namespace kubvc::algorithm {
         KUB_LEXER_DEBUG("[tokenize] try to tokenize: {}", str);
         std::vector<Token> tokens = { };
         bool isOperatorOpen = false;
-        std::int32_t isBracketOpen = 0;    
+        std::int32_t bracketLayer = 0;    
         std::size_t pos = startFromPos;
         while (pos < str.size()) {
             auto current = peek(pos, str);
-            KUB_LEXER_DEBUG("[tokenize] current character is {} pos:{}", std::string(1, current), pos);
+            const auto currentCharStr = std::string(1, current);
+
+            KUB_LEXER_DEBUG("[tokenize] current character is {} pos:{}", currentCharStr, pos);
             if (algorithm::Helpers::isWhiteSpace(current)) {
                 KUB_LEXER_DEBUG("[tokenize] skip whitespace");
                 pos++;
@@ -358,14 +360,14 @@ namespace kubvc::algorithm {
             } else if (algorithm::Helpers::isComma(current)) {
                 KUB_LEXER_DEBUG("[tokenize] is comma");
                 // TODO: Protection of double comma -> ,,1,
-                if (isBracketOpen == 0) {
+                if (bracketLayer == 0) {
                     KUB_ERROR("[tokenize] trying to use comma not in function");
                     return std::nullopt;
                 }
 
                 const auto token = Token {
                     Token::Types::Comma,
-                    std::string(1, current),
+                    currentCharStr,
                 };
                 tokens.push_back(token);  
                 pos++;                                     
@@ -398,7 +400,7 @@ namespace kubvc::algorithm {
 
                 const auto token = Token {
                     isUnary ? Token::Types::UnaryOperator : Token::Types::Operator,
-                    std::string(1, current),
+                    currentCharStr,
                 };
                 
 
@@ -409,53 +411,55 @@ namespace kubvc::algorithm {
                 KUB_LEXER_DEBUG("[tokenize] is bracket start");
                 isOperatorOpen = false;
                 // Increment a bracket layer 
-                isBracketOpen++;
+                bracketLayer++;
 
                 const auto token = Token {
                     Token::Types::BracketStart,
-                    std::string(1, current),
+                    currentCharStr,
                 };
                 tokens.push_back(token);  
                 pos++;             
             } else if (algorithm::Helpers::isBracketEnd(current)) {
                 KUB_LEXER_DEBUG("[tokenize] is bracket end");
-                if (isBracketOpen == 0) {
-                    KUB_ERROR("[tokenize] found end bracket but isBracketOpen = false");
+                if (bracketLayer == 0) {
+                    KUB_ERROR("[tokenize] found end bracket but bracket layer is zero");
                     return std::nullopt;
                 }
 
                 const auto token = Token {
                     Token::Types::BracketEnd,
-                    std::string(1, current),
+                    currentCharStr,
                 };
                 pos++;             
                 tokens.push_back(token);  
 
-                isBracketOpen--;
+                bracketLayer--;
             } else {
-                // If operator is not closed it's a invalid case
-                if (isOperatorOpen == true) {
-                    KUB_ERROR("[tokenize] operator is open, but we are pass all cases");
-                    return std::nullopt;                
-                }
-                // Continue
-                pos++;
+                KUB_ERROR("[tokenize] no cases for character {}", currentCharStr);
+                return std::nullopt;                                
             }
+        }
+        
+        // If operator is not closed on parse end
+        if (isOperatorOpen == true) {
+            KUB_ERROR("[tokenize] operator is open on parse end");
+            return std::nullopt;                
         }
 
         // If when loop is ended but some brackets are not closed it's invalid case
-        if (isBracketOpen > 0) {
+        if (bracketLayer > 0) {
             KUB_ERROR("[tokenize] some bracket is not closed");
+            return std::nullopt;
+        }
+
+        // If output is empty 
+        if (tokens.size() == 0) {
+            KUB_ERROR("[tokenize] tokens size are zero");
             return std::nullopt;
         }
 
         KUB_LEXER_DEBUG("[tokenize] finished, see next line for result");
         print(tokens);
-
-        if (tokens.size() == 0) {
-            KUB_ERROR("[tokenize] tokens size are zero");
-            return std::nullopt;
-        }
 
         return useShuntingYard ? shuntingYardAlgorithm(tokens) : tokens;
     }
