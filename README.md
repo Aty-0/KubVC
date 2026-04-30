@@ -8,7 +8,9 @@ This application is currently in an alpha state.
 ## Prerequisites
 - CMake 3.20+
 - C++ 20 MSVC/GCC
-- OpenGL Support
+- OpenGL
+- Wayland
+- X11
 
 # Build & Run
 
@@ -18,15 +20,15 @@ mkdir build
 cd build
 cmake ..
 cmake --build . --config Release
-bin\Release\KubVC.exe
+bin\Release\KubVcApp.exe
 ```
 
-## Linux (not tested yet)
+## Linux
 ```bash
 mkdir build && cd build
 cmake ..
 make
-./bin/KubVC
+cd bin && ./KubVcApp
 ```
 
 # Screenshots:
