@@ -1,5 +1,33 @@
 # KubVC
-This is a graphing calculator, which can draw generic or custom functions. (Alpha) 
+This is a graphing calculator, which can draw generic or custom functions.
+
+This application is currently in an alpha state. 
+
+# Building KubVC
+
+## Prerequisites
+- CMake 3.20+
+- C++ 20 MSVC/GCC
+- OpenGL Support
+
+# Build & Run
+
+## Windows
+```cmd
+mkdir build
+cd build
+cmake ..
+cmake --build . --config Release
+bin\Release\KubVC.exe
+```
+
+## Linux (not tested yet)
+```bash
+mkdir build && cd build
+cmake ..
+make
+./bin/KubVC
+```
 
 # Screenshots:
 the hleb (toast)
