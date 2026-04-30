@@ -2,6 +2,7 @@
 #include <string>
 #include <cmath>
 #include <algorithm>
+#include <array>
 
 #include "math_base.h"
 
@@ -9,12 +10,6 @@ namespace kubvc::algorithm {
     class Helpers {
         public:
             using uchar = unsigned char;
-
-            static inline void toLowerCase(std::string& text) {
-                std::transform(text.begin(), text.end(), text.begin(), 
-                    [](uchar chr) { return std::tolower(chr); }
-                );
-            }
 
             static inline double computeFunction(std::string_view name, double x) { 
                 auto result = utility::container::get(math::containers::Functions, name);
@@ -25,34 +20,46 @@ namespace kubvc::algorithm {
                 return result.value()(x);
             }
 
-            static inline bool isLetter(uchar chr)  {
-                return std::isalpha(chr);
+            static inline constexpr uchar toLower(uchar chr) {
+                return (chr >= 'A' && chr <= 'Z') ? (chr - 'A' + 'a') : chr;
             }
 
-            static inline bool isNumber(std::string_view text)  {
-                return !text.empty() && std::all_of(text.begin(), text.end(), [](uchar c) {
-                    return std::isdigit(c) || isDot(c);
-                });
+            static inline constexpr uchar toUpper(uchar chr) {
+                return (chr >= 'a' && chr <= 'z') ? (chr - 'a' + 'A') : chr;
             }
 
-            static inline bool isDigit(uchar chr)  {
-                return std::isdigit(chr);
+            static inline constexpr std::string toLowerCase(std::string_view text) {
+                std::string result;
+                result.reserve(text.size());
+                for (auto c : text) {
+                    result.push_back(toLower(static_cast<uchar>(c)));
+                }
+                return result;
             }
-            
-            static inline bool isDot(uchar chr) {
+
+            static inline constexpr bool isLetter(uchar chr)  {
+                return (chr >= 'A' && chr <= 'Z') || (chr >= 'a' && chr <= 'z');
+            }
+
+            static inline constexpr bool isDot(uchar chr) {
                 return chr == '.';
             }
 
-            static inline bool isUnaryOperator(uchar chr) {
-                switch (chr) {
-                    case '+':
-                    case '-':
-                        return true;
-                }
-                return false;
+            static inline constexpr bool isDigit(uchar chr)  {
+                return chr >= '0' && chr <= '9';
             }
 
-            static inline bool isOperator(uchar chr) {
+            static inline constexpr bool isNumber(std::string_view text)  {
+                return !text.empty() && std::all_of(text.begin(), text.end(), [](uchar c) {
+                    return isDigit(c) || isDot(c);
+                });
+            }
+            
+            static inline constexpr bool isUnaryOperator(uchar chr) {
+                return chr == '+' || chr == '-';
+            }
+
+            static inline constexpr bool isOperator(uchar chr) {
                 switch (chr) {
                     case '+':
                     case '-':
@@ -65,26 +72,28 @@ namespace kubvc::algorithm {
                 }
                 return false;
             }
-    
-            // TODO: Support for other brackets 
-            static inline bool isBracketStart(uchar chr) {
+
+            static inline constexpr bool isBracketStart(uchar chr) {
                 return chr == '(';
             }
 
-            static inline bool isComma(uchar chr) {
-                return chr == ',';
-            }
-
-            static inline bool isBracketEnd(uchar chr) {
+            static inline constexpr bool isBracketEnd(uchar chr) {
                 return chr == ')';
             }
 
-            static inline bool isEqualsSign(uchar chr) {
+            static inline constexpr bool isComma(uchar chr) {
+                return chr == ',';
+            }
+
+            static inline constexpr bool isEqualsSign(uchar chr) {
                 return chr == '=';
             }
 
-            static inline bool isWhiteSpace(uchar chr) {
-                return std::isspace(chr);
+            static inline constexpr bool isWhiteSpace(uchar chr) {
+                constexpr std::array<uchar, 6> cases = { ' ', '\f', '\n', '\r', '\t', '\v' };
+                return std::any_of(cases.begin(), cases.end(), [chr](uchar c) { 
+                    return chr == c;
+                });
             }
     };
 }

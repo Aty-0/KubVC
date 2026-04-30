@@ -313,21 +313,19 @@ namespace kubvc::algorithm {
                         pos += wordSize;
                         current = peek(pos, str);
                         KUB_LEXER_DEBUG("[tokenize] maybe some keyword pos:{} word:{} current char:{}", pos, word, current);
+                        // Convert name to lower case to avoid mismatch 
+                        const auto lowerCaseName = kubvc::algorithm::Helpers::toLowerCase(word);
                         // First try to find function by name
-                        const auto findResult = utility::container::find(math::containers::Functions, std::string_view { word.data(), word.size() });
+                        const auto findResult = utility::container::find(math::containers::Functions, std::string_view { lowerCaseName.data(), lowerCaseName.size() });
                         // Then if we are find bracket and it's function we are trying to parse it
                         if (findResult && algorithm::Helpers::isBracketStart(current)) { 
                             KUB_LEXER_DEBUG("[tokenize] we are find function in list and bracket is open");
                             // TODO: Not sure about text parsing                             
                             const auto result = parseTextInBrackets(str.substr(pos, str.size()));
                             if (result.has_value()) {
-                                // Convert name to lower case to avoid mismatch 
-                                std::string funcName { word };
-                                kubvc::algorithm::Helpers::toLowerCase(funcName);
-
                                 const auto token = Token {
                                     Token::Types::Function,
-                                    funcName,
+                                    lowerCaseName,
                                 };
                                 // Add function token                                 
                                 KUB_LEXER_DEBUG("[tokenize] parsed func is {}", token.value);
