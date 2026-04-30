@@ -20,6 +20,7 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
         DEBUG
         KUB_LEXER_DEBUG_ENABLE_TOKEN_PRINT
         KUB_ENABLE_LEXER_DEBUG_LOG
+        #KUB_USE_ANSI_COLORS
     )
 else()
     target_compile_definitions(KubVcApp PRIVATE 

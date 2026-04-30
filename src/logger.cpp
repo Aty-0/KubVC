@@ -1,8 +1,6 @@
 #include "logger.h"
 #include <stdexcept>
 
-#define KUB_USE_ANSI_COLORS
-
 namespace kubvc::utility {       
     static inline std::string_view levelToStr(Logger::LogLevel level) {
         switch (level) {
