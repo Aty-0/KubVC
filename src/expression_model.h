@@ -47,7 +47,7 @@ namespace kubvc::math {
 
             if (result.has_value()) {
                 lexer->print(result.value());
-                const auto buildResult = builder->build(m_expression->getTree(), result.value());
+                const auto buildResult = builder->build(m_expression->getTree(), m_expression->getVariableDependenceController(), result.value());
                 m_expression->setValid(buildResult);
                 m_expression->eval(limits);                
             } else {

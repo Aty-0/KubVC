@@ -5,9 +5,9 @@
 #include <cstdint>
 
 namespace kubvc::algorithm {
- struct INode {
+    struct INode {
+        virtual void calculate(const double x, const double y, double& result) = 0;
         virtual NodeTypes getType() const = 0;
-        virtual void calculate(const double& n, double& result) = 0;
         
         inline std::int32_t getId() const { return m_id; }
         inline void setId(std::uint32_t id) { if (m_id == DEFAULT_NODE_ID) { m_id = id; } }        
@@ -16,6 +16,18 @@ namespace kubvc::algorithm {
             static constexpr std::uint8_t DEFAULT_NODE_ID = -1;
             std::int32_t m_id = DEFAULT_NODE_ID; 
     };
+    
+    template<NodeTypes NodeType> 
+    struct NodeTraits { };
+
+    template<NodeTypes NodeType>
+    using NodePtr = std::shared_ptr<NodeTraits<NodeType>>;
+
+    template <NodeTypes Type>
+    inline static std::shared_ptr<INode> castToINodePtr(NodePtr<Type> ptr) { return std::static_pointer_cast<INode>(ptr); }
+
+    template <NodeTypes Type>
+    inline static NodePtr<Type> castToNodePtr(std::shared_ptr<INode> ptr) { return std::dynamic_pointer_cast<NodeTraits<Type>>(ptr); }
 
     template <typename ValueType>
     struct NodeValue {
@@ -24,14 +36,11 @@ namespace kubvc::algorithm {
         protected:        
             ValueType m_value;
     };
-
-    template<NodeTypes NodeType> 
-    struct NodeTraits { };
     
     template<>
     struct NodeTraits<NodeTypes::Root> : INode {
         virtual NodeTypes getType() const final { return NodeTypes::Root; }
-        virtual void calculate(const double& n, double& result) final;
+        virtual void calculate(const double x, const double y, double& result) final;
 
         std::shared_ptr<INode> child;
     };
@@ -39,19 +48,19 @@ namespace kubvc::algorithm {
     template<>
     struct NodeTraits<NodeTypes::Variable> : INode, NodeValue<char> { 
         virtual NodeTypes getType() const final { return NodeTypes::Variable; }
-        virtual void calculate(const double& n, double& result) final { result = n; }
+        virtual void calculate(const double x, const double y, double& result) final;
     };
 
     template<>
     struct NodeTraits<NodeTypes::Number> : INode, NodeValue<double> {
         virtual NodeTypes getType() const final { return NodeTypes::Number; }
-        virtual void calculate(const double& n, double& result) final { result = m_value; }
+        virtual void calculate(const double x, const double y, double& result) final { result = m_value; }
     };
 
     template<>
     struct NodeTraits<NodeTypes::Invalid> : INode {
         virtual NodeTypes getType() const final { return NodeTypes::Invalid; }
-        virtual void calculate(const double& n, double& result) final { } // Do nothing
+        virtual void calculate(const double x, const double y, double& result) final { } // Do nothing
 
         std::string name;
     };
@@ -59,7 +68,7 @@ namespace kubvc::algorithm {
     template<>
     struct NodeTraits<NodeTypes::UnaryOperator> : INode {        
         virtual NodeTypes getType() const final { return NodeTypes::UnaryOperator; }
-        virtual void calculate(const double& n, double& result) final;
+        virtual void calculate(const double x, const double y, double& result) final;
         
         char operation;
         std::shared_ptr<INode> child; 
@@ -68,7 +77,7 @@ namespace kubvc::algorithm {
     template<>
     struct NodeTraits<NodeTypes::Operator> : INode {
         virtual NodeTypes getType() const final { return NodeTypes::Operator; }
-        virtual void calculate(const double& n, double& result) final;        
+        virtual void calculate(const double x, const double y, double& result) final;        
         
         char operation;
         std::shared_ptr<INode> right; 
@@ -78,7 +87,7 @@ namespace kubvc::algorithm {
     template<>
     struct NodeTraits<NodeTypes::Function> : INode {
         virtual NodeTypes getType() const final { return NodeTypes::Function; }
-        virtual void calculate(const double& n, double& result) final;
+        virtual void calculate(const double x, const double y, double& result) final;
         
         std::string name;
         std::shared_ptr<INode> argument;

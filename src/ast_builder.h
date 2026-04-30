@@ -3,6 +3,7 @@
 #include "singleton.h"
 #include "lexer.h"
 #include "logger.h"
+#include "variable_dependence.h"
 
 #include <stack>
 #include <charconv>
@@ -10,7 +11,7 @@
 namespace kubvc::algorithm {
     class ASTBuilder : public utility::Singleton<ASTBuilder> {
         public:
-            bool build(ASTree& tree, const std::vector<Token>& tokens);
+            bool build(ASTree& tree, math::VariableDependenceController& controller, const std::vector<Token>& tokens);
 
         private:        
             [[nodiscard]] NodePtr<NodeTypes::Root> createRoot(std::shared_ptr<INode> child) const;
@@ -81,7 +82,8 @@ namespace kubvc::algorithm {
         return node;
     }
 
-    inline bool ASTBuilder::build(ASTree& tree, const std::vector<Token>& tokens) {
+    inline bool ASTBuilder::build(ASTree& tree, math::VariableDependenceController& controller, const std::vector<Token>& tokens) {
+        controller.clear();
         tree.clear();
 
         std::stack<std::shared_ptr<algorithm::INode>> nodeStack = { };
@@ -105,6 +107,9 @@ namespace kubvc::algorithm {
                     const auto value = token.value;
                     const auto node = createVariableNode(value.at(0));
                     nodeStack.push(node);
+                    
+                    const auto varNode = castToNodePtr<NodeTypes::Variable>(node);
+                    controller.add(math::VariableSideDependence::Right, varNode->getId(), varNode->getValue());
                     break;
                 }
                 case Token::Types::Operator: {
@@ -126,6 +131,16 @@ namespace kubvc::algorithm {
                     const auto value = token.value;
                     const auto node = createOperatorNode(arg2, arg1, value.at(0));
                     nodeStack.push(node);
+
+                    if (node->operation == '=') {
+                        if (arg2 && arg2->getType() == NodeTypes::Variable) {
+                            const auto varNode = castToNodePtr<NodeTypes::Variable>(arg2);
+                            if (varNode) {
+                                controller.add(math::VariableSideDependence::Left, varNode->getId(), varNode->getValue());
+                            }
+                        } 
+                    }
+
                     break;
                 }
                 case Token::Types::Function: {
