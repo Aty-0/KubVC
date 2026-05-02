@@ -293,13 +293,25 @@ namespace kubvc::algorithm {
                     KUB_ERROR("[tokenize] failed to parse number");
                     return std::nullopt;
                 }
-
             } else if (algorithm::Helpers::isLetter(current)) {
                 const auto result = parseWhile(str.substr(pos, str.size()), [](algorithm::Helpers::uchar chr) { return algorithm::Helpers::isLetter(chr) || algorithm::Helpers::isDigit(chr); });
                 isOperatorOpen = false;
                 if (result.has_value()) {
                     const auto word = result.value();
-                    const auto wordSize = word.size();
+                    const auto wordSize = word.size();     
+                    // First we are try to find constant from list                
+                    const auto constResult = utility::container::get(math::containers::Constants, std::string_view { word.data(), wordSize });
+                    if (constResult.has_value()) {
+                        KUB_LEXER_DEBUG("[tokenize] it's a constant");
+                        const auto token = Token {
+                            Token::Types::Number,
+                            std::to_string(constResult.value()),
+                        };   
+                        tokens.push_back(token);
+                        pos++;
+                        continue;                                                                                     
+                    }
+                    // Or it's possible variable or function 
                     if (wordSize == 1) {
                         const auto token = Token {
                             Token::Types::Variable,
@@ -335,20 +347,9 @@ namespace kubvc::algorithm {
                                 return std::nullopt;
                             }
                         } else {
-                            const auto constResult = utility::container::get(math::containers::Constants, std::string_view { word.data(), word.size() });
-                            if (constResult.has_value()) {
-                                KUB_LEXER_DEBUG("[tokenize] it's a constant");
-                                const auto token = Token {
-                                    Token::Types::Number,
-                                    std::to_string(constResult.value()),
-                                };   
-                                tokens.push_back(token);                                                             
-                            } else {
-                                // TODO: Actually we can check on implicit multiplication here
-                                KUB_ERROR("[tokenize] unknown keyword or brecket are not open {}", word);
-                                return std::nullopt;
-                            }
-                        }     
+                            KUB_ERROR("[tokenize] unknown keyword or brecket are not open {}", word);
+                            return std::nullopt;
+                        }  
                     }
                 } else {
                     KUB_ERROR("[tokenize] failed to parse letters");
