@@ -32,7 +32,7 @@ namespace kubvc::editor {
     }
 
     void EditorGraphListWindow::drawGraphPanel(kubvc::render::GUI& gui, std::shared_ptr<math::ExpressionModel> model, std::int32_t index) {
-        static const auto fontBig = gui.getDefaultFontMathSize();        
+        static auto fontBig = gui.getDefaultFontMathSize();        
 
         const auto selectedModel = controller->getSelected();
 
@@ -58,13 +58,13 @@ namespace kubvc::editor {
 
         // Draw counter 
         {
-            ImGui::PushFont(fontBig);
+            ImGui::PushFont(&fontBig);
             ImGui::TextDisabled("%d:", index);
             ImGui::PopFont();
             ImGui::SameLine();
         }
 
-        ImGui::PushFont(gui.getMathFont());
+        ImGui::PushFont(&gui.getMathFont());
         const auto currentExpressionIsSelected = selectedModel == nullptr ? false : currentModelId == selectedModel->getId();
         if (!currentExpression.isValid())
             ImGui::PushStyleColor(ImGuiCol_Border, INVALID_COLOR);
@@ -100,7 +100,7 @@ namespace kubvc::editor {
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.3f, 0.3f, 0.3f, 0.3f));
         
-        ImGui::PushFont(gui.getIconFont());
+        ImGui::PushFont(&gui.getIconFont());
         
         ImGui::PushID(("##" + idStr + "_ExprRadioButton").c_str());    
         const auto visible = currentSettings.getVisible();

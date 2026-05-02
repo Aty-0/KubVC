@@ -273,7 +273,7 @@ namespace kubvc::editor {
     }
     
     static inline void drawIcon(const kubvc::render::GUI& gui, std::string_view icon) {
-        ImGui::PushFont(gui.getIconFont());
+        ImGui::PushFont(&gui.getIconFont());
         ImGui::Text(icon.data());
         ImGui::PopFont();
     }

@@ -17,12 +17,12 @@ namespace kubvc::render {
             void begin();
             void end();
 
-            inline ImFont* getMathFont() const { return m_mathFont; }
-            inline ImFont* getDefaultFont() const { return m_defaultFont; }
-            inline ImFont* getIconFont() const { return m_iconFont; }
+            inline ImFont& getMathFont() const { return *m_mathFont; }
+            inline ImFont& getDefaultFont() const { return *m_defaultFont; }
+            inline ImFont& getIconFont() const { return *m_iconFont; }
 
             // Default font but with math font size 
-            inline ImFont* getDefaultFontMathSize() const { return m_defaultFontMathSize; }
+            inline ImFont& getDefaultFontMathSize() const { return *m_defaultFontMathSize; }
 
             void applyDefaultKubDarkTheme();
             void applyImGuiWhiteTheme();

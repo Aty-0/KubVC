@@ -27,7 +27,7 @@ namespace kubvc::render {
 		io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;     
 		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;    
 		
-		if (!ImGui_ImplGlfw_InitForOpenGL(window->getHandle(), true)) {
+		if (!ImGui_ImplGlfw_InitForOpenGL(&window->getHandle(), true)) {
 			KUB_FATAL("ImGui GLFW impl failed!");
 		}
 

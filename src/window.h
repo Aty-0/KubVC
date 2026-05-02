@@ -14,7 +14,7 @@ namespace kubvc::application {
             void swapAndPool();
 
             bool shouldClose() const;
-            inline GLFWwindow* getHandle() const { return m_windowHandle; }
+            [[nodiscard]] GLFWwindow& getHandle() const { return *m_windowHandle; }
         private:
             bool initializeGLFW() const; 
 
