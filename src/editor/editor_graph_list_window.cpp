@@ -58,9 +58,9 @@ namespace kubvc::editor {
 
         // Draw counter 
         {
-            ImGui::PushFont(&fontBig);
+            //ImGui::PushFont(&fontBig);
             ImGui::TextDisabled("%d:", index);
-            ImGui::PopFont();
+            //ImGui::PopFont();
             ImGui::SameLine();
         }
 
@@ -188,7 +188,7 @@ namespace kubvc::editor {
 
     void EditorGraphListWindow::onRender(kubvc::render::GUI& gui) {
         const auto childFlags = ImGuiChildFlags_::ImGuiChildFlags_Borders;
-        const auto childWindowFlags = ImGuiWindowFlags_::ImGuiWindowFlags_HorizontalScrollbar |  ImGuiWindowFlags_::ImGuiWindowFlags_AlwaysUseWindowPadding;
+        const auto childWindowFlags = ImGuiWindowFlags_::ImGuiWindowFlags_HorizontalScrollbar /* |  ImGuiWindowFlags_::ImGuiWindowFlags_AlwaysUseWindowPadding */;
 
         auto windowSize = ImGui::GetWindowSize();
         if (ImGui::BeginChild("GraphListHeader", ImVec2(windowSize.x, 42.0f), childFlags)) {

@@ -2,10 +2,10 @@
 #include "window.h"
 #include "logger.h"
 
-#include "Libs/imgui/imgui_impl_opengl3.h"
-#include "Libs/imgui/imgui_impl_glfw.h"
-#include "Libs/imgui/imgui_internal.h"
-#include "Libs/imgui/implot_internal.h"
+#include "imgui_impl_opengl3.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_internal.h"
+#include "implot_internal.h"
 
 #include "IconsFontAwesome6.h"
 

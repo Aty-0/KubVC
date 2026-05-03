@@ -1,7 +1,7 @@
 #include "renderer.h"
 #include "logger.h"
 
-#include "Libs/imgui/imgui.h"
+#include "imgui.h"
 
 namespace kubvc::render {
     static constexpr glm::vec4 CLEAR_COLOR = { 0.0f, 0.0f, 0.0f, 1.0f };
