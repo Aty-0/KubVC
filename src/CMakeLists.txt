@@ -7,6 +7,7 @@ target_include_directories(KubVcApp
     PUBLIC ${imgui_SOURCE_DIR}
     PUBLIC ${imgui_SOURCE_DIR}/backends
     PUBLIC ${implot_SOURCE_DIR}
+    PUBLIC ${ImGuiFileDialog_SOURCE_DIR}
 )
 
 target_compile_features(KubVcApp PRIVATE cxx_std_20)
@@ -16,19 +17,22 @@ target_link_libraries(KubVcApp
     libglew_static
     imgui
     implot
+    ImGuiFileDialog
 )
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug") 
     target_compile_definitions(KubVcApp PRIVATE 
         GLEW_STATIC
+        USE_STD_FILESYSTEM
         DEBUG
         KUB_LEXER_DEBUG_ENABLE_TOKEN_PRINT
         KUB_ENABLE_LEXER_DEBUG_LOG
         #KUB_USE_ANSI_COLORS
-    )
-else()
+        )
+    else()
     target_compile_definitions(KubVcApp PRIVATE 
         GLEW_STATIC
+        USE_STD_FILESYSTEM
     )
 endif()
 

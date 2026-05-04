@@ -110,6 +110,23 @@ add_library(implot STATIC ${IMPLOT_SOURCES})
 target_include_directories(implot PUBLIC ${implot_SOURCE_DIR})
 target_link_libraries(implot PUBLIC imgui)
 
+FetchContent_Declare(
+    ImGuiFileDialog
+    GIT_REPOSITORY https://github.com/aiekick/ImGuiFileDialog.git 
+    GIT_TAG v0.6.8
+    GIT_SHALLOW TRUE
+)
+    
+#FetchContent_MakeAvailable(imgui ImGuiFileDialog)
+FetchContent_GetProperties(ImGuiFileDialog)
+if(NOT ImGuiFileDialog_POPULATED)
+    FetchContent_Populate(ImGuiFileDialog)
+endif()
+
+add_library(ImGuiFileDialog STATIC ${ImGuiFileDialog_SOURCE_DIR}/ImGuiFileDialog.cpp  )
+target_include_directories(ImGuiFileDialog PUBLIC ${ImGuiFileDialog_SOURCE_DIR})
+target_link_libraries(ImGuiFileDialog PUBLIC imgui)
+    
 #################################################################################
 # Add sources 
 #################################################################################

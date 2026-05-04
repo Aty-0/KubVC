@@ -8,7 +8,7 @@ namespace kubvc::math {
             ExpressionController() = default;
             ~ExpressionController();
 
-            void create();
+            [[nodiscard]] std::shared_ptr<ExpressionModel> create();
             void clear();
             bool removeById(std::int32_t index);
             bool removeByIndex(std::size_t index);
@@ -28,11 +28,12 @@ namespace kubvc::math {
         clear();
     }
 
-    inline void ExpressionController::create() {
+    inline std::shared_ptr<ExpressionModel> ExpressionController::create() {
         static std::int32_t globalId = 0; 
         const auto model = std::make_shared<ExpressionModel>(globalId);
         m_expressions.push_back(model);
         globalId++;
+        return model;
     } 
 
     inline void ExpressionController::clear() {

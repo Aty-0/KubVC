@@ -6,18 +6,87 @@
 
 #include "../logger.h"
 
+// TODO: relocate all save/load code
+#include "../expression_controller.h"
+#include "../io.h"
+#include <ranges>
+
+#include "ImGuiFileDialog.h"
+
 namespace kubvc::editor {
     void EditorMenuBar::render(kubvc::render::GUI& gui) {
+        static const auto controller = math::ExpressionController::getInstance();
+        
+        static const IGFD::FileDialogConfig config = { .path = "." };
+        static const auto fileDialogInstance = ImGuiFileDialog::Instance();
+        if (fileDialogInstance->Display("PointsSaveFileDialog")) {
+            const auto filePathName = fileDialogInstance->GetFilePathName();
+            if (fileDialogInstance->IsOk()) {
+                const auto selected = controller->getSelected();
+                if (selected != nullptr) {
+                    io::FileSaver file;
+                    std::vector<char> buffer; 
+                    for (const auto& point : selected->getExpression().getPlotBuffer()) {
+                        const auto str = std::format("{}, {}\n", point.x, point.y);
+                        std::ranges::copy(str, std::back_inserter(buffer));
+                    }
+                    KUB_ASSERT(file.save(filePathName, buffer), "failed to save file");
+                }
+            }
+
+            fileDialogInstance->Close();
+        }
+        
+        if (fileDialogInstance->Display("GraphListSaveFileDialog")) {
+            if (fileDialogInstance->IsOk()) {
+                const auto filePathName = fileDialogInstance->GetFilePathName();
+                const auto expressions = controller->getExpressions();
+                std::vector<char> fileBuffer;
+                for (auto expression : expressions) {
+                    if (expression != nullptr) {
+                        const auto exprBuffer = expression->getTextBuffer().getBuffer();                            
+                        fileBuffer.insert(exprBuffer.end(), exprBuffer.begin(), exprBuffer.end());
+                        fileBuffer.push_back('\n');
+                    }
+                }
+                
+                io::FileSaver file;
+                KUB_ASSERT(file.save(filePathName, fileBuffer), "failed to save file");              
+            }
+            fileDialogInstance->Close();
+        }
+
+        if (fileDialogInstance->Display("GraphListOpenFileDialog")) {
+            if (fileDialogInstance->IsOk()) {
+                const auto filePathName = fileDialogInstance->GetFilePathName();
+                io::FileLoader file;
+                const auto result = file.load(filePathName);
+                if (result.has_value()) {
+                    const auto value = result.value();
+                    for (const auto& str : value | std::views::split('\n')) {
+                        const auto newExpression = controller->create();
+                        auto& buffer = newExpression->getTextBuffer().getBuffer();
+                        std::ranges::copy(str, std::back_inserter(buffer));
+                    }
+                }
+            }
+            fileDialogInstance->Close();
+        }
+
         if (ImGui::BeginMainMenuBar()) {
             if (ImGui::BeginMenu("File")) {
                 if (ImGui::MenuItem("Open (.graphlist, .txt)")) {
-                    // TODO: 
+                    fileDialogInstance->OpenDialog("GraphListOpenFileDialog", "Open graph list", ".graphlist,.txt", config);
                 }
-
+                
                 if (ImGui::MenuItem("Save (.graphlist, .txt)")) {
-                    // TODO: 
+                    fileDialogInstance->OpenDialog("GraphListSaveFileDialog", "Save graph list", ".graphlist,.txt", config);
                 }
-
+                
+                if (ImGui::MenuItem("Save all points (.txt)")) {
+                    fileDialogInstance->OpenDialog("PointsSaveFileDialog", "Save graph list", ".graphlist,.txt", config);
+                }
+                
                 if (ImGui::MenuItem("Make graph screenshot")) {
                     // TODO: 
                 }
