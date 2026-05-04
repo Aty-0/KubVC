@@ -29,7 +29,8 @@ namespace kubvc::io {
         if (!file.is_open()) {
             return false;
         }
-        file << buffer.data() << '\0';
+
+        file.write(buffer.data(), buffer.size());
         file.close();
 
         return true;
@@ -64,7 +65,7 @@ namespace kubvc::io {
             KUB_ERROR("Path is empty");
             return std::nullopt;
         }
-        std::ifstream file = std::ifstream(path.data(), std::iostream::ate);
+        std::ifstream file = std::ifstream(path.data(), std::iostream::ate | std::ios::binary);
         if (!file.is_open()) {
             // TODO: details
             KUB_ERROR("failed to open file");
@@ -87,7 +88,7 @@ namespace kubvc::io {
             return std::nullopt;
         }
 
-        const auto data = std::string { m_buffer.data(), m_buffer.size() };
+        const auto data = std::string(m_buffer.begin(), m_buffer.end());
         file.close();
 
         return data;

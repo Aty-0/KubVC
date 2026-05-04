@@ -28,7 +28,7 @@ namespace kubvc::editor {
                     std::vector<char> buffer; 
                     for (const auto& point : selected->getExpression().getPlotBuffer()) {
                         const auto str = std::format("{}, {}\n", point.x, point.y);
-                        std::ranges::copy(str, std::back_inserter(buffer));
+                        buffer.insert(buffer.begin(),  str.begin(), str.end());
                     }
                     KUB_ASSERT(file.save(filePathName, buffer), "failed to save file");
                 }
@@ -41,17 +41,19 @@ namespace kubvc::editor {
             if (fileDialogInstance->IsOk()) {
                 const auto filePathName = fileDialogInstance->GetFilePathName();
                 const auto expressions = controller->getExpressions();
-                std::vector<char> fileBuffer;
+                std::vector<char> fileContentBuffer;
                 for (auto expression : expressions) {
                     if (expression != nullptr) {
-                        const auto exprBuffer = expression->getTextBuffer().getBuffer();                            
-                        fileBuffer.insert(exprBuffer.end(), exprBuffer.begin(), exprBuffer.end());
-                        fileBuffer.push_back('\n');
+                        const auto exprBuffer = expression->getTextBuffer().getBuffer();
+                        // Find end, because we are have a fixed-size buffer    
+                        const auto actualEnd = std::find(exprBuffer.begin(), exprBuffer.end(), '\0');                                                 
+                        fileContentBuffer.insert(fileContentBuffer.end(), exprBuffer.begin(), actualEnd);
+                        fileContentBuffer.push_back('\n');
                     }
                 }
                 
                 io::FileSaver file;
-                KUB_ASSERT(file.save(filePathName, fileBuffer), "failed to save file");              
+                KUB_ASSERT(file.save(filePathName, fileContentBuffer), "failed to save file");              
             }
             fileDialogInstance->Close();
         }
@@ -62,12 +64,17 @@ namespace kubvc::editor {
                 io::FileLoader file;
                 const auto result = file.load(filePathName);
                 if (result.has_value()) {
-                    const auto value = result.value();
-                    for (const auto& str : value | std::views::split('\n')) {
+                    auto value = result.value();
+                    for (const auto& str : value | std::views::split('\n') | std::views::filter([](const auto& str) { return !str.empty(); })) {
                         const auto newExpression = controller->create();
+                        // Add expression to buffer
                         auto& buffer = newExpression->getTextBuffer().getBuffer();
-                        std::ranges::copy(str, std::back_inserter(buffer));
+                        buffer.insert(buffer.begin(), str.begin(), str.end());
+                        // Try to parse it and evaluate 
+                        newExpression->parseThenEvaluate(math::GraphLimits::GlobalLimits);
                     }
+                } else {
+                    KUB_ERROR("Trying to open a invalid file");
                 }
             }
             fileDialogInstance->Close();
@@ -75,16 +82,16 @@ namespace kubvc::editor {
 
         if (ImGui::BeginMainMenuBar()) {
             if (ImGui::BeginMenu("File")) {
-                if (ImGui::MenuItem("Open (.graphlist, .txt)")) {
-                    fileDialogInstance->OpenDialog("GraphListOpenFileDialog", "Open graph list", ".graphlist,.txt", config);
+                if (ImGui::MenuItem("Open Graphs(.txt)")) {
+                    fileDialogInstance->OpenDialog("GraphListOpenFileDialog", "Open graph list", ".txt", config);
                 }
                 
-                if (ImGui::MenuItem("Save (.graphlist, .txt)")) {
-                    fileDialogInstance->OpenDialog("GraphListSaveFileDialog", "Save graph list", ".graphlist,.txt", config);
+                if (ImGui::MenuItem("Save Graphs(.txt)")) {
+                    fileDialogInstance->OpenDialog("GraphListSaveFileDialog", "Save graph list", ".txt", config);
                 }
                 
-                if (ImGui::MenuItem("Save all points (.txt)")) {
-                    fileDialogInstance->OpenDialog("PointsSaveFileDialog", "Save graph list", ".graphlist,.txt", config);
+                if (ImGui::MenuItem("Save graph points (.txt)")) {
+                    fileDialogInstance->OpenDialog("PointsSaveFileDialog", "Save graph points", ".txt", config);
                 }
                 
                 if (ImGui::MenuItem("Make graph screenshot")) {
