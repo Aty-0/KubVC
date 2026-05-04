@@ -1,10 +1,12 @@
 file(GLOB_RECURSE SOURCES *.cpp)
 
 add_executable(KubVcApp ${SOURCES})
-
 target_include_directories(KubVcApp
     PUBLIC ${KUBVC_SOURCES_DIR}
     PUBLIC ${glew_SOURCE_DIR}/include
+    PUBLIC ${imgui_SOURCE_DIR}
+    PUBLIC ${imgui_SOURCE_DIR}/backends
+    PUBLIC ${implot_SOURCE_DIR}
 )
 
 target_compile_features(KubVcApp PRIVATE cxx_std_20)
@@ -12,6 +14,8 @@ target_link_libraries(KubVcApp
     glm::glm
     glfw
     libglew_static
+    imgui
+    implot
 )
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug") 

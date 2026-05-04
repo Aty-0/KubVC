@@ -1,3 +1,4 @@
+# TODO: presets
 #################################################################################
 # Basic project setup
 #################################################################################
@@ -58,6 +59,56 @@ FetchContent_Declare(
 )
 
 FetchContent_MakeAvailable(glm)
+
+# Get ImGui 
+FetchContent_Declare(
+    imgui
+    GIT_REPOSITORY https://github.com/ocornut/imgui.git
+    GIT_TAG v1.92.7-docking
+    GIT_SHALLOW TRUE
+)
+	
+FetchContent_MakeAvailable(imgui)
+
+set(IMGUI_SOURCES
+    ${imgui_SOURCE_DIR}/imgui.cpp
+    ${imgui_SOURCE_DIR}/imgui_demo.cpp
+    ${imgui_SOURCE_DIR}/imgui_draw.cpp
+    ${imgui_SOURCE_DIR}/imgui_tables.cpp
+    ${imgui_SOURCE_DIR}/imgui_widgets.cpp
+    ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
+    ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp
+)
+
+add_library(imgui STATIC ${IMGUI_SOURCES})
+target_include_directories(imgui PUBLIC
+    ${imgui_SOURCE_DIR}         
+    ${imgui_SOURCE_DIR}/backends
+)
+target_link_libraries(imgui PUBLIC 
+    OpenGL::GL 
+    glfw
+)
+
+# Get implot 
+FetchContent_Declare(
+    implot
+    GIT_REPOSITORY https://github.com/epezent/implot.git
+    GIT_TAG v1.0
+    GIT_SHALLOW TRUE
+)
+
+FetchContent_MakeAvailable(implot)
+
+set(IMPLOT_SOURCES
+    ${implot_SOURCE_DIR}/implot.cpp
+    ${implot_SOURCE_DIR}/implot_items.cpp
+    ${implot_SOURCE_DIR}/implot_demo.cpp
+)
+
+add_library(implot STATIC ${IMPLOT_SOURCES})
+target_include_directories(implot PUBLIC ${implot_SOURCE_DIR})
+target_link_libraries(implot PUBLIC imgui)
 
 #################################################################################
 # Add sources 

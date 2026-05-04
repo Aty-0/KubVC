@@ -1,7 +1,7 @@
 #pragma once
 #include "singleton.h"
-#include "Libs/imgui/imgui.h"
-#include "Libs/imgui/implot.h"
+#include "imgui.h"
+#include "implot.h"
 
 #include "IconsFontAwesome6.h"
 

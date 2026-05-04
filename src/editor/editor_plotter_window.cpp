@@ -64,11 +64,18 @@ namespace kubvc::editor {
                     const auto buffer = expression.getPlotBuffer(); 
                     if (!buffer.empty()) {
                         // Apply plot style from expression                                                   
-                        ImPlot::SetNextLineStyle(kubvc::utility::toImVec4(settings.getColor()), settings.getThickness());    
                         const auto isShaded = settings.getShaded() ? ImPlotLineFlags_::ImPlotLineFlags_Shaded : ImPlotLineFlags_::ImPlotLineFlags_None;
                         const auto flags = ImPlotLineFlags_::ImPlotLineFlags_NoClip | isShaded;
 
-                        ImPlot::PlotLine(textBuffer.getBuffer().data(), &buffer[0].x, &buffer[0].y, buffer.size(), flags, 0, vecStride);      
+                        ImPlotSpec specs;
+                        specs.LineWeight = settings.getThickness();
+                        specs.LineColor = kubvc::utility::toImVec4(settings.getColor());
+                        specs.Flags = flags;
+                        specs.Stride = vecStride;
+
+                        ImPlot::PlotLine(textBuffer.getBuffer().data(), &buffer[0].x, &buffer[0].y, 
+                            buffer.size(), specs);      
+
                         //ImPlot::PlotScatter(expr->getTextBuffer().data(), &buffer[0].x, &buffer[0].y, buffer.size(), flags, 0, vecStride);                                  
                     }
                 }                    

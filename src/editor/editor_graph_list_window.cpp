@@ -32,7 +32,7 @@ namespace kubvc::editor {
     }
 
     void EditorGraphListWindow::drawGraphPanel(kubvc::render::GUI& gui, std::shared_ptr<math::ExpressionModel> model, std::int32_t index) {
-        static auto fontBig = gui.getDefaultFontMathSize();        
+        static auto& fontBig = gui.getDefaultFontMathSize();        
 
         const auto selectedModel = controller->getSelected();
 
@@ -188,7 +188,7 @@ namespace kubvc::editor {
 
     void EditorGraphListWindow::onRender(kubvc::render::GUI& gui) {
         const auto childFlags = ImGuiChildFlags_::ImGuiChildFlags_Borders;
-        const auto childWindowFlags = ImGuiWindowFlags_::ImGuiWindowFlags_HorizontalScrollbar |  ImGuiWindowFlags_::ImGuiWindowFlags_AlwaysUseWindowPadding;
+        const auto childWindowFlags = ImGuiWindowFlags_::ImGuiWindowFlags_HorizontalScrollbar /* |  ImGuiWindowFlags_::ImGuiWindowFlags_AlwaysUseWindowPadding */;
 
         auto windowSize = ImGui::GetWindowSize();
         if (ImGui::BeginChild("GraphListHeader", ImVec2(windowSize.x, 42.0f), childFlags)) {
