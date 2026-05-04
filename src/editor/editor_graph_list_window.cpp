@@ -32,7 +32,7 @@ namespace kubvc::editor {
     }
 
     void EditorGraphListWindow::drawGraphPanel(kubvc::render::GUI& gui, std::shared_ptr<math::ExpressionModel> model, std::int32_t index) {
-        static auto fontBig = gui.getDefaultFontMathSize();        
+        static auto& fontBig = gui.getDefaultFontMathSize();        
 
         const auto selectedModel = controller->getSelected();
 
@@ -58,9 +58,9 @@ namespace kubvc::editor {
 
         // Draw counter 
         {
-            //ImGui::PushFont(&fontBig);
+            ImGui::PushFont(&fontBig);
             ImGui::TextDisabled("%d:", index);
-            //ImGui::PopFont();
+            ImGui::PopFont();
             ImGui::SameLine();
         }
 
