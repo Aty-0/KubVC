@@ -205,17 +205,12 @@ namespace kubvc::render {
 		style.WindowTitleAlign = ImVec2(0.5f, 0.5f);
 		
 		auto& plotStyle = ImPlot::GetStyle();
-		plotStyle.Colors[ImPlotCol_Fill] = ImVec4(0.30f, 0.40f, 0.60f, 0.20f);
-		plotStyle.Colors[ImPlotCol_MarkerOutline] = ImVec4(0.80f, 0.80f, 0.90f, 1.00f);
-		plotStyle.Colors[ImPlotCol_MarkerFill] = ImVec4(0.40f, 0.62f, 0.90f, 0.60f); 
 		plotStyle.Colors[ImPlotCol_PlotBg] = ImVec4(0.11f, 0.11f, 0.13f, 1.00f);
 		plotStyle.Colors[ImPlotCol_PlotBorder] = ImVec4(0.30f, 0.30f, 0.40f, 0.30f);
 		plotStyle.Colors[ImPlotCol_Selection] = ImVec4(0.40f, 0.62f, 0.90f, 0.40f); 
 		plotStyle.Colors[ImPlotCol_Crosshairs] = ImVec4(0.80f, 0.80f, 0.90f, 0.40f);
 		
 		plotStyle.PlotPadding = ImVec2(12.0f, 12.0f);
-		plotStyle.LineWeight = 1.5f;
-		plotStyle.MarkerSize = 5.0f;
 		plotStyle.PlotBorderSize = 1.0f;
 		plotStyle.MinorAlpha = 0.20f;
 		plotStyle.MajorTickLen = ImVec2(8.0f, 8.0f);

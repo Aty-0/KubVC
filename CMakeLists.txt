@@ -1,3 +1,4 @@
+# TODO: presets
 #################################################################################
 # Basic project setup
 #################################################################################
@@ -93,7 +94,7 @@ target_link_libraries(imgui PUBLIC
 FetchContent_Declare(
     implot
     GIT_REPOSITORY https://github.com/epezent/implot.git
-    GIT_TAG v0.17
+    GIT_TAG v1.0
     GIT_SHALLOW TRUE
 )
 
