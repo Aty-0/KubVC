@@ -308,7 +308,7 @@ namespace kubvc::algorithm {
                             std::to_string(constResult.value()),
                         };   
                         tokens.push_back(token);
-                        pos++;
+                        pos += wordSize;
                         continue;                                                                                     
                     }
                     // Or it's possible variable or function 
