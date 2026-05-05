@@ -106,10 +106,43 @@ set(IMPLOT_SOURCES
     ${implot_SOURCE_DIR}/implot_demo.cpp
 )
 
+
 add_library(implot STATIC ${IMPLOT_SOURCES})
 target_include_directories(implot PUBLIC ${implot_SOURCE_DIR})
 target_link_libraries(implot PUBLIC imgui)
 
+set(IMGUI_CONFIG_DIR ${CMAKE_BINARY_DIR}/imgui-config)
+file(MAKE_DIRECTORY ${IMGUI_CONFIG_DIR})
+
+# Create a simple config file
+file(WRITE ${IMGUI_CONFIG_DIR}/imgui-config.cmake
+    "if(NOT TARGET imgui)\n"
+    "    message(FATAL_ERROR \"imgui target not found\")\n"
+    "endif()\n"
+    "\n"
+    "# Create imported target for find_package compatibility\n"
+    "if(NOT TARGET imgui::imgui)\n"
+    "    add_library(imgui::imgui ALIAS imgui)\n"
+    "endif()\n"
+    "\n"
+    "set(imgui_FOUND TRUE)\n"
+)
+
+list(APPEND CMAKE_PREFIX_PATH ${IMGUI_CONFIG_DIR})
+
+FetchContent_Declare(
+    ImGuiFileDialog
+    GIT_REPOSITORY https://github.com/aiekick/ImGuiFileDialog.git 
+    GIT_TAG v0.6.8
+    GIT_SHALLOW TRUE
+)
+
+FetchContent_MakeAvailable(ImGuiFileDialog)
+
+if(TARGET ImGuiFileDialog)
+    target_link_libraries(ImGuiFileDialog PUBLIC imgui)
+endif()
+    
 #################################################################################
 # Add sources 
 #################################################################################

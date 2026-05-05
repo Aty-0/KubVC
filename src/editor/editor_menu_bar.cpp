@@ -5,19 +5,71 @@
 #include "editor_fps_counter_window.h"
 
 #include "../logger.h"
+#include "../expression_io.h"
+
+#include "ImGuiFileDialog.h"
 
 namespace kubvc::editor {
+    enum class FileDialogMode {
+        SaveGraphs,
+        SaveGraphsPoints,
+        LoadGraphs,
+        Unknown
+    };
+
     void EditorMenuBar::render(kubvc::render::GUI& gui) {
+        static const auto controller = math::ExpressionController::getInstance();
+        static const auto exprIo = io::ExpressionIO::getInstance();
+        static const auto fileDialogInstance = ImGuiFileDialog::Instance();
+        static const IGFD::FileDialogConfig config = { .path = "." };
+        static FileDialogMode fileDialogMode = FileDialogMode::Unknown;
+
+        if (fileDialogInstance->Display("EditorMenuBarFileDialog")) {
+            const auto filePathName = fileDialogInstance->GetFilePathName();
+            if (fileDialogInstance->IsOk()) {
+                switch (fileDialogMode)
+                {
+                    case FileDialogMode::LoadGraphs: {
+                        exprIo->loadGraphs(filePathName);
+                        break;
+                    }
+                    case FileDialogMode::SaveGraphs: {
+                        exprIo->saveGraphs(filePathName);
+                        break;
+                    }
+                    case FileDialogMode::SaveGraphsPoints: {
+                        const auto selected = controller->getSelected();
+                        exprIo->saveGraphPoints(filePathName, selected);                
+                        break;
+                    }            
+                    default: {
+                        KUB_ASSERT(false, "Unknown FileDialogMode.");
+                        break;
+                    }
+                }
+                // Reset
+                fileDialogMode = FileDialogMode::Unknown;
+            }
+            fileDialogInstance->Close();
+        }
+
         if (ImGui::BeginMainMenuBar()) {
             if (ImGui::BeginMenu("File")) {
-                if (ImGui::MenuItem("Open (.graphlist, .txt)")) {
-                    // TODO: 
+                if (ImGui::MenuItem("Open Graphs(.txt)")) {
+                    fileDialogInstance->OpenDialog("EditorMenuBarFileDialog", "Open graph list", ".txt", config);
+                    fileDialogMode = FileDialogMode::LoadGraphs;
                 }
-
-                if (ImGui::MenuItem("Save (.graphlist, .txt)")) {
-                    // TODO: 
+                
+                if (ImGui::MenuItem("Save Graphs(.txt)")) {
+                    fileDialogInstance->OpenDialog("EditorMenuBarFileDialog", "Save graph list", ".txt", config);
+                    fileDialogMode = FileDialogMode::SaveGraphs;
                 }
-
+                
+                if (ImGui::MenuItem("Save graph points (.txt)")) {
+                    fileDialogInstance->OpenDialog("EditorMenuBarFileDialog", "Save graph points", ".txt", config);
+                    fileDialogMode = FileDialogMode::SaveGraphsPoints;
+                }
+                
                 if (ImGui::MenuItem("Make graph screenshot")) {
                     // TODO: 
                 }
