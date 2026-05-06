@@ -22,11 +22,14 @@ namespace kubvc::editor {
     }
 
     void EditorGraphListWindow::drawGraphList(kubvc::render::GUI& gui) {
-        std::int32_t expressionIndex = 0;
-        for (auto model : controller->getExpressions()) {
-            if (model != nullptr) {
-                expressionIndex++;
-                drawGraphPanel(gui, model, expressionIndex);
+        ImGuiListClipper clipper;
+        const auto expressions = controller->getExpressions();
+        clipper.Begin(static_cast<std::int32_t>(expressions.size()), 
+            ImGui::GetTextLineHeightWithSpacing());
+        while (clipper.Step()) {
+            for (std::int32_t i = clipper.DisplayStart; i < clipper.DisplayEnd; ++i) {
+                const auto model = expressions[i];
+                drawGraphPanel(gui, model, i);
             }
         }
     }
