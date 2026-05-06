@@ -80,7 +80,7 @@ namespace kubvc::editor {
         if (ImGui::InputText(("##" + idStr + "_ExprInputText").c_str(), currentTextBuffer.getBuffer().data(), 
             currentTextBuffer.getBuffer().size(), ImGuiInputTextFlags_::ImGuiInputTextFlags_CallbackAlways, 
                 EditorGraphListWindow::handleExpressionCursorPosCallback, &currentTextBuffer)) {            
-            model->parseThenEvaluate(math::GraphLimits::GlobalLimits);
+            controller->parseThenEvaluate(model, math::GraphLimits::GlobalLimits);
         }
 
         ImGui::PopFont();

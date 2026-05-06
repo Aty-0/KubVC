@@ -59,7 +59,7 @@ namespace kubvc::io {
                 auto& buffer = newExpression->getTextBuffer().getBuffer();
                 buffer.insert(buffer.begin(), str.begin(), str.end());
                 // Try to parse it and evaluate 
-                newExpression->parseThenEvaluate(math::GraphLimits::GlobalLimits);
+                controller->parseThenEvaluate(newExpression, math::GraphLimits::GlobalLimits);
             }
         } else {
             KUB_ERROR("Trying to open a invalid file");

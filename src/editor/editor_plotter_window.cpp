@@ -49,7 +49,7 @@ namespace kubvc::editor {
 #endif
 
             // Draw our functions 
-            for (auto model : controller->getExpressions()) {
+            for (auto model : controller->getValidExpressions()) {
                 KUB_ASSERT(model != nullptr, "Some model in expression list are nullptr");          
 
                 auto& settings = model->getSettings(); 
