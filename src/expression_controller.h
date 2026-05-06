@@ -56,6 +56,7 @@ namespace kubvc::math {
     }
 
     inline ExpressionController::~ExpressionController() {
+        resetSelected();
         clear();
     }
 
