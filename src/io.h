@@ -25,11 +25,15 @@ namespace kubvc::io {
             return false;
         }
         std::ofstream file;
-        file.open(path.data(), std::ios_base::out);
-        if (!file.is_open()) {
+        file.exceptions(std::ofstream::failbit | std::ofstream::badbit);
+        try {
+            file.open(path.data(), std::ios_base::out);
+        } catch (const std::ios_base::failure& ex) {
+            KUB_ERROR("can't save file: {}", ex.what());
             return false;
         }
-
+        
+        
         file.write(buffer.data(), buffer.size());
         file.close();
 
@@ -65,13 +69,17 @@ namespace kubvc::io {
             KUB_ERROR("Path is empty");
             return std::nullopt;
         }
-        std::ifstream file = std::ifstream(path.data(), std::iostream::ate | std::ios::binary);
-        if (!file.is_open()) {
-            // TODO: details
-            KUB_ERROR("failed to open file");
+        std::ifstream file;
+        file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+        try {
+            file.open(path.data(), std::iostream::ate | std::ios::binary);
+        } catch (const std::ios_base::failure& ex) {
+            KUB_ERROR("can't open file: {}", ex.what());
             return std::nullopt;
         }
-        
+        // Disable exceptions 
+        file.exceptions(std::ifstream::goodbit);
+
         if (!m_buffer.empty()) {
             m_buffer.clear();
             m_buffer.shrink_to_fit();
@@ -82,7 +90,6 @@ namespace kubvc::io {
         
         m_buffer.resize(size);
         if (!file.read(m_buffer.data(), size)) {
-            // TODO: details
             KUB_ERROR("failed to read file");
             file.close();
             return std::nullopt;
