@@ -14,15 +14,17 @@ namespace kubvc::utility {
                 Error, 
                 Fatal
             };
-
+            Logger() = default;
             ~Logger();
 
 
             template<typename... Args>
             void print(Logger::LogLevel level, const std::source_location source, std::format_string<Args...> fmt, Args&&... args);        
 
+            // Save log file by path
             void save(std::string_view path);
-
+            // Clear log buffer 
+            void clear();
         private:
             void printImpl(Logger::LogLevel level, const std::source_location source, std::string_view text);   
             

@@ -33,11 +33,15 @@ namespace kubvc::utility {
 #endif
 
     Logger::~Logger() {
-        m_buffer.str("");
-        m_buffer.pubseekpos(0);
+        clear();
         if (m_file.is_open()) {
             m_file.close();
         }
+    }
+    
+    void Logger::clear() {
+        m_buffer.str("");
+        m_buffer.pubseekpos(0);
     }
 
     void Logger::printImpl(Logger::LogLevel level, const std::source_location source, std::string_view text) {
