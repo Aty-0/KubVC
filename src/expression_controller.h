@@ -81,41 +81,34 @@ namespace kubvc::math {
     }
 
     inline bool ExpressionController::removeByIndex(std::size_t index) {
+        if (index > m_expressions.size()) {
+            return false;
+        }
+
         const auto it = m_expressions.begin() + index;
         const auto model = *it;
-        if (m_validExpressions.contains(model)) {
+        if (model && m_validExpressions.contains(model)) {
             m_validExpressions.erase(model);
         }  
         
-        const auto eraseIt = m_expressions.erase(it);
-        return eraseIt == m_expressions.end();
+        m_expressions.erase(it);
+        return true;
     }
 
     inline bool ExpressionController::removeById(std::int32_t id) {
-        const auto findModelById = [id](auto model) {
-            if (model == nullptr)
-                return false;
+        const auto isModelWithId = [id](auto model) { return model && model->getId() == id; };
+        const auto it = std::remove_if(m_expressions.begin(), m_expressions.end(), isModelWithId);
 
-            return model->getId() == id; 
-        };
-
-        const auto findIt = std::find_if(m_expressions.begin(), m_expressions.begin(), findModelById);
-        if (findIt != m_expressions.end()) {
-            const auto model = *findIt;
-            if (m_validExpressions.contains(model)) {
-                m_validExpressions.erase(model);
-            }  
-        }
+        if (it != m_expressions.end()) {
+            std::erase_if(m_validExpressions, isModelWithId);
+            m_expressions.erase(it);
+            return true;
+        } 
         
-        const auto it = m_expressions.erase(std::remove_if(m_expressions.begin(), m_expressions.end(), findModelById));
-        return it == m_expressions.end();
+        return false;
     }
 
-    inline std::shared_ptr<ExpressionModel> ExpressionController::get(std::size_t index) const {
-        if (index >= m_expressions.size()) {
-            return nullptr;
-        }
-
-        return m_expressions.at(index);
+    inline std::shared_ptr<ExpressionModel> ExpressionController::get(std::size_t index) const {        
+        return index < m_expressions.size() ? m_expressions[index] : nullptr;
     } 
 }
