@@ -41,20 +41,34 @@ namespace kubvc::algorithm {
     
     class Lexer : public utility::Singleton<Lexer> {
         public:
-            std::optional<std::vector<Token>> tokenize(std::string_view str, bool useShuntingYard = true, std::size_t startFromPos = 0);
+            [[nodiscard]] std::optional<std::vector<Token>> tokenize(std::string_view str, bool useShuntingYard = true, std::size_t startFromPos = 0);
+            [[nodiscard]] std::string getLastError() const { return m_lastErrorMessage; }
             
-
             void print(const std::vector<Token>& tokens);
 
         private:
             // Parse text while predicate is stay true
-            std::optional<std::string> parseWhile(std::string_view str, std::function<bool(algorithm::Helpers::uchar)> predicate);
+            [[nodiscard]] std::optional<std::string> parseWhile(std::string_view str, std::function<bool(algorithm::Helpers::uchar)> predicate);
             // Return text in brackets 
-            std::optional<std::string> parseTextInBrackets(std::string_view str);
-            std::vector<Token> shuntingYardAlgorithm(const std::vector<Token>& in);
+            [[nodiscard]] std::optional<std::string> parseTextInBrackets(std::string_view str);
+            [[nodiscard]] std::vector<Token> shuntingYardAlgorithm(const std::vector<Token>& in);
             
-            algorithm::Helpers::uchar peek(const std::size_t pos, std::string_view str);
+            [[nodiscard]] constexpr algorithm::Helpers::uchar peek(const std::size_t pos, std::string_view str);
+            
+            template<typename... Args>
+            void saveLastError(std::format_string<Args...> fmt, Args&&... args);
+
+            std::string m_lastErrorMessage;
     };
+
+
+    template<typename... Args>
+    inline void Lexer::saveLastError(std::format_string<Args...> fmt, Args&&... args) {
+        const auto formatedString = std::format(fmt, std::forward<Args>(args)...);
+        KUB_ERROR("[lexer] {}", formatedString);
+        m_lastErrorMessage = formatedString;
+    }
+
 
     inline std::vector<Token> Lexer::shuntingYardAlgorithm(const std::vector<Token>& in) {
         if (in.size() == 0) {
@@ -231,11 +245,13 @@ namespace kubvc::algorithm {
         return std::nullopt;
     }
 
-    inline algorithm::Helpers::uchar Lexer::peek(const std::size_t pos, std::string_view str) {
+    inline constexpr algorithm::Helpers::uchar Lexer::peek(const std::size_t pos, std::string_view str) {
         if (pos >= str.length()) {
+            KUB_LEXER_DEBUG("peek failed: pos >= str.length()");
             return '\0';
         }
-        return str.at(pos);
+
+        return str[pos];
     }  
 
 #ifdef KUB_LEXER_DEBUG_ENABLE_TOKEN_PRINT
@@ -256,8 +272,11 @@ namespace kubvc::algorithm {
 #endif
 
     inline std::optional<std::vector<Token>> Lexer::tokenize(std::string_view str, bool useShuntingYard, std::size_t startFromPos) {
+        // reset error message 
+        m_lastErrorMessage = "";
+
         if (str.empty()) {
-            KUB_LEXER_DEBUG("[tokenize] input string is empty");
+            saveLastError("input string is empty: nothing to tokenize");
             return std::nullopt;
         }
 
@@ -291,7 +310,7 @@ namespace kubvc::algorithm {
                     tokens.push_back(token);
                     KUB_LEXER_DEBUG("[tokenize] parserd number is {}", number);
                 } else {
-                    KUB_ERROR("[tokenize] failed to parse number");
+                    saveLastError("failed to parse number: invalid numeric format at position {}", pos);
                     return std::nullopt;
                 }
             } else if (algorithm::Helpers::isLetter(current)) {
@@ -325,13 +344,14 @@ namespace kubvc::algorithm {
                     } else {
                         pos += wordSize;
                         current = peek(pos, str);
-                        KUB_LEXER_DEBUG("[tokenize] maybe some keyword pos:{} word:{} current char:{}", pos, word, current);
+                        KUB_LEXER_DEBUG("[tokenize] maybe some keyword pos:{} word:{} current char:{}", pos, word, currentCharStr);
                         // Convert name to lower case to avoid mismatch 
                         const auto lowerCaseName = kubvc::algorithm::Helpers::toLowerCase(word);
                         // First try to find function by name
                         const auto findResult = utility::container::find(math::containers::Functions, std::string_view { lowerCaseName.data(), lowerCaseName.size() });
                         // Then if we are find bracket and it's function we are trying to parse it
-                        if (findResult && algorithm::Helpers::isBracketStart(current)) { 
+                        const auto brecketIsOpened = algorithm::Helpers::isBracketStart(current);
+                        if (findResult && brecketIsOpened) { 
                             KUB_LEXER_DEBUG("[tokenize] we are find function in list and bracket is open");
                             // TODO: Not sure about text parsing                             
                             const auto parseTextResult = parseTextInBrackets(str.substr(pos, str.size()));
@@ -344,16 +364,20 @@ namespace kubvc::algorithm {
                                 KUB_LEXER_DEBUG("[tokenize] parsed func is {}", token.value);
                                 tokens.push_back(token);      
                             } else {
-                                KUB_ERROR("[tokenize] brackets parse failed");
+                                saveLastError("failed to parse function arguments in brackets: {}", word);
                                 return std::nullopt;
                             }
                         } else {
-                            KUB_ERROR("[tokenize] unknown keyword or brecket are not open {}", word);
+                            if (!brecketIsOpened) {
+                                saveLastError("expected '(' after function name '{}', but found different character", word);
+                            } else {
+                                saveLastError("unknown identifier '{}' (not a function, constant, or variable)", word);
+                            }
                             return std::nullopt;
                         }  
                     }
                 } else {
-                    KUB_ERROR("[tokenize] failed to parse letters");
+                    saveLastError("failed to parse letters");
                     return std::nullopt;
                 }
 
@@ -361,7 +385,7 @@ namespace kubvc::algorithm {
                 KUB_LEXER_DEBUG("[tokenize] is comma");
                 // TODO: Protection of double comma -> ,,1,
                 if (bracketLayer == 0) {
-                    KUB_ERROR("[tokenize] trying to use comma not in function");
+                    saveLastError("comma can only be used inside function argument list (outside brackets layer 0)");
                     return std::nullopt;
                 }
 
@@ -392,7 +416,7 @@ namespace kubvc::algorithm {
                 }
                 const bool currentCharIsUnary = (current == '-' || current == '+');
                 if (isUnary && !currentCharIsUnary) {
-                    KUB_ERROR("[tokenize] operator is marked as unary, but this operator can't be unary");
+                    saveLastError("operator '{}' cannot be used as unary operator in this context, position {}", currentCharStr, pos);
                     return std::nullopt;
                 }
 
@@ -422,7 +446,7 @@ namespace kubvc::algorithm {
             } else if (algorithm::Helpers::isBracketEnd(current)) {
                 KUB_LEXER_DEBUG("[tokenize] is bracket end");
                 if (bracketLayer == 0) {
-                    KUB_ERROR("[tokenize] found end bracket but bracket layer is zero");
+                    saveLastError("closing bracket ')' without matching opening bracket '('");
                     return std::nullopt;
                 }
 
@@ -435,31 +459,31 @@ namespace kubvc::algorithm {
 
                 bracketLayer--;
             } else {
-                KUB_ERROR("[tokenize] no cases for character {}", currentCharStr);
+                saveLastError("unexpected character '{}' (not a digit, letter, operator, bracket, or comma)", currentCharStr);
                 return std::nullopt;                                
             }
         }
         
         // If operator is not closed on parse end
         if (isOperatorOpen == true) {
-            KUB_ERROR("[tokenize] operator is open on parse end");
+            saveLastError("incomplete expression: operator has no right operand");
             return std::nullopt;                
         }
 
         // If when loop is ended but some brackets are not closed it's invalid case
         if (bracketLayer > 0) {
-            KUB_ERROR("[tokenize] some bracket is not closed");
+            saveLastError("unclosed bracket(s): bracket(s) still open at end of input");
             return std::nullopt;
         }
 
         // If output is empty 
         if (tokens.size() == 0) {
-            KUB_ERROR("[tokenize] tokens size are zero");
+            saveLastError("tokenization produced no tokens: input contains no valid expressions");
             return std::nullopt;
         }
 
         KUB_LEXER_DEBUG("[tokenize] finished, see next line for result");
-        print(tokens);
+        print(tokens);    
 
         return useShuntingYard ? shuntingYardAlgorithm(tokens) : tokens;
     }
