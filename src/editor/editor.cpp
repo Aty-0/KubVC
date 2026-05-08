@@ -6,6 +6,7 @@
 #include "editor_keyboard_window.h"
 #include "editor_plotter_window.h"
 #include "editor_menu_bar.h"
+#include "editor_math_element_list_window.h"
 
 namespace kubvc::editor {
     Editor::Editor() : m_windows({ 
@@ -15,6 +16,7 @@ namespace kubvc::editor {
             std::make_shared<EditorFpsCounterWindow>(), 
             std::make_shared<EditorKeyboardWindow>(), 
             std::make_shared<EditorPlotterWindow>(), 
+            std::make_shared<EditorMathElementListWindow>(), 
     }) {
 
     }
