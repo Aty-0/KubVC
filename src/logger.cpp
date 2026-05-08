@@ -56,7 +56,7 @@ namespace kubvc::utility {
 
         // Throw error if we are get a fatal log level 
         if (level == Logger::LogLevel::Fatal) {
-            throw std::runtime_error("Fatal error");
+            throw std::runtime_error("Logger received fatal log level");
         }
     }
 
