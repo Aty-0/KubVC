@@ -7,8 +7,8 @@ namespace kubvc::editor {
         virtual void onRender(kubvc::render::GUI& gui) final;       
 
         private:
+            void drawKeys(kubvc::render::GUI& gui);
             void drawOperators();
-            void drawKeys();
             void drawNumbers();
             void drawFunctions();
     };

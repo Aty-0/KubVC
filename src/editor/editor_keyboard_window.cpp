@@ -1,8 +1,8 @@
 #include "editor_keyboard_window.h"
 #include "expression_controller.h"
+#include "alg_helpers.h"
 
 #include <string>
-#include <cstring> // TODO: Why
 
 namespace kubvc::editor {
     static const auto controller = math::ExpressionController::getInstance();
@@ -14,22 +14,12 @@ namespace kubvc::editor {
     }
 
     static bool drawPickElementButton(std::string_view text, const ImVec2& size) {
-        auto cText = text.data();
-    
+        const auto cText = text.data();
         if (ImGui::Button(cText, size)) {
             const auto selected = controller->getSelected();
             if (selected != nullptr) {
                 auto& textBuffer = selected->getTextBuffer();
-
-                const auto len = std::strlen(cText);
-                auto end = cText + len;
-                auto& buffer = textBuffer.getBuffer();
-                // Find last empty character in buffer 
-                auto beg = buffer.begin() + textBuffer.getCursor();
-                
-                buffer.insert(beg, cText, end);
-                
-                textBuffer.setCursor(textBuffer.getCursor() + len);        
+                textBuffer.insertAtCursor(text);
                 controller->parseThenEvaluate(selected, math::GraphLimits::GlobalLimits);
             }
     
@@ -39,7 +29,7 @@ namespace kubvc::editor {
         return false;
     }
 
-    void EditorKeyboardWindow::onRender([[maybe_unused]] kubvc::render::GUI& gui) {
+    void EditorKeyboardWindow::onRender(kubvc::render::GUI& gui) {
         // TODO: Operators, functions as childs
         if (ImGui::Button("Functions")) {
             ImGui::OpenPopup("FunctionsKeyboardPopup");
@@ -49,10 +39,10 @@ namespace kubvc::editor {
             ImGui::EndPopup();
         }
         
-        const auto childFlags = ImGuiChildFlags_::ImGuiChildFlags_Borders;
-        const auto childWindowFlags = ImGuiWindowFlags_::ImGuiWindowFlags_HorizontalScrollbar /* |  ImGuiWindowFlags_::ImGuiWindowFlags_AlwaysUseWindowPadding */;
+        constexpr auto childFlags = ImGuiChildFlags_::ImGuiChildFlags_Borders;
+        constexpr auto childWindowFlags = ImGuiWindowFlags_::ImGuiWindowFlags_HorizontalScrollbar /* |  ImGuiWindowFlags_::ImGuiWindowFlags_AlwaysUseWindowPadding */;
 
-        static const auto keyboardTableFlags = ImGuiTableFlags_::ImGuiTableFlags_Reorderable | ImGuiTableFlags_::ImGuiTableFlags_Hideable 
+        static constexpr auto keyboardTableFlags = ImGuiTableFlags_::ImGuiTableFlags_Reorderable | ImGuiTableFlags_::ImGuiTableFlags_Hideable 
             | ImGuiTableFlags_::ImGuiTableFlags_Sortable | ImGuiTableFlags_SortMulti
             | ImGuiTableFlags_::ImGuiTableFlags_RowBg |  ImGuiTableFlags_::ImGuiTableFlags_Resizable
             | ImGuiTableFlags_::ImGuiTableFlags_PadOuterX;
@@ -72,7 +62,7 @@ namespace kubvc::editor {
 
             ImGui::TableNextColumn();
             if (ImGui::BeginChild("keysKeyboardChild", ImVec2(0, 0), childFlags, childWindowFlags)) { 
-                drawKeys();
+                drawKeys(gui);
             }
             ImGui::EndChild();
         }
@@ -80,13 +70,13 @@ namespace kubvc::editor {
     }    
 
     void EditorKeyboardWindow::drawOperators() {
-        const auto opColumnsCount = 6;
+        constexpr auto opColumnsCount = 6;
+        constexpr auto opButtonSize = ImVec2(35.0f, 35.0f);
         ImGui::TextDisabled("Operators");
         ImGui::Separator();
 
         if (ImGui::BeginTable("opTable", opColumnsCount)) {                        
-            static const std::initializer_list<unsigned char> ops = { '+', '-', '*', '/', '^', '=' };
-            const auto opButtonSize = ImVec2(35.0f, 35.0f);
+            static constexpr std::initializer_list<algorithm::Helpers::uchar> ops = { '+', '-', '*', '/', '^', '=' };
             for (auto item : ops) {         
                 ImGui::TableNextColumn();       
                 drawPickElementButton(std::string(1, item), opButtonSize);                
@@ -102,45 +92,42 @@ namespace kubvc::editor {
         }
     }
 
-    void EditorKeyboardWindow::drawKeys() {
-        const auto opColumnsCount = 6;
-        const auto opButtonSize = ImVec2(35.0f, 35.0f);        
+    void EditorKeyboardWindow::drawKeys(kubvc::render::GUI& gui) {
+        constexpr auto opColumnsCount = 6;
+        constexpr auto opButtonSize = ImVec2(35.0f, 35.0f);        
+        static bool isUp = false;    
+        
         ImGui::TextDisabled("Keys");
         ImGui::Separator(); 
-        static bool isUp = false;    
         if (ImGui::Button("Up", opButtonSize)) {
             isUp = !isUp;
         }
 
         ImGui::SameLine();
-        if (ImGui::Button("<-", opButtonSize)) {
+
+        ImGui::PushFont(&gui.getIconFont());
+        if (ImGui::Button(ICON_FA_DELETE_LEFT, opButtonSize)) {
             const auto selected = controller->getSelected();
-            if (selected == nullptr) {
-                return;
-            }
+            if (selected != nullptr) {
+                auto& textBuffer = selected->getTextBuffer();
+                const auto cursor = textBuffer.getCursor();
 
-            auto& textBuffer = selected->getTextBuffer();
-            const auto cursor = textBuffer.getCursor();
-
-            if (cursor > 0) {
-                // Remove character by cursor from text buffer 
-                auto& buffer = textBuffer.getBuffer();
-                auto begin = buffer.begin() + cursor;
-                buffer.erase(begin - 1, begin);
-
-                textBuffer.setCursor(cursor - 1);
-
-                // Update  
-                controller->parseThenEvaluate(selected, math::GraphLimits::GlobalLimits);
+                if (cursor > 0) {
+                    // Remove character by cursor from text buffer 
+                    auto& buffer = textBuffer.getBuffer();
+                    const auto& begin = buffer.begin() + cursor;
+                    buffer.erase(begin - 1, begin);
+                    textBuffer.setCursor(cursor - 1);
+                    controller->parseThenEvaluate(selected, math::GraphLimits::GlobalLimits);
+                }                
             }
         }
+        ImGui::PopFont();
 
         if (ImGui::BeginTable("keysTable", opColumnsCount)) {                        
-            // Very, a very dumb way to implement qwerty keyboard
-            // Maybe not, idk
-            const std::int8_t QWERTY_KEYS_SIZE = 26; 
-            const char* QWERTY_KEYS_UP = "QWERTYUIOPASDFGHJKLZXCVBNM";
-            const char* QWERTY_KEYS_DOWN = "qwertyuiopasdfghjklzxcvbnm";
+            static constexpr std::string_view QWERTY_KEYS_DOWN = "qwertyuiopasdfghjklzxcvbnm";
+            static constexpr std::int8_t QWERTY_KEYS_SIZE = QWERTY_KEYS_DOWN.size(); 
+            static const std::string QWERTY_KEYS_UP = algorithm::Helpers::toUpperCase(QWERTY_KEYS_DOWN);
 
             for (std::uint8_t i = 0; i < QWERTY_KEYS_SIZE; i++) {         
                 ImGui::TableNextColumn();       
@@ -152,12 +139,12 @@ namespace kubvc::editor {
     }
 
     void EditorKeyboardWindow::drawNumbers() {
-        const auto opColumnsCount = 6;
+        constexpr auto opColumnsCount = 6;
+        constexpr auto opButtonSize = ImVec2(35.0f, 35.0f);
         ImGui::TextDisabled("Numbers");
         ImGui::Separator();
 
         if (ImGui::BeginTable("numTable", opColumnsCount)) {                        
-            const auto opButtonSize = ImVec2(35.0f, 35.0f);
             for (char i = '0'; i <= '9'; i++) {         
                 ImGui::TableNextColumn();       
                 drawPickElementButton(std::string(1, i), opButtonSize);                
@@ -170,10 +157,9 @@ namespace kubvc::editor {
         ImGui::Separator();
 
         if (ImGui::BeginTable("constTable", opColumnsCount)) {                        
-            const auto opButtonSize = ImVec2(35.0f, 35.0f);
-            for (auto i : kubvc::math::containers::Constants) {         
+            for (const auto& [name, _] : kubvc::math::containers::Constants) {         
                 ImGui::TableNextColumn();       
-                drawPickElementButton(i.first, opButtonSize);                
+                drawPickElementButton(name, opButtonSize);                
             }
 
             ImGui::EndTable();
@@ -185,16 +171,16 @@ namespace kubvc::editor {
         ImGui::TextDisabled("Functions");
         ImGui::Separator();
 
-        const auto funcColumnsCount = 5;
+        constexpr auto funcColumnsCount = 5;
         if (ImGui::BeginTable("funcTable", funcColumnsCount)) {     
             std::int32_t itemCount = 0;                   
-            for (auto item : kubvc::math::containers::Functions) {         
+            for (const auto& [name, _] : kubvc::math::containers::Functions) {         
                 if (itemCount % funcColumnsCount == 0 && itemCount != 0) {
                     ImGui::TableNextRow();
                 }
 
                 ImGui::TableNextColumn();       
-                if (drawPickElementButton(item.first, ImVec2(0.0f, 35.0f))) {
+                if (drawPickElementButton(name, ImVec2(0.0f, 35.0f))) {
                     ImGui::CloseCurrentPopup();
                 }
 

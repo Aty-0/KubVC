@@ -36,6 +36,15 @@ namespace kubvc::algorithm {
                 }
                 return result;
             }
+       
+            static inline constexpr std::string toUpperCase(std::string_view text) {
+                std::string result;
+                result.reserve(text.size());
+                for (auto c : text) {
+                    result.push_back(toUpper(static_cast<uchar>(c)));
+                }
+                return result;
+            }
 
             static inline constexpr bool isLetter(uchar chr)  {
                 return (chr >= 'A' && chr <= 'Z') || (chr >= 'a' && chr <= 'z');
