@@ -42,7 +42,7 @@ namespace kubvc::math {
             if (result.has_value()) {
                 lexer->print(result.value());
                 const auto buildResult = builder->build(expression.getTree(), result.value());
-                expression.setValid(buildResult);
+                expression.setValid(buildResult, "failed to build ast"); // TODO: Reasons
                 expression.eval(limits);              
                 m_validExpressions.insert(model);
             } else {
@@ -50,7 +50,8 @@ namespace kubvc::math {
                 if (m_validExpressions.contains(model)) {
                     m_validExpressions.erase(model);
                 }                
-                expression.setValid(false);
+                const auto lastError = lexer->getLastError();
+                expression.setValid(false, lastError);
             }         
         });
     }

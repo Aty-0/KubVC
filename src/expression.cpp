@@ -7,7 +7,8 @@ namespace kubvc::math {
     Expression::Expression()  : 
         m_tree(), 
         m_plotBuffer(std::vector<glm::dvec2>(MAX_PLOT_BUFFER_SIZE)),
-        m_valid(false) {
+        m_valid(false),
+        m_lastErrorMessage() {
     
     }
 
@@ -38,5 +39,12 @@ namespace kubvc::math {
                 m_plotBuffer[i] = { x0, y0 };
             }
         });        
+    }
+
+    void Expression::setValid(bool isValid, std::string lastMessage) {
+        m_valid = isValid;
+        if (!lastMessage.empty()) {
+            m_lastErrorMessage = lastMessage;
+        }
     }
 }

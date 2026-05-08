@@ -16,9 +16,9 @@ namespace kubvc::math {
             
             [[nodiscard]] algorithm::ASTree& getTree() { return m_tree; }
             [[nodiscard]] std::vector<glm::dvec2> getPlotBuffer() const { return m_plotBuffer; } 
-            
+            [[nodiscard]] std::string getLastErrorMessage() const { return m_lastErrorMessage; }
             [[nodiscard]] bool isValid() const { return m_valid; }
-            void setValid(bool isValid) { m_valid = isValid; }
+            void setValid(bool isValid, std::string lastMessage);
 
             // Evaluate current expression 
             void eval(const GraphLimits& limits, std::int32_t maxPointCount = MAX_PLOT_BUFFER_SIZE);
@@ -28,5 +28,6 @@ namespace kubvc::math {
             // Calculated points for graph
             std::vector<glm::dvec2> m_plotBuffer;  
             bool m_valid = false;
+            std::string m_lastErrorMessage;
     };             
 }

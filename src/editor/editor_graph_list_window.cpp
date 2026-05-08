@@ -66,6 +66,7 @@ namespace kubvc::editor {
             ImGui::PopFont();
             ImGui::SameLine();
         }
+        
 
         ImGui::PushFont(&gui.getMathFont());
         const auto currentExpressionIsSelected = selectedModel == nullptr ? false : currentModelId == selectedModel->getId();
@@ -147,6 +148,21 @@ namespace kubvc::editor {
 
         if (ImGui::IsItemHovered(ImGuiHoveredFlags_::ImGuiHoveredFlags_AllowWhenDisabled)) {
             ImGui::SetTooltip("Remove this graph from graph list");
+        }
+
+        const auto lastErrorMessage = currentExpression.getLastErrorMessage();
+        if (!currentExpression.isValid() && !lastErrorMessage.empty()) {
+            ImGui::SameLine();
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
+
+            ImGui::PushFont(&gui.getIconFont());
+            ImGui::Text(ICON_FA_TRIANGLE_EXCLAMATION);
+            ImGui::PopFont();
+            ImGui::PopStyleColor();
+
+            if (ImGui::IsItemHovered()) {
+                ImGui::SetTooltip(lastErrorMessage.c_str());
+            }
         }
 
         ImGui::PopFont();
