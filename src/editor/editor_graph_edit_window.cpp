@@ -353,7 +353,7 @@ namespace kubvc::editor {
             ImGui::TextDisabled("Debug");
             drawDebugAST();
             const auto points = selected->getExpression().getPlotBuffer();
-            ImGui::Text("Count: %i", points.size());
+            ImGui::Text("Count: %zu", points.size());
             if (ImGui::CollapsingHeader("Points")) {
                 if (ImGui::Button("Dump points to file")) {
                     std::ofstream filex;

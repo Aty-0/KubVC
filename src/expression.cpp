@@ -6,8 +6,8 @@
 namespace kubvc::math {
     Expression::Expression()  : 
         m_tree(), 
-        m_valid(false),
-        m_plotBuffer(std::vector<glm::dvec2>(MAX_PLOT_BUFFER_SIZE)) {
+        m_plotBuffer(std::vector<glm::dvec2>(MAX_PLOT_BUFFER_SIZE)),
+        m_valid(false) {
     
     }
 

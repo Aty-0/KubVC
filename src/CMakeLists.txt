@@ -25,7 +25,7 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
         GLEW_STATIC
         USE_STD_FILESYSTEM
         DEBUG
-        KUB_LEXER_DEBUG_ENABLE_TOKEN_PRINT
+        #KUB_LEXER_DEBUG_ENABLE_TOKEN_PRINT
         KUB_ENABLE_LEXER_DEBUG_LOG
         #KUB_USE_ANSI_COLORS
         )
@@ -35,6 +35,13 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
         USE_STD_FILESYSTEM
     )
 endif()
+
+if (MSVC)
+    target_compile_options(KubVcApp PRIVATE /W4)
+else()
+    target_compile_options(KubVcApp PRIVATE -Wall -Wextra -Wpedantic)
+endif()
+
 
 # Add fonts to builded application
 file(GLOB_RECURSE RES_FONTS resources/*.ttf)

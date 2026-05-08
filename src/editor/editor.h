@@ -11,8 +11,10 @@ namespace kubvc::editor {
     };
 
     struct EditorWindow : public EditorDrawable {
-        EditorWindow() : m_visible(true), m_name("untitled_editor_window"), 
-            m_disableVisibleToggle(true), m_flags(0) { }
+        EditorWindow() : m_flags(0),
+            m_name("untitled_editor_window"), 
+            m_disableVisibleToggle(true),
+            m_visible(true) { }
 
         virtual void render(kubvc::render::GUI& gui) final;
         [[nodiscard]] bool isVisible() const { return m_visible; }
@@ -28,7 +30,7 @@ namespace kubvc::editor {
             bool m_disableVisibleToggle;
             bool m_visible;
 
-            virtual void onRender(kubvc::render::GUI& gui) { }
+            virtual void onRender([[maybe_unused]] kubvc::render::GUI& gui) { }
     };
 
     inline void EditorWindow::render(kubvc::render::GUI& gui) {

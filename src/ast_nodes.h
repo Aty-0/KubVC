@@ -13,7 +13,7 @@ namespace kubvc::algorithm {
         inline void setId(std::uint32_t id) { if (m_id == DEFAULT_NODE_ID) { m_id = id; } }        
 
         private:
-            static constexpr std::uint8_t DEFAULT_NODE_ID = -1;
+            static constexpr std::int8_t DEFAULT_NODE_ID = -1;
             std::int32_t m_id = DEFAULT_NODE_ID; 
     };
 
@@ -45,13 +45,13 @@ namespace kubvc::algorithm {
     template<>
     struct NodeTraits<NodeTypes::Number> : INode, NodeValue<double> {
         virtual NodeTypes getType() const final { return NodeTypes::Number; }
-        virtual void calculate(const double& n, double& result) final { result = m_value; }
+        virtual void calculate([[maybe_unused]] const double& n, double& result) final { result = m_value; }
     };
 
     template<>
     struct NodeTraits<NodeTypes::Invalid> : INode {
         virtual NodeTypes getType() const final { return NodeTypes::Invalid; }
-        virtual void calculate(const double& n, double& result) final { } // Do nothing
+        virtual void calculate([[maybe_unused]] const double& n, [[maybe_unused]] double& result) final { } // Do nothing
 
         std::string name;
     };
@@ -97,10 +97,10 @@ namespace kubvc::algorithm {
             case kubvc::algorithm::NodeTypes::Function:
                 return "Function";           
             case kubvc::algorithm::NodeTypes::Operator:
-                return "Operator";               
+                return "Operator";   
+            default:            
+                return "Unknown";
         }
-    
-        return "Unknown";
     }
 }
 

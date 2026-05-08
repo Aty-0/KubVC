@@ -39,7 +39,7 @@ namespace kubvc::editor {
         return false;
     }
 
-    void EditorKeyboardWindow::onRender(kubvc::render::GUI& gui) {
+    void EditorKeyboardWindow::onRender([[maybe_unused]] kubvc::render::GUI& gui) {
         // TODO: Operators, functions as childs
         if (ImGui::Button("Functions")) {
             ImGui::OpenPopup("FunctionsKeyboardPopup");

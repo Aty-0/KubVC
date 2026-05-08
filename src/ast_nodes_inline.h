@@ -34,6 +34,8 @@ namespace kubvc::algorithm {
             case NodeTypes::Variable:
                 result = Helpers::computeFunction(name, n); 
                 break;
+            default:
+                break;
         }
     }
         
@@ -90,6 +92,8 @@ namespace kubvc::algorithm {
                 break;
             case Operators::Power:
                 result = glm::pow(firstResult, secondResult);
+                break;
+            default:
                 break;
         }              
     }

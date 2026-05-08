@@ -11,7 +11,7 @@ namespace kubvc::editor {
         setName("Viewer");
     }
 
-    void EditorPlotterWindow::onRender(kubvc::render::GUI& gui) {
+    void EditorPlotterWindow::onRender([[maybe_unused]] kubvc::render::GUI& gui) {
         static constexpr auto vecStride = 2 * sizeof(double);
         static constexpr auto plotFlags = ImPlotFlags_::ImPlotFlags_NoTitle | ImPlotFlags_::ImPlotFlags_Crosshairs;
         const auto size = ImGui::GetContentRegionAvail();
@@ -74,7 +74,7 @@ namespace kubvc::editor {
                         specs.Stride = vecStride;
 
                         ImPlot::PlotLine(textBuffer.getBuffer().data(), &buffer[0].x, &buffer[0].y, 
-                            buffer.size(), specs);      
+                            static_cast<std::int32_t>(buffer.size()), specs);      
 
                         //ImPlot::PlotScatter(expr->getTextBuffer().data(), &buffer[0].x, &buffer[0].y, buffer.size(), flags, 0, vecStride);                                  
                     }

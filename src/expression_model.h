@@ -14,10 +14,11 @@ namespace kubvc::math {
     class ExpressionModel {
         public:
             ExpressionModel(std::int32_t id) : 
+                m_id(id),
                 m_textBuffer(std::make_unique<ExpressionTextBuffer>()), 
-                m_settings(std::make_unique<ExpressionVisualSettings>()),
                 m_expression(std::make_unique<Expression>()), 
-                m_id(id) {
+                m_settings(std::make_unique<ExpressionVisualSettings>())
+            {
                     m_settings->setRandomColor();
             }
 

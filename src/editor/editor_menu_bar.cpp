@@ -21,7 +21,14 @@ namespace kubvc::editor {
         static const auto controller = math::ExpressionController::getInstance();
         static const auto exprIo = io::ExpressionIO::getInstance();
         static const auto fileDialogInstance = ImGuiFileDialog::Instance();
-        static const IGFD::FileDialogConfig config = { .path = "." };
+        static const IGFD::FileDialogConfig defaultFileDialogConfig = { 
+            .path = ".",
+            .fileName = "", 
+            .filePathName = "",
+            .sidePane = nullptr,
+            .userFileAttributes = nullptr
+        };
+
         static FileDialogMode fileDialogMode = FileDialogMode::Unknown;
 
         if (fileDialogInstance->Display("EditorMenuBarFileDialog")) {
@@ -56,28 +63,32 @@ namespace kubvc::editor {
         if (ImGui::BeginMainMenuBar()) {
             if (ImGui::BeginMenu("File")) {
                 if (ImGui::MenuItem("Open Graphs(.txt)")) {
-                    fileDialogInstance->OpenDialog("EditorMenuBarFileDialog", "Open graph list", ".txt", config);
+                    fileDialogInstance->OpenDialog("EditorMenuBarFileDialog", "Open graph list", ".txt", defaultFileDialogConfig);
                     fileDialogMode = FileDialogMode::LoadGraphs;
                 }
                 
                 if (ImGui::MenuItem("Save Graphs(.txt)")) {
-                    fileDialogInstance->OpenDialog("EditorMenuBarFileDialog", "Save graph list", ".txt", config);
+                    fileDialogInstance->OpenDialog("EditorMenuBarFileDialog", "Save graph list", ".txt", defaultFileDialogConfig);
                     fileDialogMode = FileDialogMode::SaveGraphs;
                 }
                 
                 if (ImGui::MenuItem("Save graph points (.txt)")) {
-                    fileDialogInstance->OpenDialog("EditorMenuBarFileDialog", "Save graph points", ".txt", config);
+                    fileDialogInstance->OpenDialog("EditorMenuBarFileDialog", "Save graph points", ".txt", defaultFileDialogConfig);
                     fileDialogMode = FileDialogMode::SaveGraphsPoints;
                 }
                 
                 if (ImGui::MenuItem("Make graph screenshot")) {
                     // TODO: 
                 }
-
+                
+                ImGui::Separator();
                 if (ImGui::MenuItem("Save Log file")) {
                     kubvc::utility::log->save("kub.log");
                 }
 
+                if (ImGui::MenuItem("Clear logger buffer")) {
+                    kubvc::utility::log->clear();
+                }
                 ImGui::EndMenu();
             }
             if (ImGui::BeginMenu("View")) {

@@ -32,7 +32,6 @@ namespace kubvc::math {
     }
 
     inline void ExpressionTextBuffer::setCursor(std::size_t cursorPos) {
-        KUB_ASSERT(cursorPos >= 0, "Neg cursor pos");
         KUB_ASSERT(cursorPos < m_textBuffer.size(), "Cursor is bigger than text buffer size");
         m_cursor = cursorPos; 
     }   

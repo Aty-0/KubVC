@@ -85,7 +85,7 @@ namespace kubvc::algorithm {
         tree.clear();
 
         std::stack<std::shared_ptr<algorithm::INode>> nodeStack = { };
-        for (const auto token : tokens) {
+        for (const auto& token : tokens) {
             if (token.value.empty()) {
                 KUB_ERROR("token with type {} has empty value, skip", static_cast<std::int32_t>(token.type));
                 continue;

@@ -72,7 +72,7 @@ namespace kubvc::algorithm {
 
         std::vector<Token> output;
         std::stack<Token> stack;
-        for (const auto token : in) {
+        for (const auto& token : in) {
             switch (token.type) {                    
                 case Token::Types::Variable:
                 case Token::Types::Number: {
@@ -117,7 +117,6 @@ namespace kubvc::algorithm {
                             const auto top = stack.top();                            
                             
                             if (top.type == Token::Types::Operator || top.type == Token::Types::UnaryOperator) {
-                                const auto topOperator = top.value.at(0);
                                 const auto topOperatorPriority = utility::container::get(operatorPriority, currentOperator);
                                 const auto operatorIsPower = currentOperator == '^';
                                 
@@ -239,20 +238,22 @@ namespace kubvc::algorithm {
         return str.at(pos);
     }  
 
-    inline void Lexer::print(const std::vector<Token>& tokens) {
 #ifdef KUB_LEXER_DEBUG_ENABLE_TOKEN_PRINT
+    inline void Lexer::print(const std::vector<Token>& tokens) {
         std::stringstream stream;
         stream << tokens.size() << " ";               
         stream << "[";               
-        for (const auto token : tokens) {
+        for (const auto& token : tokens) {
             stream << token.value << ",";
         }
         stream << "]";        
 
         KUB_LEXER_DEBUG("{}", stream.str());
         stream.clear();
-#endif
     }
+#else 
+    inline void Lexer::print([[maybe_unused]] const std::vector<Token>& tokens) { }
+#endif
 
     inline std::optional<std::vector<Token>> Lexer::tokenize(std::string_view str, bool useShuntingYard, std::size_t startFromPos) {
         if (str.empty()) {
@@ -333,8 +334,8 @@ namespace kubvc::algorithm {
                         if (findResult && algorithm::Helpers::isBracketStart(current)) { 
                             KUB_LEXER_DEBUG("[tokenize] we are find function in list and bracket is open");
                             // TODO: Not sure about text parsing                             
-                            const auto result = parseTextInBrackets(str.substr(pos, str.size()));
-                            if (result.has_value()) {
+                            const auto parseTextResult = parseTextInBrackets(str.substr(pos, str.size()));
+                            if (parseTextResult.has_value()) {
                                 const auto token = Token {
                                     Token::Types::Function,
                                     lowerCaseName,

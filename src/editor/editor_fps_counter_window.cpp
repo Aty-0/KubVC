@@ -20,7 +20,7 @@ namespace kubvc::editor {
 
         auto io = ImGui::GetIO();
         ImGui::PushFont(&gui.getDefaultFontMathSize());
-        ImGui::Text("Fps %.1f\ntasks:%i", io.Framerate, taskManager->size());
+        ImGui::Text("Fps %.1f\ntasks:%zu", io.Framerate, taskManager->size());
         ImGui::PopFont();
     }        
 } 

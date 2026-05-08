@@ -31,7 +31,7 @@ namespace kubvc::utility {
 
     inline TaskManager::TaskManager() {        
         const auto threadCount = std::thread::hardware_concurrency();
-        for (std::int32_t i = 0; i < threadCount; ++i) {
+        for (std::uint32_t i = 0; i < threadCount; ++i) {
             KUB_DEBUG("Add new thread {}", i);
             m_threads.push_back(std::thread(&TaskManager::worker, this));
         }
