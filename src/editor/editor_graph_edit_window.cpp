@@ -13,7 +13,7 @@ namespace kubvc::editor {
     static const auto controller = math::ExpressionController::getInstance();
 
     EditorEditGraphWindow::EditorEditGraphWindow() {
-        setName("Edit Graph");
+        setName("Edit Graph##EditorEditGraphWindow");
     }
 
 #if defined(KUB_IS_DEBUG) || defined(SHOW_DEBUG_TOOLS_ON_RELEASE) 

@@ -8,7 +8,7 @@ namespace kubvc::editor {
     static const auto controller = math::ExpressionController::getInstance();
 
     EditorPlotterWindow::EditorPlotterWindow() {
-        setName("Viewer");
+        setName("Viewer##EditorPlotterWindow");
     }
 
     void EditorPlotterWindow::onRender([[maybe_unused]] kubvc::render::GUI& gui) {

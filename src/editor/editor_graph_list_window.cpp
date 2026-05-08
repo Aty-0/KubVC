@@ -5,7 +5,7 @@ namespace kubvc::editor {
     static const auto controller = kubvc::math::ExpressionController::getInstance();
     
     EditorGraphListWindow::EditorGraphListWindow() {
-        setName("Graph List");
+        setName("Graph List##EditorGraphListWindow");
     }
     
     // Save current cursor position for expression

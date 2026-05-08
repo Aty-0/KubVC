@@ -12,6 +12,7 @@ namespace kubvc::editor {
             | ImGuiWindowFlags_::ImGuiWindowFlags_NoCollapse;
 
     EditorFpsCounterWindow::EditorFpsCounterWindow() {    
+        setName("##EditorFpsCounterWindow");
         setWindowFlags(fpsCounterWindowFlags);
     }
     

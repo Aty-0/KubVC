@@ -8,7 +8,7 @@ namespace kubvc::editor {
     static const auto controller = math::ExpressionController::getInstance();
 
     EditorKeyboardWindow::EditorKeyboardWindow() {
-        setName("Keyboard");
+        setName("Keyboard##EditorKeyboardWindow");
         m_disableVisibleToggle = true;
         setVisible(false);
     }
