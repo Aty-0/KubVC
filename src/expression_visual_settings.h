@@ -8,6 +8,7 @@ namespace kubvc::math {
                               
         void setShaded(bool shaded) { m_shaded = shaded; }
         void setVisible(bool visible) { m_visible = visible; }
+        void setExpandTextBox(bool expand) { m_expandTextBox = expand; }
         void setThickness(float thickness) { m_thickness = thickness; }
         void setColor(const glm::vec4& color) { m_color = color; }
         void setChangeColor(bool changeColor) { m_changeColor = changeColor; }
@@ -17,11 +18,13 @@ namespace kubvc::math {
         [[nodiscard]] bool getVisible() const { return m_visible; }
         [[nodiscard]] bool getChangeColor() const { return m_changeColor; }
         [[nodiscard]] float getThickness() const { return m_thickness; }
+        [[nodiscard]] bool getExpandTextBox() const { return m_expandTextBox; }
         [[nodiscard]] glm::vec4 getColor() const { return m_color; }
 
         private:
             glm::vec4 m_color = glm::vec4(1,1,1,1);
             float m_thickness = 1.0f;
+            bool m_expandTextBox = false;
             bool m_shaded = false;
             bool m_changeColor = false;
             bool m_visible = true;

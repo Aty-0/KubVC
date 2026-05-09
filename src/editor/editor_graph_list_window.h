@@ -12,7 +12,8 @@ namespace kubvc::editor {
             static constexpr auto SELECTED_COLOR = ImVec4(0.16f, 0.64f, 0.16f, 1.0f);                   
 
             static std::int32_t handleExpressionCursorPosCallback(ImGuiInputTextCallbackData* data);
-            
+            static std::int32_t handleTextBoxMultilineInput(ImGuiInputTextCallbackData* data);
+
             void drawGraphPanel(kubvc::render::GUI& gui, std::shared_ptr<math::ExpressionModel> model, std::int32_t index);
             void drawGraphList(kubvc::render::GUI& gui);            
             void drawGraphListHeader();            
