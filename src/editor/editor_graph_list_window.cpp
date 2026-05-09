@@ -175,6 +175,11 @@ namespace kubvc::editor {
                     const auto lastErrorMessage = currentExpression.getLastErrorMessage();
                     if (!currentExpression.isValid() && !lastErrorMessage.empty()) {
                         ImGui::SameLine();
+                        ImGui::Dummy(ImVec2(2.0f, 0.0f)); 
+                        ImGui::SameLine();
+
+                        ImGui::AlignTextToFramePadding();
+
                         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
 
                         ImGui::Text(ICON_FA_TRIANGLE_EXCLAMATION);
