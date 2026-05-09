@@ -9,9 +9,9 @@ namespace kubvc::algorithm {
         if (isRootExist()) {
             clearFrom(m_root);
             m_root = nullptr;
-        } else {
+        }/* else {
             KUB_DEBUG("Can't clear ast because root is nullptr");
-        }
+        }*/
     }
 
     void ASTree::clearFrom(std::shared_ptr<kubvc::algorithm::INode> start) {
