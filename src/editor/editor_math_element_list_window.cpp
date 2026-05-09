@@ -19,20 +19,37 @@ namespace kubvc::editor {
         }
     
     } 
-    void EditorMathElementListWindow::onRender([[maybe_unused]] kubvc::render::GUI& gui) {
+    void EditorMathElementListWindow::onRender(kubvc::render::GUI& gui) {
         const auto region = ImGui::GetContentRegionAvail();
 
         if (ImGui::BeginListBox("##EditorElementList", region)) {
             for (const auto& [name, _] : math::containers::Functions) {
+                ImGui::PushFont(&gui.getMathFont());
+                ImGui::Text(ICON_FA_WAVE_SQUARE);
+                ImGui::PopFont();
+                ImGui::SameLine();
                 if (ImGui::Selectable(name.data())) {
                     addItemToExpression(name);
                 } 
+
+                if (ImGui::IsItemHovered()) {
+                    ImGui::SetTooltip("Function:%s\nClick this item to insert it into the expression input field.", name.data());
+                }
+
             }
 
             for (const auto& [name, _] : math::containers::Constants) {
+                ImGui::PushFont(&gui.getMathFont());
+                ImGui::Text(ICON_FA_BOOK);
+                ImGui::PopFont();
+                ImGui::SameLine();
                 if (ImGui::Selectable(name.data())) {
                     addItemToExpression(name);
                 } 
+
+                if (ImGui::IsItemHovered()) {
+                    ImGui::SetTooltip("Constant:%s\nClick this item to insert it into the expression input field.", name.data());
+                }
             }
 
             ImGui::EndListBox();
