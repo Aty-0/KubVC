@@ -9,6 +9,7 @@ namespace kubvc::editor {
             | ImGuiWindowFlags_::ImGuiWindowFlags_NoScrollbar 
             | ImGuiWindowFlags_::ImGuiWindowFlags_NoTitleBar 
             | ImGuiWindowFlags_::ImGuiWindowFlags_NoResize 
+            | ImGuiWindowFlags_::ImGuiWindowFlags_NoMove 
             | ImGuiWindowFlags_::ImGuiWindowFlags_NoCollapse;
 
     EditorFpsCounterWindow::EditorFpsCounterWindow() {    
@@ -19,9 +20,11 @@ namespace kubvc::editor {
     void EditorFpsCounterWindow::onRender(kubvc::render::GUI& gui) {
         static const auto taskManager = utility::TaskManager::getInstance();
 
-        auto io = ImGui::GetIO();
-        ImGui::PushFont(&gui.getDefaultFontMathSize());
-        ImGui::Text("Fps %.1f\ntasks:%zu", io.Framerate, taskManager->size());
+        const auto io = ImGui::GetIO();
+        const auto size = io.DisplaySize;
+        ImGui::SetWindowPos({0, size.y - 40.0f});
+        ImGui::PushFont(&gui.getDefaultFont());
+        ImGui::Text("Fps:%.1f\nTask Count:%zu", io.Framerate, taskManager->size());
         ImGui::PopFont();
     }        
 } 
