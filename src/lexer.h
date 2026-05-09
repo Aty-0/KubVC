@@ -369,7 +369,7 @@ namespace kubvc::algorithm {
                             }
                         } else {
                             if (!brecketIsOpened) {
-                                saveLastError("expected '(' after function name '{}', but found different character", word);
+                                saveLastError("expected '(' after function name '{}'", word);
                             } else {
                                 saveLastError("unknown identifier '{}' (not a function, constant, or variable)", word);
                             }
