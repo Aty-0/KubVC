@@ -12,35 +12,37 @@
 namespace kubvc::render {
 	static constexpr auto DEFAULT_FONT_SIZE = 18.0f; 
 	static constexpr auto MATH_FONT_SIZE = 22.0f; 
+	static constexpr auto DEFAULT_CONFIG_FLAGS = ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_DockingEnable;
+	static constexpr auto DOCKSPACE_WINDOW_FLAGS = ImGuiWindowFlags_NoBringToFrontOnFocus |
+			ImGuiWindowFlags_NoNavFocus |
+			ImGuiWindowFlags_NoDocking |
+			ImGuiWindowFlags_NoTitleBar |
+			ImGuiWindowFlags_NoResize |
+			ImGuiWindowFlags_NoMove |
+			ImGuiWindowFlags_NoCollapse |
+			ImGuiWindowFlags_MenuBar |
+			ImGuiWindowFlags_NoBackground |
+			ImGuiWindowFlags_NoScrollbar;
 
     void GUI::init() {
+		const auto window = kubvc::application::Window::getInstance();
 		KUB_DEBUG("Initialize Imgui...");
-		auto window = kubvc::application::Window::getInstance();
 
 		IMGUI_CHECKVERSION();
 		ImGui::CreateContext();
-		auto& io = ImGui::GetIO();
-		
 		ImPlot::CreateContext();
 
-		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;    
-		io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;     
-		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;    
+		auto& io = ImGui::GetIO();
+		io.ConfigFlags = DEFAULT_CONFIG_FLAGS;    
 		
-		if (!ImGui_ImplGlfw_InitForOpenGL(&window->getHandle(), true)) {
-			KUB_FATAL("ImGui GLFW impl failed!");
-		}
-
-		if (!ImGui_ImplOpenGL3_Init()) {
-			KUB_FATAL("ImGui OpenGL3 init failed!");
-		}	
+		KUB_ASSERT(ImGui_ImplGlfw_InitForOpenGL(&window->getHandle(), true), "ImGui GLFW impl failed!");
+		KUB_ASSERT(ImGui_ImplOpenGL3_Init(), "ImGui OpenGL3 init failed!");
 
 		m_defaultFont = io.Fonts->AddFontFromFileTTF("fonts/Roboto-Light.ttf", DEFAULT_FONT_SIZE);
 		m_defaultFontMathSize = io.Fonts->AddFontFromFileTTF("fonts/Roboto-Light.ttf", MATH_FONT_SIZE * 1.5f);
 		m_mathFont = io.Fonts->AddFontFromFileTTF("fonts/OldStandard-Regular.ttf", MATH_FONT_SIZE);
 
-
-		ImFontConfig config;
+		ImFontConfig config{};
 		config.MergeMode = true; 
 		config.GlyphMinAdvanceX = DEFAULT_FONT_SIZE; 
 		config.PixelSnapH = true;
@@ -53,18 +55,6 @@ namespace kubvc::render {
 
 	void GUI::beginDockspace() {
 		const auto viewport = ImGui::GetMainViewport();
-	
-		const auto windowFlags = ImGuiWindowFlags_NoBringToFrontOnFocus |
-			ImGuiWindowFlags_NoNavFocus |
-			ImGuiWindowFlags_NoDocking |
-			ImGuiWindowFlags_NoTitleBar |
-			ImGuiWindowFlags_NoResize |
-			ImGuiWindowFlags_NoMove |
-			ImGuiWindowFlags_NoCollapse |
-			ImGuiWindowFlags_MenuBar |
-			ImGuiWindowFlags_NoBackground |
-			ImGuiWindowFlags_NoScrollbar;
-
 		
 		ImGui::SetNextWindowPos(viewport->Pos);
 		ImGui::SetNextWindowSize(viewport->Size);
@@ -74,7 +64,7 @@ namespace kubvc::render {
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);			
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
 	
-		ImGui::Begin("##dockspace_wnd", nullptr, windowFlags);
+		ImGui::Begin("##dockspace_wnd", nullptr, DOCKSPACE_WINDOW_FLAGS);
 
 		const auto dockId = ImGui::GetID("dockspace");
 		ImGui::DockSpace(dockId, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_PassthruCentralNode);
