@@ -23,6 +23,8 @@ namespace kubvc::math {
             [[nodiscard]] std::shared_ptr<ExpressionModel> getSelected() const { return m_selected; }
             [[nodiscard]] std::vector<std::shared_ptr<ExpressionModel>> getExpressions() const { return m_expressions; }
             [[nodiscard]] std::unordered_set<std::shared_ptr<ExpressionModel>> getValidExpressions() const { return m_validExpressions; } 
+            [[nodiscard]] const std::vector<std::shared_ptr<ExpressionModel>>& getExpressions() const { return m_expressions; }
+            [[nodiscard]] const std::unordered_set<std::shared_ptr<ExpressionModel>>& getValidExpressions() const { return m_validExpressions; } 
         private:
             std::unordered_set<std::shared_ptr<ExpressionModel>> m_validExpressions;
             std::vector<std::shared_ptr<ExpressionModel>> m_expressions;  

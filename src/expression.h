@@ -15,8 +15,8 @@ namespace kubvc::math {
             ~Expression();
             
             [[nodiscard]] algorithm::ASTree& getTree() { return m_tree; }
-            [[nodiscard]] std::vector<glm::dvec2> getPlotBuffer() const { return m_plotBuffer; } 
-            [[nodiscard]] std::string getLastErrorMessage() const { return m_lastErrorMessage; }
+            [[nodiscard]] const std::vector<glm::dvec2>& getPlotBuffer() const { return m_plotBuffer; } 
+            [[nodiscard]] const std::string& getLastErrorMessage() const { return m_lastErrorMessage; }
             [[nodiscard]] bool isValid() const { return m_valid; }
             void setValid(bool isValid, std::string lastMessage);
 

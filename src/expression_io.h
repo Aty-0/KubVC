@@ -52,7 +52,7 @@ namespace kubvc::io {
         io::FileLoader file;
         const auto result = file.load(path);
         if (result.has_value()) {
-            auto value = result.value();
+            const auto& value = result.value();
             for (const auto& str : value | std::views::split('\n') | std::views::filter([](const auto& str) { return !str.empty(); })) {
                 const auto newExpression = controller->create();
                 // Add expression to buffer
