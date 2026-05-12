@@ -126,7 +126,7 @@ namespace kubvc::editor {
 
         if (ImGui::BeginTable("keysTable", opColumnsCount)) {                        
             static constexpr std::string_view QWERTY_KEYS_DOWN = "qwertyuiopasdfghjklzxcvbnm";
-            static constexpr std::int8_t QWERTY_KEYS_SIZE = QWERTY_KEYS_DOWN.size(); 
+            static constexpr std::int8_t QWERTY_KEYS_SIZE = static_cast<std::int8_t>(QWERTY_KEYS_DOWN.size()); 
             static const std::string QWERTY_KEYS_UP = algorithm::Helpers::toUpperCase(QWERTY_KEYS_DOWN);
 
             for (std::uint8_t i = 0; i < QWERTY_KEYS_SIZE; i++) {         
