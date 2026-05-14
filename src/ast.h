@@ -2,15 +2,6 @@
 #include "ast_nodes.h"
 
 namespace kubvc::algorithm {
-    template<NodeTypes NodeType>
-    using NodePtr = std::shared_ptr<NodeTraits<NodeType>>;
-
-    template <NodeTypes Type>
-    inline static std::shared_ptr<INode> castToINodePtr(NodePtr<Type> ptr) { return std::static_pointer_cast<INode>(ptr); }
-
-    template <NodeTypes Type>
-    inline static NodePtr<Type> castToNodePtr(std::shared_ptr<INode> ptr) { return std::dynamic_pointer_cast<NodeTraits<Type>>(ptr); }
-
     class ASTree {
         public:
             ASTree() = default;                    

@@ -3,14 +3,16 @@
 #include "singleton.h"
 #include "lexer.h"
 #include "logger.h"
+#include "variable_dependence.h"
 
 #include <stack>
+#include <queue>
 #include <charconv>
 
 namespace kubvc::algorithm {
     class ASTBuilder : public utility::Singleton<ASTBuilder> {
         public:
-            bool build(ASTree& tree, const std::vector<Token>& tokens);
+            bool build(ASTree& tree, math::VariableDependenceController& vdc, const std::vector<Token>& tokens);
 
         private:        
             [[nodiscard]] NodePtr<NodeTypes::Root> createRoot(std::shared_ptr<INode> child) const;
@@ -81,10 +83,12 @@ namespace kubvc::algorithm {
         return node;
     }
 
-    inline bool ASTBuilder::build(ASTree& tree, const std::vector<Token>& tokens) {
+    inline bool ASTBuilder::build(ASTree& tree, math::VariableDependenceController& vdc, const std::vector<Token>& tokens) {
         tree.clear();
+        vdc.reset();
 
-        std::stack<std::shared_ptr<algorithm::INode>> nodeStack = { };
+        std::stack<std::shared_ptr<algorithm::INode>> nodeStack { };
+        std::queue<NodePtr<algorithm::NodeTypes::Variable>> variableStack { };
         for (const auto& token : tokens) {
             if (token.value.empty()) {
                 KUB_ERROR("token with type {} has empty value, skip", static_cast<std::int32_t>(token.type));
@@ -105,6 +109,9 @@ namespace kubvc::algorithm {
                     const auto value = token.value;
                     const auto node = createVariableNode(value.at(0));
                     nodeStack.push(node);
+
+                    const auto varNode = castToNodePtr<NodeTypes::Variable>(node);
+                    variableStack.push(varNode);
                     break;
                 }
                 case Token::Types::Operator: {
@@ -126,6 +133,17 @@ namespace kubvc::algorithm {
                     const auto value = token.value;
                     const auto node = createOperatorNode(arg2, arg1, value.at(0));
                     nodeStack.push(node);
+
+                    const auto hasLeftValue = vdc.getVariableAtSide(math::VDC::VariableSide::Left).has_value();
+                    if (!hasLeftValue && node->operation == '=') {
+                        if (arg2 && arg2->getType() == NodeTypes::Variable) {
+                            const auto varNode = castToNodePtr<NodeTypes::Variable>(arg2);
+                            if (varNode) {
+                                KUB_DEBUG("vdc: left variable {}", std::string(1, varNode->getValue()));
+                                vdc.set(math::VDC::VariableSide::Left, varNode->getValue());
+                            }
+                        }
+                    }
                     break;
                 }
                 case Token::Types::Function: {
@@ -170,7 +188,43 @@ namespace kubvc::algorithm {
             return false;
         }
 
-        const auto root = createRoot(nodeStack.top());
+        const auto leftVariable = vdc.getVariableAtSide(math::VDC::VariableSide::Left);
+        const auto hasLeftValue = leftVariable.has_value();
+        if (!variableStack.empty()) {
+            while (hasLeftValue && !variableStack.empty()) {
+                const auto rightVariable = vdc.getVariableAtSide(math::VDC::VariableSide::Right);
+                const auto hasRightValue = rightVariable.has_value();
+
+                const auto var = variableStack.back();
+                /*if (hasRightValue && (leftVariable.value().value != var->getValue() 
+                    && rightVariable.value().value == var->getValue())) {
+                    KUB_DEBUG("vdc: {} isSecond", std::string(1, var->getValue()));
+                    var->isSecond = true;
+                }*/
+                 
+                if (!hasRightValue) {
+                    KUB_DEBUG("vdc: right variable is {}", std::string(1, var->getValue()));
+                    vdc.set(math::VDC::VariableSide::Right, var->getValue());
+                } 
+                else if (hasRightValue && rightVariable.value().value != var->getValue()) {
+                    KUB_DEBUG("vdc: {} is a parameter", std::string(1, var->getValue()));
+                    var->isParameter = true;
+                }
+                variableStack.pop();
+            }
+        }
+        
+        const auto rightVariable = vdc.getVariableAtSide(math::VDC::VariableSide::Right);
+        const auto hasRightValue = rightVariable.has_value();
+
+        if ((hasRightValue && hasLeftValue) && (rightVariable.value().value == leftVariable.value().value)) {
+            KUB_ERROR("vdc: identical axis used in both left and right operands");
+            return false;
+        }
+
+        const auto rootChildNode = nodeStack.top();
+        KUB_ASSERT(rootChildNode != nullptr, "Child for root is nullptr");
+        const auto root = createRoot(rootChildNode);
         tree.setRoot(root);
         nodeStack.pop();
 

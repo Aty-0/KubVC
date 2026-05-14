@@ -21,10 +21,11 @@ namespace kubvc::math {
         
             [[nodiscard]] std::shared_ptr<ExpressionModel> get(std::size_t index) const;
             [[nodiscard]] std::shared_ptr<ExpressionModel> getSelected() const { return m_selected; }
-            [[nodiscard]] const std::vector<std::shared_ptr<ExpressionModel>>& getExpressions() const { return m_expressions; }
-            [[nodiscard]] const std::unordered_set<std::shared_ptr<ExpressionModel>>& getValidExpressions() const { return m_validExpressions; } 
+
+            [[nodiscard]] std::span<const std::shared_ptr<ExpressionModel>> getExpressions() const { return m_expressions; }
+            [[nodiscard]] std::span<const std::shared_ptr<ExpressionModel>> getValidExpressions() const { return m_validExpressions; } 
         private:
-            std::unordered_set<std::shared_ptr<ExpressionModel>> m_validExpressions;
+            std::vector<std::shared_ptr<ExpressionModel>> m_validExpressions;
             std::vector<std::shared_ptr<ExpressionModel>> m_expressions;  
             std::shared_ptr<ExpressionModel> m_selected;
     };
@@ -41,15 +42,13 @@ namespace kubvc::math {
             const auto result = lexer->tokenize(textBuffer.getBuffer().data());
             if (result.has_value()) {
                 lexer->print(result.value());
-                const auto buildResult = builder->build(expression.getTree(), result.value());
-                expression.setValid(buildResult, "failed to build ast"); // TODO: Reasons
+                const auto buildResult = builder->build(expression.getTree(), expression.getVDC(), result.value());
+                expression.setValid(buildResult, !buildResult ? "failed to build ast" : ""); // TODO: Reasons
                 expression.eval(limits);              
-                m_validExpressions.insert(model);
+                m_validExpressions.push_back(model);
             } else {
                 // Remove model from list 
-                if (m_validExpressions.contains(model)) {
-                    m_validExpressions.erase(model);
-                }                
+                std::erase(m_validExpressions, model);
                 const auto lastError = lexer->getLastError();
                 expression.setValid(false, lastError);
             }         
@@ -88,8 +87,8 @@ namespace kubvc::math {
 
         const auto it = m_expressions.begin() + index;
         const auto model = *it;
-        if (model && m_validExpressions.contains(model)) {
-            m_validExpressions.erase(model);
+        if (model) {
+            std::erase(m_validExpressions, model);
         }  
         
         m_expressions.erase(it);
