@@ -38,9 +38,13 @@ namespace kubvc::editor {
                 saveLimitsFirstTime = true;
             }	
 
-            // Draw our functions 
-            for (auto model : controller->getValidExpressions()) {
-                KUB_ASSERT(model != nullptr, "Some model in expression list are nullptr");          
+            // Draw our functions
+            const auto& models = controller->getValidExpressions(); 
+            for (std::size_t i = 0; i < models.size(); ++i) {
+                auto model = models[i];
+                if (!model) {
+                    continue;
+                }
 
                 auto& settings = model->getSettings(); 
                 auto& textBuffer = model->getTextBuffer(); 
