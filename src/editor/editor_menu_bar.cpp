@@ -18,6 +18,7 @@ namespace kubvc::editor {
     };
 
     void EditorMenuBar::render(kubvc::render::GUI& gui) {
+        static bool showDemoWindow = false;
         static const auto controller = math::ExpressionController::getInstance();
         static const auto exprIo = io::ExpressionIO::getInstance();
         static const auto fileDialogInstance = ImGuiFileDialog::Instance();
@@ -30,6 +31,9 @@ namespace kubvc::editor {
         };
 
         static FileDialogMode fileDialogMode = FileDialogMode::Unknown;
+        if (showDemoWindow) {
+            ImGui::ShowDemoWindow();
+        }
 
         if (fileDialogInstance->Display("EditorMenuBarFileDialog")) {
             const auto filePathName = fileDialogInstance->GetFilePathName();
@@ -120,6 +124,11 @@ namespace kubvc::editor {
                         gui.applyImGuiClassicTheme();
 
                     ImGui::EndMenu();
+                }
+
+                ImGui::Separator();
+                if (ImGui::MenuItem("ImGui Demo Window")) {
+                    showDemoWindow = !showDemoWindow;
                 }
 
                 ImGui::EndMenu();
