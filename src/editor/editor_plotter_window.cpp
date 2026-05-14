@@ -2,7 +2,6 @@
 #include "expression_controller.h"
 #include "vec_convert.h"
 
-//#define SHOW_DEBUG_LIMITS 
 
 namespace kubvc::editor {
     static const auto controller = math::ExpressionController::getInstance();
@@ -38,15 +37,6 @@ namespace kubvc::editor {
                 math::GraphLimits::GlobalLimits = ImPlot::GetPlotLimits(); 
                 saveLimitsFirstTime = true;
             }	
-#ifdef SHOW_DEBUG_LIMITS
-            const auto limits = ImPlot::GetPlotLimits();    
-            const glm::dvec2 limitsMin = { limits.X.Min, limits.Y.Min };
-            const glm::dvec2 limitsMax = { limits.X.Max, limits.Y.Max };
-            ImPlot::PlotText("debug_limits_min", limitsMin[0] / 2, limitsMin[1] / 2);
-            ImPlot::PlotScatter("debug_limits_min", &limitsMin[0], &limitsMin[1], 2, 0, 0, vecStride);      
-            ImPlot::PlotText("debug_limits_max", limitsMax[0] / 2, limitsMax[1] / 2);
-            ImPlot::PlotScatter("debug_limits_max", &limitsMax[0], &limitsMax[1], 2, 0, 0, vecStride);      
-#endif
 
             // Draw our functions 
             for (auto model : controller->getValidExpressions()) {
