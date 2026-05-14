@@ -38,8 +38,8 @@ namespace kubvc::render {
 		KUB_ASSERT(ImGui_ImplGlfw_InitForOpenGL(&window->getHandle(), true), "ImGui GLFW impl failed!");
 		KUB_ASSERT(ImGui_ImplOpenGL3_Init(), "ImGui OpenGL3 init failed!");
 
-		m_defaultFont = io.Fonts->AddFontFromFileTTF("fonts/Roboto-Light.ttf", DEFAULT_FONT_SIZE);
-		m_defaultFontMathSize = io.Fonts->AddFontFromFileTTF("fonts/Roboto-Light.ttf", MATH_FONT_SIZE * 1.5f);
+		m_defaultFont = io.Fonts->AddFontFromFileTTF("fonts/Roboto-Regular.ttf", DEFAULT_FONT_SIZE);
+		m_defaultFontMathSize = io.Fonts->AddFontFromFileTTF("fonts/Roboto-Regular.ttf", MATH_FONT_SIZE * 1.5f);
 		m_mathFont = io.Fonts->AddFontFromFileTTF("fonts/OldStandard-Regular.ttf", MATH_FONT_SIZE);
 
 		ImFontConfig config{};
