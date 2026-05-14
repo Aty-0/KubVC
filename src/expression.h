@@ -2,7 +2,8 @@
 #include <glm/glm.hpp>
 #include "ast.h"
 #include "graph_limits.h"
-    
+#include "variable_dependence.h"
+
 namespace kubvc::math {
     class Expression {
         public:
@@ -14,6 +15,7 @@ namespace kubvc::math {
 
             ~Expression();
             
+            [[nodiscard]] math::VariableDependenceController& getVDC() { return m_vdc; }
             [[nodiscard]] algorithm::ASTree& getTree() { return m_tree; }
             [[nodiscard]] const std::vector<glm::dvec2>& getPlotBuffer() const { return m_plotBuffer; } 
             [[nodiscard]] const std::string& getLastErrorMessage() const { return m_lastErrorMessage; }
@@ -23,8 +25,9 @@ namespace kubvc::math {
             // Evaluate current expression 
             void eval(const GraphLimits& limits, std::int32_t maxPointCount = MAX_PLOT_BUFFER_SIZE);
         private:
+            math::VariableDependenceController m_vdc;
             // Abstract syntax tree for expressions 
-            kubvc::algorithm::ASTree m_tree;
+            algorithm::ASTree m_tree;
             // Calculated points for graph
             std::vector<glm::dvec2> m_plotBuffer;  
             bool m_valid = false;

@@ -13,7 +13,7 @@ namespace kubvc::algorithm {
         Unknown,
     };
 
-    [[nodiscard]] static inline Operators getOperatorFrom(Helpers::uchar chr) {   
+    [[nodiscard]] static inline Operators getOperatorTypeByChar(Helpers::uchar chr) {   
         switch (chr) {
             case '+':
                 return Operators::Plus;
