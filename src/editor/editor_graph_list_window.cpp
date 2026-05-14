@@ -51,12 +51,14 @@ namespace kubvc::editor {
 
     void EditorGraphListWindow::drawGraphPanel(kubvc::render::GUI& gui, std::shared_ptr<math::ExpressionModel> model, std::int32_t index) {
         static auto& fontBig = gui.getDefaultFontMathSize();        
-
-        const auto selectedModel = controller->getSelected();
+        if (!model) {
+            return;
+        }
         
         auto& currentExpression = model->getExpression();
         auto& currentSettings = model->getSettings();
         
+        const auto selectedModel = controller->getSelected();
         // Is text box expanded
         const auto expandTextBox = currentSettings.getExpandTextBox();
 
@@ -78,9 +80,27 @@ namespace kubvc::editor {
         const auto padding = style.FramePadding.y * 2 + style.ItemSpacing.y;
         const auto totalHeight = height + padding;
         
-        ImGui::PushStyleColor(ImGuiCol_ChildBg, 0); 
-        ImGui::BeginChild(("##graphPanel" + idStr).c_str(), ImVec2(0, totalHeight), true);
-        ImGui::PopStyleColor();
+        ImGui::PushStyleColor(ImGuiCol_ChildBg, ImGui::GetStyleColorVec4(ImGuiCol_WindowBg)); 
+        ImGui::BeginChild(("##graphPanel" + idStr).c_str(), ImVec2(0, totalHeight), ImGuiChildFlags_::ImGuiChildFlags_Borders);
+        
+        ImGui::PushStyleColor(ImGuiCol_ChildBg, ImGui::GetStyleColorVec4(ImGuiCol_Border));
+        ImGui::BeginChild(("##gripArea" + idStr).c_str(), ImVec2(24 * scale, 0));
+        
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.18f, 0.18f, 0.20f, 0.95f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.28f, 0.28f, 0.31f, 0.95f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.35f, 0.35f, 0.38f, 0.95f));
+        
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, (totalHeight - ImGui::GetFrameHeight()) / 2.0f));
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
+        
+        ImGui::PopStyleVar(2);
+        ImGui::PopStyleColor(4);
+        
+        ImGui::EndChild();
+        
+        ImGui::SameLine();
+        
+        ImGui::BeginGroup();
         
         // Draw current index text 
         {
@@ -93,7 +113,6 @@ namespace kubvc::editor {
         ImGui::SameLine();
 
         // Draw icons
-        ImGui::BeginGroup();
         {
             ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
             ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.3f, 0.3f, 0.3f, 0.3f));
@@ -169,7 +188,6 @@ namespace kubvc::editor {
                     }
                     ImGui::PopFont();
                 }
-                ImGui::SameLine();
                 // Draw error hint 
                 {
                     const auto lastErrorMessage = currentExpression.getLastErrorMessage();
@@ -196,7 +214,6 @@ namespace kubvc::editor {
             ImGui::PopFont();
             ImGui::PopStyleColor(2);
         }
-        ImGui::EndGroup();
 
         // Draw textbox 
         {
@@ -206,10 +223,9 @@ namespace kubvc::editor {
                 ImGui::PushStyleColor(ImGuiCol_Border, INVALID_COLOR);
             else if (currentExpressionIsSelected)
                 ImGui::PushStyleColor(ImGuiCol_Border, SELECTED_COLOR);
-
                     
             
-            const auto textBoxWidth = ImGui::GetContentRegionAvail().x;
+            const auto textBoxWidth = ImGui::GetContentRegionAvail().x - 8 * scale;
             auto& currentExpressionTextBuffer = model->getTextBuffer(); 
             auto& textBuffer = currentExpressionTextBuffer.getBuffer();
             bool textChanged = false;
@@ -255,8 +271,9 @@ namespace kubvc::editor {
                 controller->setSelected(model);
             }
         }
-
-
+        
+        ImGui::PopStyleColor();
+        ImGui::EndGroup();
         ImGui::EndChild();
         ImGui::PopStyleVar(2);
         ImGui::EndGroup();
@@ -303,8 +320,6 @@ namespace kubvc::editor {
         ImGui::EndChild();
         
         if (ImGui::BeginChild("GraphListChild", ImVec2(windowSize.x, 0), childFlags, childWindowFlags)) { 
-            ImGui::TextDisabled("Graphs:");
-            ImGui::Separator();
             drawGraphList(gui);
         }
         ImGui::EndChild();
