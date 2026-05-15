@@ -22,8 +22,8 @@ namespace kubvc::math {
             [[nodiscard]] std::shared_ptr<ExpressionModel> get(std::size_t index) const;
             [[nodiscard]] std::shared_ptr<ExpressionModel> getSelected() const { return m_selected; }
 
-            [[nodiscard]] std::span<const std::shared_ptr<ExpressionModel>> getExpressions() const { return m_expressions; }
-            [[nodiscard]] std::span<const std::shared_ptr<ExpressionModel>> getValidExpressions() const { return m_validExpressions; } 
+            [[nodiscard]] const std::vector<std::shared_ptr<ExpressionModel>>& getExpressions() const { return m_expressions; }
+            [[nodiscard]] const std::vector<std::shared_ptr<ExpressionModel>>& getValidExpressions() const { return m_validExpressions; } 
         private:
             std::vector<std::shared_ptr<ExpressionModel>> m_validExpressions;
             std::vector<std::shared_ptr<ExpressionModel>> m_expressions;  
