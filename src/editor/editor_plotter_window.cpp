@@ -1,7 +1,7 @@
 #include "editor_plotter_window.h"
 #include "expression_controller.h"
 #include "vec_convert.h"
-
+#include "application_config.h"
 
 namespace kubvc::editor {
     static const auto controller = math::ExpressionController::getInstance();
@@ -18,8 +18,23 @@ namespace kubvc::editor {
             static bool saveLimitsFirstTime = false; 
 
             // Draw axis notes 
-            ImPlot::SetupAxis(ImAxis_X1, "X-Axis", ImPlotAxisFlags_::ImPlotAxisFlags_Foreground);
-            ImPlot::SetupAxis(ImAxis_Y1, "Y-Axis", ImPlotAxisFlags_::ImPlotAxisFlags_Foreground);
+            static const auto appConfig = application::ApplicationConfig::getInstance();
+            
+            static constexpr auto PLOT_AXIS_FLAGS = ImPlotAxisFlags_::ImPlotAxisFlags_Foreground;
+
+            switch (appConfig->getMode()) {
+                case application::MathMode::Real: {
+                    ImPlot::SetupAxis(ImAxis_X1, "X-Axis", PLOT_AXIS_FLAGS);
+                    ImPlot::SetupAxis(ImAxis_Y1, "Y-Axis", PLOT_AXIS_FLAGS);
+                    break;
+                }
+                case application::MathMode::Complex: {
+                    ImPlot::SetupAxis(ImAxis_X1, "Re", PLOT_AXIS_FLAGS);
+                    // TODO: SetupAxisTicks
+                    ImPlot::SetupAxis(ImAxis_Y1, "Im", PLOT_AXIS_FLAGS);
+                    break;                    
+                }
+            }
             
             static bool updateExpressions = false;
             if (ImPlot::IsPlotHovered()) {

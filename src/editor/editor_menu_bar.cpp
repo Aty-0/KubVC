@@ -6,6 +6,7 @@
 
 #include "../logger.h"
 #include "../expression_io.h"
+#include "../application_config.h"
 
 #include "ImGuiFileDialog.h"
 
@@ -142,6 +143,31 @@ namespace kubvc::editor {
 
                 ImGui::EndMenu();
             }
+
+            if (ImGui::BeginMenu("Mode")) {
+                static const auto config = application::ApplicationConfig::getInstance();
+
+                auto& iconFont = gui.getIconFont();
+                
+                if (config->getMode() == application::MathMode::Real) {
+                    ImGui::PushFont(&iconFont);
+                    ImGui::Text(ICON_FA_CHECK);
+                    ImGui::PopFont();
+                    ImGui::SameLine();
+                }
+
+                if (ImGui::MenuItem("Real")) {
+                    config->setMode(application::MathMode::Real);
+                }
+                if (config->getMode() == application::MathMode::Complex) {
+                    ImGui::PushFont(&iconFont);
+                    ImGui::Text(ICON_FA_CHECK);
+                    ImGui::PopFont();
+                    ImGui::SameLine();
+                }
+
+                if (ImGui::MenuItem("Complex")) {                    
+                    config->setMode(application::MathMode::Complex);
                 }
 
                 ImGui::EndMenu();

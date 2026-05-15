@@ -97,6 +97,10 @@ namespace kubvc::editor {
                 ImGui::Text("value: %f", node->parameter);
                 break;
             }
+            case algorithm::NodeTypes::ComplexNumber: {
+                ImGui::Text("complex number, id:%d", start->getId());
+                break;
+            }
             case algorithm::NodeTypes::Invalid: {
                 ImGui::Text("invalid, id:%d", start->getId());
                 break;

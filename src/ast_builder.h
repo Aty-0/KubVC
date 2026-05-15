@@ -18,6 +18,7 @@ namespace kubvc::algorithm {
             [[nodiscard]] NodePtr<NodeTypes::Root> createRoot(std::shared_ptr<INode> child) const;
             [[nodiscard]] NodePtr<NodeTypes::Variable> createVariableNode(char value) const;
             [[nodiscard]] NodePtr<NodeTypes::Number> createNumberNode(double value) const;
+            [[nodiscard]] NodePtr<NodeTypes::ComplexNumber> createComplexNumber() const;
             [[nodiscard]] NodePtr<NodeTypes::Operator> createOperatorNode(std::shared_ptr<INode> x,  std::shared_ptr<INode> y, char op) const;
             [[nodiscard]] NodePtr<NodeTypes::UnaryOperator> createUnaryOperatorNode(std::shared_ptr<INode> x, char op) const;
             [[nodiscard]] NodePtr<NodeTypes::Invalid> createInvalidNode(std::string_view name) const;
@@ -40,6 +41,11 @@ namespace kubvc::algorithm {
     inline NodePtr<NodeTypes::Root> ASTBuilder::createRoot(std::shared_ptr<INode> child) const {
         const auto node = createNode<NodeTypes::Root>();
         node->child = child;
+        return node;
+    }
+
+    inline NodePtr<NodeTypes::ComplexNumber> ASTBuilder::createComplexNumber() const {
+        const auto node = createNode<NodeTypes::ComplexNumber>();
         return node;
     }
 
@@ -103,6 +109,11 @@ namespace kubvc::algorithm {
                     KUB_ASSERT(result == std::errc(), "Invalid convert");
                     const auto node = createNumberNode(numberValue);
                     nodeStack.push(node);
+                    break;
+                }
+                case Token::Types::ComplexNumber: {
+                    const auto node = createComplexNumber();
+                    nodeStack.push(node);                    
                     break;
                 }
                 case Token::Types::Variable: {

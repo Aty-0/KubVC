@@ -8,6 +8,7 @@
 
 // TODO:
 //#include "function_handler.h"
+#include "application_config.h"
 #include <functional>
 
 #include <string>
@@ -26,6 +27,7 @@ namespace kubvc::algorithm {
         enum class Types {
             None,
             Number, 
+            ComplexNumber,
             Variable,
             Function,
             Operator, 
@@ -89,6 +91,7 @@ namespace kubvc::algorithm {
         for (const auto& token : in) {
             switch (token.type) {                    
                 case Token::Types::Variable:
+                case Token::Types::ComplexNumber:
                 case Token::Types::Number: {
                     output.push_back(token);
 
@@ -333,11 +336,20 @@ namespace kubvc::algorithm {
                     }
                     // Or it's possible variable or function 
                     if (wordSize == 1) {
-                        const auto token = Token {
-                            Token::Types::Variable,
-                            word,
-                        };
-                        tokens.push_back(token);
+                        static const auto appConfig = application::ApplicationConfig::getInstance();
+                        if (word == "i" && appConfig->getMode() == application::MathMode::Complex) {
+                            const auto token = Token {
+                                Token::Types::ComplexNumber,
+                                word,
+                            };
+                            tokens.push_back(token);
+                        } else {
+                            const auto token = Token {
+                                Token::Types::Variable,
+                                word,
+                            };
+                            tokens.push_back(token);
+                        }
                         pos++;
 
                         KUB_LEXER_DEBUG("[tokenize] parserd variable is {}", word);

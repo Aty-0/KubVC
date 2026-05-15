@@ -92,6 +92,12 @@ namespace kubvc::algorithm {
     };
 
     template<>
+    struct NodeTraits<NodeTypes::ComplexNumber> : INode {
+        [[nodiscard]] virtual NodeTypes getType() const final { return NodeTypes::ComplexNumber; }
+        virtual void calculate([[maybe_unused]] double x, [[maybe_unused]] double y, [[maybe_unused]] double& result) final { }        
+    };
+
+    template<>
     struct NodeTraits<NodeTypes::Function> : INode {
         [[nodiscard]] virtual NodeTypes getType() const final { return NodeTypes::Function; }
         virtual void calculate(double x, double y, double& result) final;
