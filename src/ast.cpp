@@ -1,12 +1,20 @@
 #include "ast.h"
+#include <mutex>
 
 namespace kubvc::algorithm { 
     ASTree::~ASTree() {
         clear();
     }
+    
+    void ASTree::setRoot(NodePtr<NodeTypes::Root> root) { 
+        std::unique_lock lock(m_mutex);
+        m_root = root; 
+    }
 
     void ASTree::clear()  {        
         if (isRootExist()) {
+            std::unique_lock lock(m_mutex);
+
             clearFrom(m_root);
             m_root = nullptr;
         }/* else {
@@ -69,6 +77,8 @@ namespace kubvc::algorithm {
     }
     
     bool ASTree::validate() const {
+        std::unique_lock lock(m_mutex);
+
         if (!isRootExist()) {
             return false;
         } 

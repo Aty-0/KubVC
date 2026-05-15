@@ -1,6 +1,8 @@
 #pragma once
 #include "ast_nodes.h"
 
+#include <shared_mutex>
+
 namespace kubvc::algorithm {
     class ASTree {
         public:
@@ -16,9 +18,11 @@ namespace kubvc::algorithm {
             // Start validating ast from specific node
             [[nodiscard]] bool validateFrom(std::shared_ptr<INode> start) const;
             [[nodiscard]] NodePtr<NodeTypes::Root> getRoot() const { return m_root; }
-            void setRoot(NodePtr<NodeTypes::Root> root) { m_root = root; }
+            void setRoot(NodePtr<NodeTypes::Root> root);
             
         private:
             NodePtr<NodeTypes::Root> m_root;
+
+            mutable std::shared_mutex m_mutex;
     };
 }
