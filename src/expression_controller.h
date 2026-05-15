@@ -5,6 +5,7 @@
 
 #include <unordered_set>
 #include <shared_mutex>
+#include <span>
 
 namespace kubvc::math {
     class ExpressionController : public utility::Singleton<ExpressionController> {
