@@ -18,7 +18,8 @@ namespace kubvc::editor {
     };
 
     void EditorMenuBar::render(kubvc::render::GUI& gui) {
-        static bool showDemoWindow = false;
+        static bool showImGuiDemoWindow = false;
+        static bool showImPlotDemoWindow = false;
         static const auto controller = math::ExpressionController::getInstance();
         static const auto exprIo = io::ExpressionIO::getInstance();
         static const auto fileDialogInstance = ImGuiFileDialog::Instance();
@@ -31,9 +32,13 @@ namespace kubvc::editor {
         };
 
         static FileDialogMode fileDialogMode = FileDialogMode::Unknown;
-        if (showDemoWindow) {
+        if (showImGuiDemoWindow) {
             ImGui::ShowDemoWindow();
         }
+
+        if (showImPlotDemoWindow) {
+            ImPlot::ShowDemoWindow();
+        } 
 
         if (fileDialogInstance->Display("EditorMenuBarFileDialog")) {
             const auto filePathName = fileDialogInstance->GetFilePathName();
@@ -128,7 +133,15 @@ namespace kubvc::editor {
 
                 ImGui::Separator();
                 if (ImGui::MenuItem("ImGui Demo Window")) {
-                    showDemoWindow = !showDemoWindow;
+                    showImGuiDemoWindow = !showImGuiDemoWindow;
+                }
+
+                if (ImGui::MenuItem("ImPlot Demo Window")) {
+                    showImPlotDemoWindow = !showImPlotDemoWindow;
+                }
+
+                ImGui::EndMenu();
+            }
                 }
 
                 ImGui::EndMenu();
