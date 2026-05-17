@@ -46,6 +46,7 @@ namespace kubvc::algorithm {
 
     inline NodePtr<NodeTypes::ComplexNumber> ASTBuilder::createComplexNumber() const {
         const auto node = createNode<NodeTypes::ComplexNumber>();
+        node->setValue(std::complex<double>(0.0, 1.0));
         return node;
     }
 
@@ -201,7 +202,7 @@ namespace kubvc::algorithm {
 
         const auto leftVariable = vdc.getVariableAtSide(math::VDC::VariableSide::Left);
         const auto hasLeftValue = leftVariable.has_value();
-        if (!variableStack.empty()) {
+        if (variableStack.size() > 1) {
             while (hasLeftValue && !variableStack.empty()) {
                 const auto rightVariable = vdc.getVariableAtSide(math::VDC::VariableSide::Right);
                 const auto hasRightValue = rightVariable.has_value();

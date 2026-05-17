@@ -67,11 +67,12 @@ namespace kubvc::algorithm {
             }
             case kubvc::algorithm::NodeTypes::Number:
             case kubvc::algorithm::NodeTypes::Variable:
+            case kubvc::algorithm::NodeTypes::ComplexNumber:
             case kubvc::algorithm::NodeTypes::Invalid:
                 // Nothing to clear 
                 break;
             default:
-                KUB_ASSERT(true, "Unknown type");
+                KUB_ASSERT(false, "Unknown type");
                 break;
         }
     }
@@ -98,6 +99,7 @@ namespace kubvc::algorithm {
                 return validateFrom(node->child);
             }
             case kubvc::algorithm::NodeTypes::Number:
+            case kubvc::algorithm::NodeTypes::ComplexNumber:
             case kubvc::algorithm::NodeTypes::Variable:
                 return true;            
             case kubvc::algorithm::NodeTypes::Operator: {

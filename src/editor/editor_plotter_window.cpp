@@ -69,24 +69,37 @@ namespace kubvc::editor {
                         math::GraphLimits::GlobalLimits = ImPlot::GetPlotLimits();                 
                         expression.eval(math::GraphLimits::GlobalLimits);     
                     }
+                    
+                    const auto isShaded = settings.getShaded() ? ImPlotLineFlags_::ImPlotLineFlags_Shaded : ImPlotLineFlags_::ImPlotLineFlags_None;
+                    const auto flags = ImPlotLineFlags_::ImPlotLineFlags_NoClip | isShaded;
 
                     const auto buffer = expression.getPlotBuffer(); 
-                    if (!buffer.empty()) {
                         // Apply plot style from expression                                                   
-                        const auto isShaded = settings.getShaded() ? ImPlotLineFlags_::ImPlotLineFlags_Shaded : ImPlotLineFlags_::ImPlotLineFlags_None;
-                        const auto flags = ImPlotLineFlags_::ImPlotLineFlags_NoClip | isShaded;
 
-                        ImPlotSpec specs;
-                        specs.LineWeight = settings.getThickness();
-                        specs.LineColor = kubvc::utility::toImVec4(settings.getColor());
-                        specs.Flags = flags;
-                        specs.Stride = vecStride;
-
-                        ImPlot::PlotLine(textBuffer.getBuffer().data(), &buffer[0].x, &buffer[0].y, 
-                            static_cast<std::int32_t>(buffer.size()), specs);      
-
-                        //ImPlot::PlotScatter(expr->getTextBuffer().data(), &buffer[0].x, &buffer[0].y, buffer.size(), flags, 0, vecStride);                                  
+                    ImPlotSpec specs;
+                    specs.LineWeight = settings.getThickness();
+                    specs.LineColor = kubvc::utility::toImVec4(settings.getColor());
+                    specs.Flags = flags;
+                    specs.Stride = vecStride;
+                    
+                    switch (appConfig->getMode()) {
+                        case application::MathMode::Real: {
+                            if (!buffer.empty()) {
+                                ImPlot::PlotLine(textBuffer.getBuffer().data(), &buffer[0].x, &buffer[0].y, 
+                                    static_cast<std::int32_t>(buffer.size()), specs);      
+                            }
+                            break;
+                        }
+                        case application::MathMode::Complex: {
+                            const auto& grid = expression.getComplexGrid();
+                            for (const auto& lines : grid) {
+                                ImPlot::PlotLine(textBuffer.getBuffer().data(), &lines[0].x, &lines[0].y, 
+                                    static_cast<std::int32_t>(lines.size()), specs);      
+                            }
+                            break;                    
+                        }
                     }
+                    //ImPlot::PlotScatter(expr->getTextBuffer().data(), &buffer[0].x, &buffer[0].y, buffer.size(), flags, 0, vecStride);                                                      
                 }                    
             }                
 

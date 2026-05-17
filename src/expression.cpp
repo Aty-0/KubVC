@@ -1,7 +1,7 @@
 #include "expression.h"
 #include "logger.h"
 #include "task_manager.h"
-
+#include "application_config.h"
 
 namespace kubvc::math {
     Expression::Expression()  : 
@@ -9,15 +9,20 @@ namespace kubvc::math {
         m_plotBuffer(std::vector<glm::dvec2>(MAX_PLOT_BUFFER_SIZE)),
         m_valid(false),
         m_lastErrorMessage() {
-    
+            // TODO: Prepare only when we are switch (already) in complex mode
+            prepareComplexGrid();
     }
 
     Expression::~Expression() {        
         m_valid = false;
         m_vdc.reset();
         m_tree.clear();
+        
         m_plotBuffer.clear();
         m_plotBuffer.shrink_to_fit();
+
+        m_complexGrid.clear();
+        m_complexGrid.shrink_to_fit();
     }
 
     static constexpr std::uint8_t NEWTON_MAX_ITER = 16; 
@@ -84,55 +89,91 @@ namespace kubvc::math {
         
         return (max + min) * 0.5;
     }
+    
+    void Expression::prepareComplexGrid() {
+        m_complexGrid.resize(COMPLEX_GRID_SIZE, std::vector<glm::dvec2>(COMPLEX_GRID_LINES_COUNT));
+    }
 
     void Expression::eval(const GraphLimits& limits, std::int32_t maxPointCount) {   
         if (!isValid())
             return; 
-
+        static const auto appConfig = application::ApplicationConfig::getInstance();
         static const auto taskManager = utility::TaskManager::getInstance();        
-        taskManager->add([this, limits, maxPointCount] { 
-            const auto root = m_tree.getRoot();
-            KUB_ASSERT(root != nullptr, "Root is nullptr, wtf");            
-            if (!root->child) {
-                KUB_WARN("child in root is empty");
-                return;
-            }
+        
+        const auto root = m_tree.getRoot();
+        KUB_ASSERT(root != nullptr, "Root is nullptr, wtf");            
+        if (!root->child) {
+            KUB_WARN("child in root is empty");
+            return;
+        }
 
-            const auto left = m_vdc.getVariableAtSide(math::VDC::VariableSide::Left);
-            const bool isYPrefered = !left.has_value() || left.value().value == 'y';
 
-            for (std::int32_t i = 0; i < maxPointCount; ++i) {                              
-                if (isYPrefered) {                    
-                    const auto x0 = std::lerp(limits.xMin, limits.xMax, static_cast<double>(i) / (maxPointCount - 1));
-                    const auto f = [root, x0](const double y) {
-                        double out = 0.0;
-                        root->calculate(x0, y, out);
-                        return out - y;
-                    };  
-
-                    auto y0 = solveNewton(f, limits.yMin, limits.yMax);
-                    if (glm::isnan(y0)) {
-                        y0 = solveBisection(f, limits.yMin, limits.yMax);
+        switch (appConfig->getMode()) {
+            case application::MathMode::Complex: {
+                taskManager->add([this, root, limits, maxPointCount] {
+                    for (std::size_t i = 0; i < COMPLEX_GRID_SIZE; ++i) {
+                        const auto x = std::lerp(limits.xMin, limits.xMax, static_cast<double>(i) / (COMPLEX_GRID_SIZE - 1));
+                        for (std::size_t j = 0; j < COMPLEX_GRID_LINES_COUNT; ++j) {
+                            const auto y = std::lerp(limits.yMin, limits.yMax, static_cast<double>(j) / (COMPLEX_GRID_LINES_COUNT - 1));
+                            const auto z = root->calculateComplex(x, y);
+                            m_complexGrid[i][j] = { z.real(), z.imag() };
+                        }
                     }
                     
-                    m_plotBuffer[i] = { x0, y0 };
-                } else {
-                    const auto y0 = std::lerp(limits.yMin, limits.yMax, static_cast<double>(i) / (maxPointCount - 1));
-                    const auto f = [root, y0](const double x) {
-                        double out = 0.0;
-                        root->calculate(x, y0, out);
-                        return out - x;
-                    };  
-
-                    auto x0 = solveNewton(f, limits.xMin, limits.xMax);
-                    if (glm::isnan(x0)) {
-                        x0 = solveBisection(f, limits.xMin, limits.xMax);
+                    /*
+                    for (std::int32_t i = 0; i < maxPointCount; ++i) {
+                        // TODO: inverse, when we are use W
+                        const auto t = static_cast<double>(i) / (maxPointCount - 1);
+                        const auto x = std::lerp(limits.xMin, limits.xMax, t);
+                        const auto y = std::lerp(limits.yMin, limits.yMax, t);
+                        const auto z = root->calculateComplex(x, y);
+                        
+                        m_plotBuffer[i] = { z.real(), z.imag() };
                     }
-
-                    m_plotBuffer[i] = { x0, y0 };
-                }
+                    */
+                });
+                break;        
             }
-        });        
+            case application::MathMode::Real: {
+                taskManager->add([this, root, limits, maxPointCount] { 
+                    const auto left = m_vdc.getVariableAtSide(math::VDC::VariableSide::Left);
+                    const bool isYPrefered = !left.has_value() || left.value().value == 'y';
+
+                    for (std::int32_t i = 0; i < maxPointCount; ++i) {                              
+                        if (isYPrefered) {                    
+                            const auto x0 = std::lerp(limits.xMin, limits.xMax, static_cast<double>(i) / (maxPointCount - 1));
+                            const auto f = [root, x0](const double y) {
+                                double out = 0.0;
+                                root->calculate(x0, y, out);
+                                return out - y;
+                            };  
+
+                            auto y0 = solveNewton(f, limits.yMin, limits.yMax);
+                            if (glm::isnan(y0)) {
+                                y0 = solveBisection(f, limits.yMin, limits.yMax);
+                            }
+                            
+                            m_plotBuffer[i] = { x0, y0 };
+                        } else {
+                            const auto y0 = std::lerp(limits.yMin, limits.yMax, static_cast<double>(i) / (maxPointCount - 1));
+                            const auto f = [root, y0](const double x) {
+                                double out = 0.0;
+                                root->calculate(x, y0, out);
+                                return out - x;
+                            };  
+
+                            auto x0 = solveNewton(f, limits.xMin, limits.xMax);
+                            if (glm::isnan(x0)) {
+                                x0 = solveBisection(f, limits.xMin, limits.xMax);
+                            }
+
+                            m_plotBuffer[i] = { x0, y0 };
+                        }
+                    }
+                });        
+                break;        
+            }
+        }
     }
 
     void Expression::setValid(bool isValid, std::string lastMessage) {
