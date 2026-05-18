@@ -136,7 +136,8 @@ namespace kubvc::editor {
 
     void EditorEditGraphWindow::drawLineColorPicker() {
         const auto selected = controller->getSelected();
-        if (selected != nullptr && selected->getSettings().getChangeColor()) {
+        const auto isColorPickerOpenned = selected->getSettings().getChangeColor();
+        if (selected && isColorPickerOpenned) {
             auto& settings = selected->getSettings();
             auto color = settings.getColor();
             if (ImGui::ColorPicker4("##_CurrentExprColorPicker", &color.x, ImGuiColorEditFlags_::ImGuiColorEditFlags_NoLabel)) {
@@ -160,7 +161,9 @@ namespace kubvc::editor {
             ImGui::Dummy(ImVec2(0, 5.0f));
             drawIcon(gui, ICON_FA_WAVE_SQUARE);
             ImGui::SameLine(0, 10.0f);
+            ImGui::PushFont(&gui.getDefaultFontMathSize());
             ImGui::TextDisabled("Graph: %s", selected->getTextBuffer().getBuffer().data());
+            ImGui::PopFont();
             ImGui::Dummy(ImVec2(0, 15.0f));
 
             // Style settings block
@@ -196,7 +199,7 @@ namespace kubvc::editor {
             drawIcon(gui, ICON_FA_PALETTE);
             ImGui::SameLine(0, 10.0f);
             ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 1.0f);
-            auto color = kubvc::utility::toImVec4(settings.getColor());
+            const auto color = kubvc::utility::toImVec4(settings.getColor());
             if (ImGui::ColorButton("##OptionsGraphColorPicker", color, ImGuiColorEditFlags_NoBorder, ImVec2(25, 25))) {
                 settings.setChangeColor(!settings.getChangeColor());
             }
@@ -225,10 +228,10 @@ namespace kubvc::editor {
             ImGui::SameLine();        
             ImGui::TextDisabled("Debug");
             drawDebugAST();
-            const auto points = selected->getExpression().getPlotBuffer();
+            const auto& points = selected->getExpression().getPlotBuffer();
             ImGui::Text("Count: %zu", points.size());
             if (ImGui::CollapsingHeader("Points")) {
-                for (auto point : selected->getExpression().getPlotBuffer()) {
+                for (const auto& point : points) {
                     if (glm::isnan(point.x) || glm::isnan(point.y)) {
                         ImGui::TextColored(ImVec4(1,0,0,1), "x:%f y:%f", point.x, point.y);
                     }

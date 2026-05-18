@@ -56,7 +56,7 @@ namespace kubvc::editor {
             // Draw our functions
             const auto& models = controller->getValidExpressions(); 
             for (std::size_t i = 0; i < models.size(); ++i) {
-                auto model = models[i];
+                const auto& model = models[i];
                 if (!model) {
                     continue;
                 }

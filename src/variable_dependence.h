@@ -4,6 +4,7 @@
 
 #include <optional>
 #include <set>
+#include <span>
 #include <shared_mutex>
 
 namespace kubvc::math {
