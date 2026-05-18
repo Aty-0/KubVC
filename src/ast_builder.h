@@ -89,13 +89,15 @@ namespace kubvc::algorithm {
         node->name = name;
         return node;
     }
+    
+    static constexpr std::initializer_list<char> RESERVED_VALUES = { 'x', 'y', 'z', 'w' };
 
     inline bool ASTBuilder::build(ASTree& tree, math::VariableDependenceController& vdc, const std::vector<Token>& tokens) {
         tree.clear();
         vdc.reset();
 
         std::stack<std::shared_ptr<algorithm::INode>> nodeStack { };
-        std::queue<NodePtr<algorithm::NodeTypes::Variable>> variableStack { };
+        std::queue<NodePtr<algorithm::NodeTypes::Variable>> variableQueue { };
         for (const auto& token : tokens) {
             if (token.value.empty()) {
                 KUB_ERROR("token with type {} has empty value, skip", static_cast<std::int32_t>(token.type));
@@ -121,9 +123,10 @@ namespace kubvc::algorithm {
                     const auto value = token.value;
                     const auto node = createVariableNode(value.at(0));
                     nodeStack.push(node);
-
+                    
                     const auto varNode = castToNodePtr<NodeTypes::Variable>(node);
-                    variableStack.push(varNode);
+                    variableQueue.push(varNode);
+                    
                     break;
                 }
                 case Token::Types::Operator: {
@@ -202,36 +205,26 @@ namespace kubvc::algorithm {
 
         const auto leftVariable = vdc.getVariableAtSide(math::VDC::VariableSide::Left);
         const auto hasLeftValue = leftVariable.has_value();
-        if (variableStack.size() > 1) {
-            while (hasLeftValue && !variableStack.empty()) {
+        if (variableQueue.size() > 1) {
+            while (hasLeftValue && !variableQueue.empty()) {
                 const auto rightVariable = vdc.getVariableAtSide(math::VDC::VariableSide::Right);
                 const auto hasRightValue = rightVariable.has_value();
+                const auto var = variableQueue.front();
+                const auto varValue = var->getValue();
 
-                const auto var = variableStack.back();
-                /*if (hasRightValue && (leftVariable.value().value != var->getValue() 
-                    && rightVariable.value().value == var->getValue())) {
-                    KUB_DEBUG("vdc: {} isSecond", std::string(1, var->getValue()));
-                    var->isSecond = true;
-                }*/
-                 
-                if (!hasRightValue) {
-                    KUB_DEBUG("vdc: right variable is {}", std::string(1, var->getValue()));
-                    vdc.set(math::VDC::VariableSide::Right, var->getValue());
+                if (!hasRightValue && (varValue != leftVariable.value().value)) {
+                    KUB_DEBUG("vdc: right variable is {}", std::string(1, varValue));
+                    vdc.set(math::VDC::VariableSide::Right, varValue);
                 } 
-                else if (hasRightValue && rightVariable.value().value != var->getValue()) {
-                    KUB_DEBUG("vdc: {} is a parameter", std::string(1, var->getValue()));
-                    var->isParameter = true;
+                else if (hasRightValue && rightVariable.value().value != varValue) {            
+                    if (std::ranges::find(RESERVED_VALUES, varValue) == RESERVED_VALUES.end()) {
+                        KUB_DEBUG("vdc: {} is a parameter", std::string(1, varValue));
+                        var->isParameter = true;
+                        vdc.saveNodeAsParameter(var);
+                    }
                 }
-                variableStack.pop();
+                variableQueue.pop();
             }
-        }
-        
-        const auto rightVariable = vdc.getVariableAtSide(math::VDC::VariableSide::Right);
-        const auto hasRightValue = rightVariable.has_value();
-
-        if ((hasRightValue && hasLeftValue) && (rightVariable.value().value == leftVariable.value().value)) {
-            KUB_ERROR("vdc: identical axis used in both left and right operands");
-            return false;
         }
 
         const auto rootChildNode = nodeStack.top();

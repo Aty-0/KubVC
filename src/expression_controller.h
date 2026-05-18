@@ -21,12 +21,22 @@ namespace kubvc::math {
             void setSelected(std::shared_ptr<ExpressionModel> selected) { m_selected = std::move(selected); }
             void parseThenEvaluate(std::shared_ptr<ExpressionModel> model, const GraphLimits& limits); 
         
+
             [[nodiscard]] std::shared_ptr<ExpressionModel> get(std::size_t index) const;
             [[nodiscard]] std::shared_ptr<ExpressionModel> getSelected() const { return m_selected; }
 
             [[nodiscard]] std::span<const std::shared_ptr<ExpressionModel>> getExpressions() const;
             [[nodiscard]] std::span<const std::shared_ptr<ExpressionModel>> getValidExpressions() const; 
+            
+            // Note: Use only for expressions. Because if parseThenEvaluate() fails 
+            // or if clear() is called, your tasks will be destroyed 
+            [[nodiscard]] utility::TaskManager& getTaskManager() { return m_taskManager; }
+
+            [[nodiscard]] std::size_t getValidExpressionsSize() const { return m_validExpressions.size(); }
+            [[nodiscard]] std::size_t getExpressionsSize() const { return m_expressions.size(); }
+
         private:
+            utility::TaskManager m_taskManager;
             std::vector<std::shared_ptr<ExpressionModel>> m_validExpressions;
             std::vector<std::shared_ptr<ExpressionModel>> m_expressions;  
             std::shared_ptr<ExpressionModel> m_selected;
@@ -34,11 +44,10 @@ namespace kubvc::math {
     };
 
     inline void ExpressionController::parseThenEvaluate(std::shared_ptr<ExpressionModel> model, const GraphLimits& limits) {
-        static const auto taskManager = utility::TaskManager::getInstance();        
         static const auto builder = kubvc::algorithm::ASTBuilder::getInstance();
         KUB_ASSERT(model != nullptr, "Model are nullptr");
 
-        taskManager->add([this, model, limits] {
+        m_taskManager.add([this, model, limits] {
             static const auto lexer = kubvc::algorithm::Lexer::getInstance();
             auto& expression = model->getExpression();
             auto& textBuffer = model->getTextBuffer();            
@@ -57,6 +66,11 @@ namespace kubvc::math {
                 std::erase(m_validExpressions, model);
                 const auto lastError = lexer->getLastError();
                 expression.setValid(false, lastError);
+                
+                lock.unlock();
+
+                // FIXME: will break valid tasks  
+                m_taskManager.clear();
             }         
         });
     }
@@ -76,11 +90,14 @@ namespace kubvc::math {
     } 
 
     inline void ExpressionController::clear() {
-        std::unique_lock lock(m_mutex);
-        m_expressions.clear();
-        m_expressions.shrink_to_fit();
+        {
+            std::unique_lock lock(m_mutex);
+            m_expressions.clear();
+            m_expressions.shrink_to_fit();
+            m_validExpressions.clear();
+        }
 
-        m_validExpressions.clear();
+        m_taskManager.clear();
     }
     
     inline void ExpressionController::resetSelected() {

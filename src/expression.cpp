@@ -1,6 +1,6 @@
 #include "expression.h"
 #include "logger.h"
-#include "task_manager.h"
+#include "expression_controller.h"
 #include "application_config.h"
 
 namespace kubvc::math {
@@ -98,8 +98,10 @@ namespace kubvc::math {
         if (!isValid())
             return; 
         static const auto appConfig = application::ApplicationConfig::getInstance();
-        static const auto taskManager = utility::TaskManager::getInstance();        
+        static const auto controller = ExpressionController::getInstance();        
+        static auto& taskManager = controller->getTaskManager();
         
+        std::shared_lock lock(m_mutex);        
         const auto root = m_tree.getRoot();
         KUB_ASSERT(root != nullptr, "Root is nullptr, wtf");            
         if (!root->child) {
@@ -110,7 +112,7 @@ namespace kubvc::math {
 
         switch (appConfig->getMode()) {
             case application::MathMode::Complex: {
-                taskManager->add([this, root, limits, maxPointCount] {
+                taskManager.add([this, root, limits, maxPointCount] {
                     for (std::size_t i = 0; i < COMPLEX_GRID_SIZE; ++i) {
                         const auto x = std::lerp(limits.xMin, limits.xMax, static_cast<double>(i) / (COMPLEX_GRID_SIZE - 1));
                         for (std::size_t j = 0; j < COMPLEX_GRID_LINES_COUNT; ++j) {
@@ -135,7 +137,7 @@ namespace kubvc::math {
                 break;        
             }
             case application::MathMode::Real: {
-                taskManager->add([this, root, limits, maxPointCount] { 
+                taskManager.add([this, root, limits, maxPointCount] { 
                     const auto left = m_vdc.getVariableAtSide(math::VDC::VariableSide::Left);
                     const bool isYPrefered = !left.has_value() || left.value().value == 'y';
 
@@ -177,9 +179,15 @@ namespace kubvc::math {
     }
 
     void Expression::setValid(bool isValid, std::string lastMessage) {
+        std::shared_lock lock(m_mutex);        
         m_valid = isValid;
         if (!lastMessage.empty()) {
             m_lastErrorMessage = lastMessage;
         }
+    }
+    
+    bool Expression::isValid() const {
+        std::shared_lock lock(m_mutex);        
+        return m_valid;
     }
 }

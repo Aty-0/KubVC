@@ -1,5 +1,5 @@
 #include "editor_fps_counter_window.h"
-#include "task_manager.h"
+#include "expression_controller.h"
 
 namespace kubvc::editor {
     static const auto fpsCounterWindowFlags = ImGuiWindowFlags_::ImGuiWindowFlags_NoBackground 
@@ -18,13 +18,14 @@ namespace kubvc::editor {
     }
     
     void EditorFpsCounterWindow::onRender(kubvc::render::GUI& gui) {
-        static const auto taskManager = utility::TaskManager::getInstance();
+        static const auto expressionController = math::ExpressionController::getInstance();
+        static auto& taskManager = expressionController->getTaskManager();
 
         const auto io = ImGui::GetIO();
         const auto size = io.DisplaySize;
         ImGui::SetWindowPos({0, size.y - 40.0f});
         ImGui::PushFont(&gui.getDefaultFont());
-        ImGui::Text("Fps:%.1f\nTask Count:%zu", io.Framerate, taskManager->size());
+        ImGui::Text("Fps:%.1f\nExpr Tasks Count:%zu", io.Framerate, taskManager.size());
         ImGui::PopFont();
     }        
 } 

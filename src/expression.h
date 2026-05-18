@@ -4,6 +4,8 @@
 #include "graph_limits.h"
 #include "variable_dependence.h"
 
+#include <shared_mutex>
+
 namespace kubvc::math {
     class Expression {
         public:
@@ -24,7 +26,7 @@ namespace kubvc::math {
             [[nodiscard]] const std::vector<std::vector<glm::dvec2>>& getComplexGrid() const { return m_complexGrid; }
             [[nodiscard]] const std::vector<glm::dvec2>& getPlotBuffer() const { return m_plotBuffer; } 
             [[nodiscard]] const std::string& getLastErrorMessage() const { return m_lastErrorMessage; }
-            [[nodiscard]] bool isValid() const { return m_valid; }
+            [[nodiscard]] bool isValid() const;
             void setValid(bool isValid, std::string lastMessage);
 
             // Evaluate current expression 
@@ -42,5 +44,7 @@ namespace kubvc::math {
 
             bool m_valid = false;
             std::string m_lastErrorMessage;
+
+            mutable std::shared_mutex m_mutex;
     };             
 }

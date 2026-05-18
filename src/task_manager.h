@@ -6,18 +6,29 @@
 #include <functional>
 #include <condition_variable>
 
-#include "singleton.h"
 #include "logger.h"
 
 namespace kubvc::utility {
-    class TaskManager : public Singleton<TaskManager> {
+    class TaskManager {
         public:
             TaskManager();
             ~TaskManager();
+
+		    TaskManager(const TaskManager&) = delete;
+		    TaskManager(TaskManager&&) = delete;
+            
+            TaskManager& operator=(const TaskManager&) = delete;
+            TaskManager& operator=(TaskManager&&) = delete;
+
             // add new task 
             void add(std::function<void()>&& func);
+
             // get size of tasks queue        
-            inline std::size_t size() const { return m_size; }
+            [[nodiscard]] std::size_t size() const;
+
+            // clear all tasks
+            void clear();
+
         private:
             void worker();
             
@@ -32,27 +43,42 @@ namespace kubvc::utility {
     inline TaskManager::TaskManager() {        
         const auto threadCount = std::thread::hardware_concurrency();
         for (std::uint32_t i = 0; i < threadCount; ++i) {
-            KUB_DEBUG("Add new thread {}", i);
             m_threads.push_back(std::thread(&TaskManager::worker, this));
         }
     }
-    
+
     inline TaskManager::~TaskManager() {
         KUB_DEBUG("destroy task manager...");
+        
+        {
+            std::unique_lock<std::mutex> lock(m_mutex);
+            m_conditionVariable.notify_all();
+            m_stopThreads = true;
+        }
 
-        // stop all threads before we are clear threads list 
-        m_size = 0;
-        m_stopThreads = true;
-        m_conditionVariable.notify_all();
-
+        clear();
+        
         for (auto& thread : m_threads) {
             if (thread.joinable()) {
                 thread.join();
             }
-        }        
-        
+        } 
+
         m_threads.clear();
         m_threads.shrink_to_fit();
+    }
+
+    inline void TaskManager::clear() {
+        // stop all threads before we are clear threads list 
+        m_size = 0;
+
+        // clear queue
+        std::queue<std::function<void()>> empty;
+        std::swap(m_tasks, empty);      
+    }
+
+    inline std::size_t TaskManager::size() const {
+        return m_size;
     }
     
     inline void TaskManager::add(std::function<void()>&& func) {
@@ -92,7 +118,10 @@ namespace kubvc::utility {
                 } catch (...) {
                     KUB_FATAL("tasks: catched unknown exception");
                 }
-                --m_size;
+
+                if (m_size > 0) {
+                    --m_size;
+                }
             }
         }
     }

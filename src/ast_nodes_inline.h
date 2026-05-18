@@ -93,7 +93,7 @@ namespace kubvc::algorithm {
                 break;
             }
             default:
-                KUB_ASSERT(false, "Unknown type operator");
+                KUB_ERROR("Unknown type operator: {}", std::string(1, operation));
                 break;
         }              
     }
@@ -196,9 +196,11 @@ namespace kubvc::algorithm {
             case Operators::Power: {
                 return std::pow(leftResult, rightResult);
             }
-            default:
-                KUB_ASSERT(false, "Unknown type operator");
+            default: {
+                //KUB_ASSERT(false, "Unknown type operator: {}", std::string(1, operation));
+                KUB_ERROR("Unknown type operator: {}", std::string(1, operation));
                 break;
+            }
         }  
 
         return { 0.0, 0.0 };
