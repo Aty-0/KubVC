@@ -117,8 +117,8 @@ namespace kubvc::math {
                         const auto x = std::lerp(limits.xMin, limits.xMax, static_cast<double>(i) / (COMPLEX_GRID_SIZE - 1));
                         for (std::size_t j = 0; j < COMPLEX_GRID_LINES_COUNT; ++j) {
                             const auto y = std::lerp(limits.yMin, limits.yMax, static_cast<double>(j) / (COMPLEX_GRID_LINES_COUNT - 1));
-                            const auto z = root->calculateComplex(x, y);
-                            m_complexGrid[i][j] = { z.real(), z.imag() };
+                            const auto w = root->calculateComplex(x, y);
+                            m_complexGrid[i][j] = { w.real(), w.imag() };
                         }
                     }
                     

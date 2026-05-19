@@ -14,8 +14,9 @@ namespace kubvc::editor {
         static constexpr auto vecStride = 2 * sizeof(double);
         static constexpr auto plotFlags = ImPlotFlags_::ImPlotFlags_NoTitle | ImPlotFlags_::ImPlotFlags_Crosshairs;
         const auto size = ImGui::GetContentRegionAvail();
+        static bool saveLimitsFirstTime = false; 
+        
         if (ImPlot::BeginPlot("##PlotViewer", size, plotFlags)) {
-            static bool saveLimitsFirstTime = false; 
 
             // Draw axis notes 
             static const auto appConfig = application::ApplicationConfig::getInstance();
@@ -42,14 +43,14 @@ namespace kubvc::editor {
 
                 const auto pos = ImPlot::GetPlotLimits().Min(); 
                 if (prevPos.x != pos.x || prevPos.y != pos.y) {
-                    updateExpressions = true;
+                    updateExpressions = true; 
                 }
                 
                 prevPos = pos;
             }
             
             if (!saveLimitsFirstTime) {
-                math::GraphLimits::GlobalLimits = ImPlot::GetPlotLimits(); 
+                math::GraphLimits::GlobalLimits = ImPlot::GetPlotLimits();
                 saveLimitsFirstTime = true;
             }	
 
@@ -66,16 +67,17 @@ namespace kubvc::editor {
                 auto& expression = model->getExpression();
                 if (settings.getVisible() && expression.isValid()) { 
                     if (updateExpressions) {
-                        math::GraphLimits::GlobalLimits = ImPlot::GetPlotLimits();                 
-                        expression.eval(math::GraphLimits::GlobalLimits);     
+                        if (appConfig->getMode() == application::MathMode::Real) {
+                            math::GraphLimits::GlobalLimits = ImPlot::GetPlotLimits();                 
+                            expression.eval(math::GraphLimits::GlobalLimits);     
+                        }
                     }
                     
                     const auto isShaded = settings.getShaded() ? ImPlotLineFlags_::ImPlotLineFlags_Shaded : ImPlotLineFlags_::ImPlotLineFlags_None;
                     const auto flags = ImPlotLineFlags_::ImPlotLineFlags_NoClip | isShaded;
-
-                    const auto buffer = expression.getPlotBuffer(); 
-                        // Apply plot style from expression                                                   
-
+                    const auto& buffer = expression.getPlotBuffer(); 
+                    
+                    // Apply plot style from expression                                                   
                     ImPlotSpec specs;
                     specs.LineWeight = settings.getThickness();
                     specs.LineColor = kubvc::utility::toImVec4(settings.getColor());
@@ -102,7 +104,7 @@ namespace kubvc::editor {
                     //ImPlot::PlotScatter(expr->getTextBuffer().data(), &buffer[0].x, &buffer[0].y, buffer.size(), flags, 0, vecStride);                                                      
                 }                    
             }                
-
+            
             updateExpressions = false;
             ImPlot::EndPlot();
 

@@ -1,5 +1,6 @@
 #include "editor_graph_list_window.h"
 #include "expression_controller.h"
+#include "application_config.h"
 
 namespace kubvc::editor {
     static const auto controller = kubvc::math::ExpressionController::getInstance();
@@ -322,6 +323,23 @@ namespace kubvc::editor {
         if (ImGui::IsItemClicked() && !ImGui::IsAnyItemActive()) {
             controller->setSelected(model);
         }
+        
+        // TODO: Temp solution 
+        static const auto appConfig = application::ApplicationConfig::getInstance();
+        // FIXME: Bruh
+        std::array<float, 4> limits = { 
+            static_cast<float>(math::GraphLimits::GlobalLimits.xMin), 
+            static_cast<float>(math::GraphLimits::GlobalLimits.xMax), 
+            static_cast<float>(math::GraphLimits::GlobalLimits.yMin), 
+            static_cast<float>(math::GraphLimits::GlobalLimits.yMax) 
+        };
+        
+        if (appConfig->getMode() == application::MathMode::Complex) {
+            if (ImGui::InputFloat4("Rectangle surface", limits.data())) {
+                math::GraphLimits::GlobalLimits = { limits[0], limits[1], limits[2], limits[3] };
+                currentExpression.eval(math::GraphLimits::GlobalLimits);
+            }
+        }
 
         ImGui::Spacing();
     }
@@ -351,8 +369,8 @@ namespace kubvc::editor {
     }
 
     void EditorGraphListWindow::onRender(kubvc::render::GUI& gui) {
-        const auto childFlags = ImGuiChildFlags_::ImGuiChildFlags_Borders;
-        const auto childWindowFlags = ImGuiWindowFlags_::ImGuiWindowFlags_HorizontalScrollbar /* |  ImGuiWindowFlags_::ImGuiWindowFlags_AlwaysUseWindowPadding */;
+        constexpr auto childFlags = ImGuiChildFlags_::ImGuiChildFlags_Borders;
+        constexpr auto childWindowFlags = ImGuiWindowFlags_::ImGuiWindowFlags_HorizontalScrollbar /* |  ImGuiWindowFlags_::ImGuiWindowFlags_AlwaysUseWindowPadding */;
 
         auto windowSize = ImGui::GetWindowSize();
         if (ImGui::BeginChild("GraphListHeader", ImVec2(windowSize.x, 42.0f), childFlags)) {
