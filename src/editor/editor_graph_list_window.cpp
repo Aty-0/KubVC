@@ -330,7 +330,7 @@ namespace kubvc::editor {
         if (appConfig->getMode() == application::MathMode::Complex) {
             constexpr auto DRAG_SPEED = 0.01f; 
             auto isRectMode = currentExpression.getRectMode();
-            if (ImGui::Checkbox(("Rect Mode" + ("##RectCheckBox" + idStr)).c_str(), &isRectMode)) {
+            if (ImGui::Checkbox(("Grid Mode" + ("##GridModeCheckBox" + idStr)).c_str(), &isRectMode)) {
                 currentExpression.setRectMode(isRectMode);
                 currentExpression.eval(math::GraphLimits::GlobalLimits);
             }
@@ -353,7 +353,9 @@ namespace kubvc::editor {
                     }
                     case math::primitives::PrimitiveTypes::Rectangle: {
                         const auto primitive = currentExpression.getPrimitive<math::primitives::RectanglePrimitive>();
-                        if (ImGui::DragScalarN(("Rect" + ("##RectangleRectDrag" + idStr)).c_str(), ImGuiDataType_Double, &primitive->rect, 4, DRAG_SPEED)) {
+                        auto rect = primitive->rect;
+                        if (ImGui::DragScalarN(("Rect" + ("##RectangleRectDrag" + idStr)).c_str(), ImGuiDataType_Double, &rect, 4, DRAG_SPEED)) {
+                            primitive->rect = rect;
                             primitive->generate(math::Expression::MAX_PLOT_BUFFER_SIZE);
                             currentExpression.eval(math::GraphLimits::GlobalLimits);
                         }
@@ -372,11 +374,11 @@ namespace kubvc::editor {
 
                             switch (currentExpression.getPrimitiveType()) {
                                 case math::primitives::PrimitiveTypes::Circle: {
-                                    currentExpression.setNewPrimitive(math::primitives::makeNewPrimitive<math::primitives::CirclePrimitive>(math::Expression::MAX_PLOT_BUFFER_SIZE));
+                                    currentExpression.setNewPrimitive(std::move(math::primitives::makeNewPrimitive<math::primitives::CirclePrimitive>(math::Expression::MAX_PLOT_BUFFER_SIZE)));
                                     break;
                                 }
                                 case math::primitives::PrimitiveTypes::Rectangle: {
-                                    currentExpression.setNewPrimitive(math::primitives::makeNewPrimitive<math::primitives::RectanglePrimitive>(math::Expression::MAX_PLOT_BUFFER_SIZE));
+                                    currentExpression.setNewPrimitive(std::move(math::primitives::makeNewPrimitive<math::primitives::RectanglePrimitive>(math::Expression::MAX_PLOT_BUFFER_SIZE)));
                                     break;            
                                 }
                             }

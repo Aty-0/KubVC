@@ -79,31 +79,35 @@ namespace kubvc::math::primitives {
         std::unique_lock lock{ m_mutex };
 
         // If empty or size are different we are resize point buffer 
-        const auto pointsPerSide = static_cast<std::int32_t>(pointsSize * 4); 
-        if (m_points.size() != static_cast<std::size_t>(pointsPerSide)) {
-            m_points.resize(pointsPerSide);
+        const auto pointsPerSide = static_cast<std::int32_t>(pointsSize / 4); 
+        if (m_points.size() != pointsSize) {
+            m_points.resize(pointsSize);
         }
         
         const auto halfSize = glm::vec2 { rect.z / 2, rect.w / 2 };
-
+        std::int32_t index = 0;
         for (std::int32_t i = 0; i < pointsPerSide; ++i) {
             const auto t = static_cast<double>(i) / (pointsPerSide - 1);
-            m_points.push_back({ rect.x + std::lerp(-halfSize.x, halfSize.x, t), rect.y + halfSize.y });
+            index++;
+            m_points[index] = { rect.x + std::lerp(-halfSize.x, halfSize.x, t), rect.y + halfSize.y };
         }
 
         for (std::int32_t i = 0; i < pointsPerSide; ++i) {
             const auto t = static_cast<double>(i) / (pointsPerSide - 1);
-            m_points.push_back({ rect.x + halfSize.x, rect.y + std::lerp(halfSize.y, -halfSize.y, t) });
+            index++;
+            m_points[index] = { rect.x + halfSize.x, rect.y + std::lerp(halfSize.y, -halfSize.y, t) };
         }
 
         for (std::int32_t i = 0; i < pointsPerSide; ++i) {
             const auto t = static_cast<double>(i) / (pointsPerSide - 1);
-            m_points.push_back({ rect.x + std::lerp(halfSize.x, -halfSize.x, t), rect.y - halfSize.y });
+            index++;
+            m_points[index] = { rect.x + std::lerp(halfSize.x, -halfSize.x, t), rect.y - halfSize.y };
         }
 
         for (std::int32_t i = 0; i < pointsPerSide; ++i) {
             const auto t = static_cast<double>(i) / (pointsPerSide - 1);
-            m_points.push_back({ rect.x - halfSize.x, rect.y + std::lerp(-halfSize.y, halfSize.y, t) });
+            index++;
+            m_points[index] = { rect.x - halfSize.x, rect.y + std::lerp(-halfSize.y, halfSize.y, t) };
         }
     }
 
