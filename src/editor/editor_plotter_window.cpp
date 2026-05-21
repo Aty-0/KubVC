@@ -93,10 +93,18 @@ namespace kubvc::editor {
                             break;
                         }
                         case application::MathMode::Complex: {
-                            const auto& grid = expression.getComplexGrid();
-                            for (const auto& lines : grid) {
-                                ImPlot::PlotLine(textBuffer.getBuffer().data(), &lines[0].x, &lines[0].y, 
-                                    static_cast<std::int32_t>(lines.size()), specs);      
+                            const auto isRectMode = expression.getRectMode();
+                            if (!isRectMode) {
+                                if (!buffer.empty()) {
+                                    ImPlot::PlotLine(textBuffer.getBuffer().data(), &buffer[0].x, &buffer[0].y, 
+                                        static_cast<std::int32_t>(buffer.size()), specs);      
+                                }
+                            } else {
+                                const auto& grid = expression.getComplexGrid();
+                                for (const auto& lines : grid) {
+                                    ImPlot::PlotLine(textBuffer.getBuffer().data(), &lines[0].x, &lines[0].y, 
+                                        static_cast<std::int32_t>(lines.size()), specs);      
+                                }
                             }
                             break;                    
                         }

@@ -205,6 +205,7 @@ namespace kubvc::algorithm {
 
         const auto leftVariable = vdc.getVariableAtSide(math::VDC::VariableSide::Left);
         const auto hasLeftValue = leftVariable.has_value();
+        // TODO: I think we need to sort it by RESERVED_VALUES
         if (variableQueue.size() > 1) {
             while (hasLeftValue && !variableQueue.empty()) {
                 const auto rightVariable = vdc.getVariableAtSide(math::VDC::VariableSide::Right);

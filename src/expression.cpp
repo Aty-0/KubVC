@@ -8,12 +8,17 @@ namespace kubvc::math {
         m_tree(), 
         m_plotBuffer(std::vector<glm::dvec2>(MAX_PLOT_BUFFER_SIZE)),
         m_valid(false),
-        m_lastErrorMessage() {
+        m_lastErrorMessage(),
+        m_primitiveType(primitives::PrimitiveTypes::Circle),
+        m_rectMode(false) {
             // TODO: Prepare only when we are switch (already) in complex mode
             prepareComplexGrid();
+            // Set default primitive
+            setNewPrimitive(primitives::makeNewPrimitive<primitives::CirclePrimitive>(MAX_PLOT_BUFFER_SIZE));
     }
 
-    Expression::~Expression() {        
+    Expression::~Expression() {    
+        std::unique_lock lock(m_mutex); 
         m_valid = false;
         m_vdc.reset();
         m_tree.clear();
@@ -108,36 +113,46 @@ namespace kubvc::math {
             KUB_WARN("child in root is empty");
             return;
         }
-
+        lock.unlock();
 
         switch (appConfig->getMode()) {
             case application::MathMode::Complex: {
                 taskManager.add([this, root, limits, maxPointCount] {
-                    for (std::size_t i = 0; i < COMPLEX_GRID_SIZE; ++i) {
-                        const auto x = std::lerp(limits.xMin, limits.xMax, static_cast<double>(i) / (COMPLEX_GRID_SIZE - 1));
-                        for (std::size_t j = 0; j < COMPLEX_GRID_LINES_COUNT; ++j) {
-                            const auto y = std::lerp(limits.yMin, limits.yMax, static_cast<double>(j) / (COMPLEX_GRID_LINES_COUNT - 1));
-                            const auto w = root->calculateComplex(x, y);
-                            m_complexGrid[i][j] = { w.real(), w.imag() };
+                    if (!isValid())
+                        return; 
+
+                    if (m_rectMode) { 
+                        for (std::size_t i = 0; i < COMPLEX_GRID_SIZE; ++i) {
+                            const auto x = std::lerp(limits.xMin, limits.xMax, static_cast<double>(i) / (COMPLEX_GRID_SIZE - 1));
+                            for (std::size_t j = 0; j < COMPLEX_GRID_LINES_COUNT; ++j) {
+                                const auto y = std::lerp(limits.yMin, limits.yMax, static_cast<double>(j) / (COMPLEX_GRID_LINES_COUNT - 1));
+                                const auto w = root->calculateComplex(x, y);
+                                
+                                std::unique_lock lock(m_mutex);
+                                m_complexGrid[i][j] = { w.real(), w.imag() };
+                            }
                         }
-                    }
-                    
-                    /*
-                    for (std::int32_t i = 0; i < maxPointCount; ++i) {
-                        // TODO: inverse, when we are use W
-                        const auto t = static_cast<double>(i) / (maxPointCount - 1);
-                        const auto x = std::lerp(limits.xMin, limits.xMax, t);
-                        const auto y = std::lerp(limits.yMin, limits.yMax, t);
-                        const auto z = root->calculateComplex(x, y);
-                        
-                        m_plotBuffer[i] = { z.real(), z.imag() };
-                    }
-                    */
+                    } else {                        
+                        if (!m_primitive) {
+                            return;
+                        }
+                        const auto points = m_primitive->getPoints();
+                        for (std::size_t i = 0; i < points.size(); ++i) {                            
+                            const auto point = points[i];
+                            const auto w = root->calculateComplex(point.x, point.y);
+                            
+                            std::unique_lock lock(m_mutex);
+                            m_plotBuffer[i] = { w.real(), w.imag() };
+                        }                     
+                    }                    
                 });
                 break;        
             }
             case application::MathMode::Real: {
                 taskManager.add([this, root, limits, maxPointCount] { 
+                    if (!isValid())
+                        return; 
+
                     const auto left = m_vdc.getVariableAtSide(math::VDC::VariableSide::Left);
                     const bool isYPrefered = !left.has_value() || left.value().value == 'y';
 
@@ -154,7 +169,8 @@ namespace kubvc::math {
                             if (glm::isnan(y0)) {
                                 y0 = solveBisection(f, limits.yMin, limits.yMax);
                             }
-                            
+
+                            std::unique_lock lock(m_mutex);
                             m_plotBuffer[i] = { x0, y0 };
                         } else {
                             const auto y0 = std::lerp(limits.yMin, limits.yMax, static_cast<double>(i) / (maxPointCount - 1));
@@ -168,7 +184,7 @@ namespace kubvc::math {
                             if (glm::isnan(x0)) {
                                 x0 = solveBisection(f, limits.xMin, limits.xMax);
                             }
-
+                            std::unique_lock lock(m_mutex);
                             m_plotBuffer[i] = { x0, y0 };
                         }
                     }
@@ -178,8 +194,8 @@ namespace kubvc::math {
         }
     }
 
-    void Expression::setValid(bool isValid, std::string lastMessage) {
-        std::shared_lock lock(m_mutex);        
+    void Expression::setValid(bool isValid, std::string_view lastMessage) {
+        std::unique_lock lock(m_mutex);        
         m_valid = isValid;
         if (!lastMessage.empty()) {
             m_lastErrorMessage = lastMessage;
@@ -189,5 +205,25 @@ namespace kubvc::math {
     bool Expression::isValid() const {
         std::shared_lock lock(m_mutex);        
         return m_valid;
+    }
+
+    bool Expression::getRectMode() const {
+        std::shared_lock lock(m_mutex);        
+        return m_rectMode;
+    }
+
+    primitives::PrimitiveTypes Expression::getPrimitiveType() const {
+        std::shared_lock lock(m_mutex);        
+        return m_primitiveType;
+    }
+
+    void Expression::setPrimitiveType(math::primitives::PrimitiveTypes type) {
+        std::unique_lock lock(m_mutex);
+        m_primitiveType = type;
+    }
+
+    void Expression::setRectMode(bool rectMode) {
+        std::unique_lock lock(m_mutex);
+        m_rectMode = rectMode;
     }
 }
