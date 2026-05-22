@@ -14,7 +14,7 @@ namespace kubvc::math::primitives {
     
     struct IPrimitive {
         IPrimitive() = default;
-        ~IPrimitive() = default;
+        virtual ~IPrimitive();
 
         virtual void generate(std::size_t pointsSize) = 0;
 
@@ -25,6 +25,11 @@ namespace kubvc::math::primitives {
             mutable std::shared_mutex m_mutex;            
             std::vector<glm::dvec2> m_points;
     }; 
+    
+    inline IPrimitive::~IPrimitive() {
+        std::shared_lock lock { m_mutex };
+        m_points.clear();
+    }
 
     inline std::span<const glm::dvec2> IPrimitive::getPoints() const {
         std::shared_lock lock { m_mutex };
@@ -33,7 +38,7 @@ namespace kubvc::math::primitives {
 
     struct CirclePrimitive : public IPrimitive {
         CirclePrimitive(); 
-        ~CirclePrimitive() = default;
+        ~CirclePrimitive() override = default;
 
         virtual PrimitiveTypes getType() final { return PrimitiveTypes::Circle; }
         virtual void generate(std::size_t pointsSize) final;
@@ -65,7 +70,7 @@ namespace kubvc::math::primitives {
 
     struct RectanglePrimitive : public IPrimitive {
         RectanglePrimitive(); 
-        ~RectanglePrimitive() = default;
+        ~RectanglePrimitive() override = default;
 
         virtual PrimitiveTypes getType() final { return PrimitiveTypes::Rectangle; }
         virtual void generate(std::size_t pointsSize) final;
@@ -88,26 +93,26 @@ namespace kubvc::math::primitives {
         std::int32_t index = 0;
         for (std::int32_t i = 0; i < pointsPerSide; ++i) {
             const auto t = static_cast<double>(i) / (pointsPerSide - 1);
-            index++;
             m_points[index] = { rect.x + std::lerp(-halfSize.x, halfSize.x, t), rect.y + halfSize.y };
+            index++;
         }
 
         for (std::int32_t i = 0; i < pointsPerSide; ++i) {
             const auto t = static_cast<double>(i) / (pointsPerSide - 1);
-            index++;
             m_points[index] = { rect.x + halfSize.x, rect.y + std::lerp(halfSize.y, -halfSize.y, t) };
+            index++;
         }
 
         for (std::int32_t i = 0; i < pointsPerSide; ++i) {
             const auto t = static_cast<double>(i) / (pointsPerSide - 1);
-            index++;
             m_points[index] = { rect.x + std::lerp(halfSize.x, -halfSize.x, t), rect.y - halfSize.y };
+            index++;
         }
 
         for (std::int32_t i = 0; i < pointsPerSide; ++i) {
             const auto t = static_cast<double>(i) / (pointsPerSide - 1);
-            index++;
             m_points[index] = { rect.x - halfSize.x, rect.y + std::lerp(-halfSize.y, halfSize.y, t) };
+            index++;
         }
     }
 

@@ -14,7 +14,7 @@ namespace kubvc::math {
             // TODO: Prepare only when we are switch (already) in complex mode
             prepareComplexGrid();
             // Set default primitive
-            setNewPrimitive(std::move(primitives::makeNewPrimitive<primitives::CirclePrimitive>(MAX_PLOT_BUFFER_SIZE)));
+            setNewPrimitive(primitives::makeNewPrimitive<primitives::CirclePrimitive>(MAX_PLOT_BUFFER_SIZE));
     }
 
     Expression::~Expression() {    
@@ -24,10 +24,7 @@ namespace kubvc::math {
         m_tree.clear();
         
         m_plotBuffer.clear();
-        //m_plotBuffer.shrink_to_fit();
-
         m_complexGrid.clear();
-        //m_complexGrid.shrink_to_fit();
     }
 
     static constexpr std::uint8_t NEWTON_MAX_ITER = 16; 

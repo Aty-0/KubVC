@@ -374,11 +374,11 @@ namespace kubvc::editor {
 
                             switch (currentExpression.getPrimitiveType()) {
                                 case math::primitives::PrimitiveTypes::Circle: {
-                                    currentExpression.setNewPrimitive(std::move(math::primitives::makeNewPrimitive<math::primitives::CirclePrimitive>(math::Expression::MAX_PLOT_BUFFER_SIZE)));
+                                    currentExpression.setNewPrimitive(math::primitives::makeNewPrimitive<math::primitives::CirclePrimitive>(math::Expression::MAX_PLOT_BUFFER_SIZE));
                                     break;
                                 }
                                 case math::primitives::PrimitiveTypes::Rectangle: {
-                                    currentExpression.setNewPrimitive(std::move(math::primitives::makeNewPrimitive<math::primitives::RectanglePrimitive>(math::Expression::MAX_PLOT_BUFFER_SIZE)));
+                                    currentExpression.setNewPrimitive(math::primitives::makeNewPrimitive<math::primitives::RectanglePrimitive>(math::Expression::MAX_PLOT_BUFFER_SIZE));
                                     break;            
                                 }
                             }

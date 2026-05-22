@@ -37,7 +37,7 @@ namespace kubvc::math {
             void setPrimitiveType(math::primitives::PrimitiveTypes type);
 
             template <primitives::IsPrimitive T>
-            void setNewPrimitive(std::shared_ptr<T>&& primitive);
+            void setNewPrimitive(std::shared_ptr<T> primitive);
 
             template <primitives::IsPrimitive T>
             [[nodiscard]] std::shared_ptr<T> getPrimitive() const;
@@ -66,13 +66,11 @@ namespace kubvc::math {
     };
 
     template <primitives::IsPrimitive T>
-    inline void Expression::setNewPrimitive(std::shared_ptr<T>&& primitive) {
-        if (primitive) { 
-            std::unique_lock lock(m_mutex);
-            m_primitive = std::move(primitive);
-        }
-    }   
-    
+    inline void Expression::setNewPrimitive(std::shared_ptr<T> primitive) {
+        std::unique_lock lock(m_mutex);
+        m_primitive = std::move(primitive);
+    }
+        
     template <primitives::IsPrimitive T>
     inline std::shared_ptr<T> Expression::getPrimitive() const {
         if (!m_primitive) {
