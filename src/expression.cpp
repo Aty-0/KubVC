@@ -25,6 +25,13 @@ namespace kubvc::math {
         
         m_plotBuffer->clear();
         m_complexGrid->clear();
+        if (m_plotBuffer) {
+            m_plotBuffer->clear();
+        }
+
+        if (m_complexGrid) {
+            m_complexGrid->clear();
+        }
 
         m_plotBuffer = nullptr;
         m_complexGrid = nullptr;
