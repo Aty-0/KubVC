@@ -11,10 +11,10 @@ namespace kubvc::algorithm {
 
     struct INode {
         // Calcualate in real mode
-        virtual void calculate(double x, double y, double& result) = 0;
+        [[nodiscard]] virtual double calculate(double x, double y) = 0;
         
         // Calcualate in complex mode
-        virtual std::complex<double> calculateComplex(double x, double y) = 0;
+        [[nodiscard]] virtual std::complex<double> calculateComplex(double re, double im) = 0;
 
         [[nodiscard]] virtual NodeTypes getType() const = 0;
         [[nodiscard]] std::int32_t getId() const { return m_id; }
@@ -30,11 +30,15 @@ namespace kubvc::algorithm {
 
 
     template <NodeTypes Type>
-    inline static std::shared_ptr<INode> castToINodePtr(NodePtr<Type> ptr) { return std::static_pointer_cast<INode>(ptr); }
+    inline static std::shared_ptr<INode> castToINodePtr(const NodePtr<Type>& ptr) { 
+        return std::static_pointer_cast<INode>(ptr); 
+    }
 
 
     template <NodeTypes Type>
-    inline static NodePtr<Type> castToNodePtr(std::shared_ptr<INode> ptr) { return std::dynamic_pointer_cast<NodeTraits<Type>>(ptr); }
+    inline static NodePtr<Type> castToNodePtr(const std::shared_ptr<INode>& ptr) { 
+        return std::static_pointer_cast<NodeTraits<Type>>(ptr); 
+    }
 
 
     template <typename ValueType>
@@ -49,8 +53,8 @@ namespace kubvc::algorithm {
     template<>
     struct NodeTraits<NodeTypes::Root> : INode {
         [[nodiscard]] virtual NodeTypes getType() const final { return NodeTypes::Root; }
-        virtual void calculate(double x, double y, double& result) final;
-        virtual std::complex<double> calculateComplex(double x, double y) final;
+        [[nodiscard]] virtual double calculate(double x, double y) final;
+        [[nodiscard]] virtual std::complex<double> calculateComplex(double re, double im) final;
 
         std::shared_ptr<INode> child;
     };
@@ -58,8 +62,8 @@ namespace kubvc::algorithm {
     template<>
     struct NodeTraits<NodeTypes::Variable> : INode, NodeValue<char> { 
         [[nodiscard]] virtual NodeTypes getType() const final { return NodeTypes::Variable; }
-        virtual void calculate(double x, double y, double& result) final;
-        virtual std::complex<double> calculateComplex(double x, double y) final;
+        [[nodiscard]] virtual double calculate(double x, double y) final;
+        [[nodiscard]] virtual std::complex<double> calculateComplex(double re, double im) final;
 
         float parameter = 0.0f;
         bool isParameter = false;
@@ -68,24 +72,23 @@ namespace kubvc::algorithm {
     template<>
     struct NodeTraits<NodeTypes::Number> : INode, NodeValue<double> {
         [[nodiscard]] virtual NodeTypes getType() const final { return NodeTypes::Number; }
-        virtual void calculate([[maybe_unused]] double x, [[maybe_unused]] double y, double& result) final { result = m_value; }
-
-        virtual std::complex<double> calculateComplex(double x, double y) final;
+        [[nodiscard]] virtual double calculate(double x, double y) final;
+        [[nodiscard]] virtual std::complex<double> calculateComplex(double re, double im) final;
     };
 
     template<>
     struct NodeTraits<NodeTypes::Invalid> : INode {
         [[nodiscard]] virtual NodeTypes getType() const final { return NodeTypes::Invalid; }
-        virtual void calculate([[maybe_unused]] double x, [[maybe_unused]] double y, [[maybe_unused]] double& result) final { } // Do nothing
-        virtual std::complex<double> calculateComplex(double x, double y) final;
+        [[nodiscard]] virtual double calculate(double x, double y) final;
+        [[nodiscard]] virtual std::complex<double> calculateComplex(double re, double im) final;
         std::string name;
     };
 
     template<>
     struct NodeTraits<NodeTypes::UnaryOperator> : INode {        
         [[nodiscard]] virtual NodeTypes getType() const final { return NodeTypes::UnaryOperator; }
-        virtual void calculate(double x, double y, double& result) final;
-        virtual std::complex<double> calculateComplex(double x, double y) final;
+        [[nodiscard]] virtual double calculate(double x, double y) final;
+        [[nodiscard]] virtual std::complex<double> calculateComplex(double re, double im) final;
         
         char operation;
         std::shared_ptr<INode> child; 
@@ -94,9 +97,10 @@ namespace kubvc::algorithm {
     template<>
     struct NodeTraits<NodeTypes::Operator> : INode {
         [[nodiscard]] virtual NodeTypes getType() const final { return NodeTypes::Operator; }
-        virtual void calculate(double x, double y, double& result) final;        
-        virtual std::complex<double> calculateComplex(double x, double y) final;
-        
+        [[nodiscard]] virtual double calculate(double x, double y) final;        
+        [[nodiscard]] virtual std::complex<double> calculateComplex(double re, double im) final;
+        [[nodiscard]] std::complex<double> calculateComplexOperator(std::complex<double> left, std::complex<double> right);
+
         char operation;
         std::shared_ptr<INode> right; 
         std::shared_ptr<INode> left;
@@ -105,21 +109,21 @@ namespace kubvc::algorithm {
     template<>
     struct NodeTraits<NodeTypes::ComplexNumber> : INode, NodeValue<std::complex<double>> {
         [[nodiscard]] virtual NodeTypes getType() const final { return NodeTypes::ComplexNumber; }
-        virtual void calculate([[maybe_unused]] double x, [[maybe_unused]] double y, [[maybe_unused]] double& result) final { }      
-        virtual std::complex<double> calculateComplex(double x, double y) final;
+        [[nodiscard]] virtual double calculate(double x, double y) final;     
+        [[nodiscard]] virtual std::complex<double> calculateComplex(double re, double im) final;
     };
 
     template<>
     struct NodeTraits<NodeTypes::Function> : INode {
         [[nodiscard]] virtual NodeTypes getType() const final { return NodeTypes::Function; }
-        virtual void calculate(double x, double y, double& result) final;
-        virtual std::complex<double> calculateComplex(double x, double y) final;
+        [[nodiscard]] virtual double calculate(double x, double y) final;
+        [[nodiscard]] virtual std::complex<double> calculateComplex(double re, double im) final;
         
         std::string name;
         std::shared_ptr<INode> argument;
     };
 
-    inline static constexpr std::string_view getNodeName(kubvc::algorithm::NodeTypes type) {
+    [[nodiscard]] inline static constexpr std::string_view getNodeName(kubvc::algorithm::NodeTypes type) {
         switch (type) {
             case kubvc::algorithm::NodeTypes::None:
                 return "None";           

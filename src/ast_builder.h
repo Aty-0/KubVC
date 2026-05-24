@@ -142,7 +142,7 @@ namespace kubvc::algorithm {
                     const auto arg1 = nodeStack.top();
                     nodeStack.pop();
 
-                    const auto arg2 = nodeStack.top();
+                    auto arg2 = nodeStack.top();
                     nodeStack.pop();
 
                     const auto value = token.value;
@@ -152,7 +152,7 @@ namespace kubvc::algorithm {
                     const auto hasLeftValue = vdc.getVariableAtSide(math::VDC::VariableSide::Left).has_value();
                     if (!hasLeftValue && node->operation == '=') {
                         if (arg2 && arg2->getType() == NodeTypes::Variable) {
-                            const auto varNode = castToNodePtr<NodeTypes::Variable>(arg2);
+                            const auto varNode = castToNodePtr<NodeTypes::Variable>(std::move(arg2));
                             if (varNode) {
                                 KUB_DEBUG("vdc: left variable {}", std::string(1, varNode->getValue()));
                                 vdc.set(math::VDC::VariableSide::Left, varNode->getValue());

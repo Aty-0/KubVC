@@ -42,10 +42,10 @@ namespace kubvc::editor {
         if (!model) {
             return;
         }
-        auto& expression = model->getExpression();
-        auto& vdc = expression.getVDC();
+        const auto& expression = model->getExpression();
+        auto& vdc = expression->getVDC();
         const auto& parameters = vdc.getParameterVariables();
-        if (!parameters.empty() && expression.isValid()) {
+        if (!parameters.empty() && expression->isValid()) {
             ImGui::Separator();
             for (auto node : parameters) {
                 if (node && node->isParameter) {
@@ -59,10 +59,10 @@ namespace kubvc::editor {
                         ImGui::DragFloat(dragFloatName.data(), &node->parameter);
                         node->parameter += ImGui::GetIO().DeltaTime;                        
                         ImGui::EndDisabled();
-                        expression.eval(math::GraphLimits::GlobalLimits);
+                        controller->evalExpression(expression, math::GraphLimits::GlobalLimits);
                     } else {
                         if (ImGui::DragFloat(dragFloatName.data(), &node->parameter)) {
-                            expression.eval(math::GraphLimits::GlobalLimits);
+                            controller->evalExpression(expression, math::GraphLimits::GlobalLimits);
                         }
                     }
 
@@ -98,12 +98,12 @@ namespace kubvc::editor {
             return;
         }
         
-        auto& currentExpression = model->getExpression();
-        auto& currentSettings = model->getSettings();
+        const auto& currentExpression = model->getExpression();
+        const auto& currentSettings = model->getSettings();
         
         const auto selectedModel = controller->getSelected();
         // Is text box expanded
-        const auto expandTextBox = currentSettings.getExpandTextBox();
+        const auto expandTextBox = currentSettings->getExpandTextBox();
 
         // id stuff
         const auto currentModelId = model->getId();
@@ -166,7 +166,7 @@ namespace kubvc::editor {
                 {
                     ImGui::PushID(("##" + idStr + "ExpandTextBoxButton").c_str());                        
                     if (ImGui::Button(!expandTextBox ? ICON_FA_EXPAND : ICON_FA_COMPRESS)) {
-                        currentSettings.setExpandTextBox(!expandTextBox);
+                        currentSettings->setExpandTextBox(!expandTextBox);
                     }
                     ImGui::PopID();
 
@@ -180,12 +180,12 @@ namespace kubvc::editor {
                 // Draw visibility icon  
                 {
                     ImGui::PushID(("##" + idStr + "_ExprRadioButton").c_str());    
-                    const auto visible = currentSettings.getVisible();
+                    const auto visible = currentSettings->getVisible();
                     ImGui::PushStyleColor(ImGuiCol_Text, visible ? 
                         ImVec4(0.4f, 0.8f, 0.4f, 1.0f) : ImVec4(0.6f, 0.6f, 0.6f, 0.7f));
                     
                     if (ImGui::Button(!visible ? ICON_FA_EYE_SLASH : ICON_FA_EYE)) {
-                        currentSettings.setVisible(!visible);
+                        currentSettings->setVisible(!visible);
                     }
                     ImGui::PopStyleColor();
                     ImGui::PopID();
@@ -233,8 +233,8 @@ namespace kubvc::editor {
                 }
                 // Draw error hint 
                 {
-                    const auto lastErrorMessage = currentExpression.getLastErrorMessage();
-                    if (!currentExpression.isValid() && !lastErrorMessage.empty()) {
+                    const auto& lastErrorMessage = currentExpression->getLastErrorMessage();
+                    if (!currentExpression->isValid() && !lastErrorMessage.empty()) {
                         ImGui::SameLine();
                         ImGui::Dummy(ImVec2(2.0f, 0.0f)); 
                         ImGui::SameLine();
@@ -262,15 +262,15 @@ namespace kubvc::editor {
         {
             ImGui::PushFont(&gui.getMathFont());
             // FIXME: for some reason not work
-            if (!currentExpression.isValid())
+            if (!currentExpression->isValid())
                 ImGui::PushStyleColor(ImGuiCol_Border, INVALID_COLOR);
             else if (currentExpressionIsSelected)
                 ImGui::PushStyleColor(ImGuiCol_Border, SELECTED_COLOR);
                     
             
             const auto textBoxWidth = ImGui::GetContentRegionAvail().x - 8 * scale;
-            auto& currentExpressionTextBuffer = model->getTextBuffer(); 
-            auto& textBuffer = currentExpressionTextBuffer.getBuffer();
+            const auto& currentExpressionTextBuffer = model->getTextBuffer(); 
+            auto& textBuffer = currentExpressionTextBuffer->getBuffer();
             bool textChanged = false;
             
             if (expandTextBox) {
@@ -286,7 +286,7 @@ namespace kubvc::editor {
                     ImVec2(textBoxWidth, frameHeight * 2),
                     textBoxMultilineFlags,
                     EditorGraphListWindow::handleTextBoxMultilineInput,
-                    &currentExpressionTextBuffer
+                    currentExpressionTextBuffer.get()
                 );
             } else {
                 ImGui::SetNextItemWidth(textBoxWidth);
@@ -296,18 +296,20 @@ namespace kubvc::editor {
                     textBuffer.size(), 
                     ImGuiInputTextFlags_::ImGuiInputTextFlags_CallbackAlways, 
                     EditorGraphListWindow::handleExpressionCursorPosCallback, 
-                    &currentExpressionTextBuffer);                
+                    currentExpressionTextBuffer.get());                
             }
 
             if (textChanged) {
-                controller->parseThenEvaluate(model, math::GraphLimits::GlobalLimits);
+                controller->parseThenEvaluate(model, math::GraphLimits::GlobalLimits);                
             }
 
             ImGui::PopFont();
 
             // Revert color changes
-            const auto popColor = static_cast<std::int32_t>(currentExpressionIsSelected || !currentExpression.isValid());
-            ImGui::PopStyleColor(popColor);
+            const auto popColor = currentExpressionIsSelected || !currentExpression->isValid();
+            if (popColor) {
+                ImGui::PopStyleColor();
+            }
 
             // Set current expression by clicking on textbox 
             if (ImGui::IsItemActive() && ImGui::IsItemClicked()) {
@@ -329,35 +331,35 @@ namespace kubvc::editor {
         
         if (appConfig->getMode() == application::MathMode::Complex) {
             constexpr auto DRAG_SPEED = 0.01f; 
-            auto isRectMode = currentExpression.getRectMode();
+            auto isRectMode = currentExpression->getRectMode();
             if (ImGui::Checkbox(("Grid Mode" + ("##GridModeCheckBox" + idStr)).c_str(), &isRectMode)) {
-                currentExpression.setRectMode(isRectMode);
-                currentExpression.eval(math::GraphLimits::GlobalLimits);
+                currentExpression->setRectMode(isRectMode);
+                controller->evalExpression(currentExpression, math::GraphLimits::GlobalLimits);
             }
 
             if (!isRectMode) {            
-                const auto primitiveType = currentExpression.getPrimitiveType();
-                switch (currentExpression.getPrimitiveType()) {
+                const auto primitiveType = currentExpression->getPrimitiveType();
+                switch (primitiveType) {
                     case math::primitives::PrimitiveTypes::Circle: {
-                        const auto primitive = currentExpression.getPrimitive<math::primitives::CirclePrimitive>();
+                        const auto& primitive = currentExpression->getPrimitive<math::primitives::CirclePrimitive>();
                         if (ImGui::DragScalar(("Radius" + ("##CircleRadiusDrag" + idStr)).c_str(), ImGuiDataType_Double, &primitive->radius, DRAG_SPEED)) {
                             primitive->generate(math::Expression::MAX_PLOT_BUFFER_SIZE);
-                            currentExpression.eval(math::GraphLimits::GlobalLimits);
+                            controller->evalExpression(currentExpression, math::GraphLimits::GlobalLimits);
                         }
 
                         if (ImGui::DragScalarN(("Center" + ("##CircleCenterDrag" + idStr)).c_str(),  ImGuiDataType_Double, &primitive->center, 2, DRAG_SPEED)) {
                             primitive->generate(math::Expression::MAX_PLOT_BUFFER_SIZE);
-                            currentExpression.eval(math::GraphLimits::GlobalLimits);
+                            controller->evalExpression(currentExpression, math::GraphLimits::GlobalLimits);
                         }
                         break;
                     }
                     case math::primitives::PrimitiveTypes::Rectangle: {
-                        const auto primitive = currentExpression.getPrimitive<math::primitives::RectanglePrimitive>();
+                        const auto& primitive = currentExpression->getPrimitive<math::primitives::RectanglePrimitive>();
                         auto rect = primitive->rect;
                         if (ImGui::DragScalarN(("Rect" + ("##RectangleRectDrag" + idStr)).c_str(), ImGuiDataType_Double, &rect, 4, DRAG_SPEED)) {
                             primitive->rect = rect;
                             primitive->generate(math::Expression::MAX_PLOT_BUFFER_SIZE);
-                            currentExpression.eval(math::GraphLimits::GlobalLimits);
+                            controller->evalExpression(currentExpression, math::GraphLimits::GlobalLimits);
                         }
                         break;            
                     }
@@ -370,20 +372,20 @@ namespace kubvc::editor {
                 if (ImGui::BeginCombo(("Primitive Type" + ("##PrimitiveTypeCombo" + idStr)).c_str(), options[current].c_str())) {
                     for (std::int32_t i = 0; i < static_cast<std::int32_t>(options.size()); i++) {
                         if (ImGui::Selectable(options[i].c_str(), current == i)) {
-                            currentExpression.setPrimitiveType(static_cast<math::primitives::PrimitiveTypes>(i));
+                            currentExpression->setPrimitiveType(static_cast<math::primitives::PrimitiveTypes>(i));
 
-                            switch (currentExpression.getPrimitiveType()) {
+                            switch (currentExpression->getPrimitiveType()) {
                                 case math::primitives::PrimitiveTypes::Circle: {
-                                    currentExpression.setNewPrimitive(math::primitives::makeNewPrimitive<math::primitives::CirclePrimitive>(math::Expression::MAX_PLOT_BUFFER_SIZE));
+                                    currentExpression->setNewPrimitive(math::primitives::makeNewPrimitive<math::primitives::CirclePrimitive>(math::Expression::MAX_PLOT_BUFFER_SIZE));
                                     break;
                                 }
                                 case math::primitives::PrimitiveTypes::Rectangle: {
-                                    currentExpression.setNewPrimitive(math::primitives::makeNewPrimitive<math::primitives::RectanglePrimitive>(math::Expression::MAX_PLOT_BUFFER_SIZE));
+                                    currentExpression->setNewPrimitive(math::primitives::makeNewPrimitive<math::primitives::RectanglePrimitive>(math::Expression::MAX_PLOT_BUFFER_SIZE));
                                     break;            
                                 }
                             }
 
-                            currentExpression.eval(math::GraphLimits::GlobalLimits);
+                            controller->evalExpression(currentExpression, math::GraphLimits::GlobalLimits);
                         }
                     }
                     ImGui::EndCombo();
@@ -399,7 +401,7 @@ namespace kubvc::editor {
                 
                 if (ImGui::InputFloat4(("Rectangle surface" + ("##RectSurfaceInput" + idStr)).c_str(), limits.data())) {
                     math::GraphLimits::GlobalLimits = math::GraphLimits { limits[0], limits[1], limits[2], limits[3] };
-                    currentExpression.eval(math::GraphLimits::GlobalLimits);
+                    controller->evalExpression(currentExpression, math::GraphLimits::GlobalLimits);
                 }
             }
             

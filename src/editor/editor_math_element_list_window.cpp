@@ -13,8 +13,8 @@ namespace kubvc::editor {
     void EditorMathElementListWindow::addItemToExpression(std::string_view text) {
         const auto selected = controller->getSelected();
         if (selected != nullptr) {
-            auto& textBuffer = selected->getTextBuffer();             
-            textBuffer.insertAtCursor(text);
+            const auto& textBuffer = selected->getTextBuffer();             
+            textBuffer->insertAtCursor(text);
             controller->parseThenEvaluate(selected, math::GraphLimits::GlobalLimits);
         }
     

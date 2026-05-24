@@ -9,18 +9,24 @@ namespace kubvc::io {
     class ExpressionIO : public utility::Singleton<ExpressionIO> {
         public:
             // Save all points from plot buffer to file 
-            void saveGraphPoints(std::string_view path, std::shared_ptr<math::ExpressionModel> expression);
+            void saveGraphPoints(std::string_view path, std::shared_ptr<math::ExpressionModel> model);
             // Save all graphs to file 
             void saveGraphs(std::string_view path);
             // Load and evaluate graphs from file
             void loadGraphs(std::string_view path);
     };
 
-    inline void ExpressionIO::saveGraphPoints(std::string_view path, std::shared_ptr<math::ExpressionModel> expression) {
-        if (expression != nullptr) {
+    inline void ExpressionIO::saveGraphPoints(std::string_view path, std::shared_ptr<math::ExpressionModel> model) {
+        if (model != nullptr) {
+            const auto& expression = model->getExpression(); 
+            const auto& plotBufferPtr = expression->getPlotBuffer();
+            if (!plotBufferPtr) {
+                return;
+            }
+
             io::FileSaver file;
-            std::vector<char> buffer; 
-            for (const auto& point : expression->getExpression().getPlotBuffer()) {
+            std::vector<char> buffer;
+            for (const auto& point : *plotBufferPtr) {
                 const auto str = std::format("{}, {}\n", point.x, point.y);
                 buffer.insert(buffer.begin(),  str.begin(), str.end());
             }
@@ -33,9 +39,9 @@ namespace kubvc::io {
 
         const auto expressions = controller->getExpressions();
         std::vector<char> fileContentBuffer;
-        for (auto expression : expressions) {
+        for (const auto& expression : expressions) {
             if (expression != nullptr) {
-                const auto exprBuffer = expression->getTextBuffer().getBuffer();
+                const auto& exprBuffer = expression->getTextBuffer()->getBuffer();
                 // Find end, because we are have a fixed-size buffer    
                 const auto actualEnd = std::find(exprBuffer.begin(), exprBuffer.end(), '\0');                                                 
                 fileContentBuffer.insert(fileContentBuffer.end(), exprBuffer.begin(), actualEnd);
@@ -56,7 +62,7 @@ namespace kubvc::io {
             for (const auto& str : value | std::views::split('\n') | std::views::filter([](const auto& str) { return !str.empty(); })) {
                 const auto newExpression = controller->create();
                 // Add expression to buffer
-                auto& buffer = newExpression->getTextBuffer().getBuffer();
+                auto& buffer = newExpression->getTextBuffer()->getBuffer();
                 buffer.insert(buffer.begin(), str.begin(), str.end());
                 // Try to parse it and evaluate 
                 controller->parseThenEvaluate(newExpression, math::GraphLimits::GlobalLimits);

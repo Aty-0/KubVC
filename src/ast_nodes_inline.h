@@ -8,127 +8,103 @@
 #include <glm/glm.hpp>
 
 namespace kubvc::algorithm {
-    inline void NodeTraits<NodeTypes::Root>::calculate(double x, double y, double& result) {
-        if (!child) {
-            return;
-        }
-            
-        child->calculate(x, y, result);            
+    inline double NodeTraits<NodeTypes::Invalid>::calculate([[maybe_unused]] double x, [[maybe_unused]] double y) {
+        return std::numeric_limits<double>::quiet_NaN();
     }
 
-    inline void NodeTraits<NodeTypes::Variable>::calculate(double x, double y, double& result) {
-        result = isParameter ? parameter : (m_value == 'y' ? y : x);
-    }  
-
-    inline void NodeTraits<NodeTypes::Function>::calculate(double x, double y, double& result) {
-        KUB_ASSERT(argument != nullptr, "Argument is null in FunctionNode");
-        
-        double argumentResult = 0.0;
-        argument->calculate(x, y, argumentResult);
-        result = Helpers::computeFunction(name, argumentResult); 
+    inline double NodeTraits<NodeTypes::ComplexNumber>::calculate([[maybe_unused]] double x, [[maybe_unused]] double y) {
+        // Complex numbers can't be used in real mode calculation
+        return std::numeric_limits<double>::quiet_NaN();
     }
-        
-    inline void NodeTraits<NodeTypes::UnaryOperator>::calculate(double x, double y, double& result) {
-        const bool isChildInvalid = child->getType() == NodeTypes::Invalid;
-        if (child == nullptr || isChildInvalid)
-            return;
 
-        child->calculate(x, y, result);
-        
-        const auto type = getOperatorTypeByChar(operation);        
-        if (type == Operators::Minus) {
-            result = -result;
-        }
+    inline double NodeTraits<NodeTypes::Number>::calculate([[maybe_unused]] double x, [[maybe_unused]] double y) {
+        return m_value;
+    }
+
+    inline double NodeTraits<NodeTypes::Root>::calculate(double x, [[maybe_unused]] double y) {
+        // Return x, because ast will be push in x value result from child node 
+        return x; 
     }
     
-    inline void NodeTraits<NodeTypes::Operator>::calculate(double x, double y, double& result) {
-        if (right == nullptr || left == nullptr) {
-            return;
-        }
-        
-        const bool isRightNodeInvalid = right->getType() == NodeTypes::Invalid;
-        const bool isLeftNodeInvalid = left->getType() == NodeTypes::Invalid; 
-        
-        if (isRightNodeInvalid || isLeftNodeInvalid) {
-            return;
-        }
+    inline double NodeTraits<NodeTypes::Variable>::calculate(double x, double y) {
+        return isParameter ? parameter : (m_value == 'y' ? y : x);
+    }  
 
-        double leftResult, rightResult = 0.0;
-        left->calculate(x, y, leftResult);
-        right->calculate(x, y, rightResult);
-        const auto op = getOperatorTypeByChar(operation);
-        switch(op) {
+    inline double NodeTraits<NodeTypes::Function>::calculate(double x, [[maybe_unused]] double y) {
+        // Same logic as root, ast will be push in x value result from child node 
+        return Helpers::computeFunction(name, x); 
+    }
+        
+    inline double NodeTraits<NodeTypes::UnaryOperator>::calculate(double x, [[maybe_unused]] double y) {        
+        const auto type = getOperatorTypeByChar(operation);        
+        return type == Operators::Minus ? -x : x;
+    }
+
+    inline double NodeTraits<NodeTypes::Operator>::calculate(double x, double y) {    
+        // Same logic as root or unary, ast will be push in x, y values result from children nodes 
+        const auto operatorType = getOperatorTypeByChar(operation);
+        switch(operatorType) {
             case Operators::Equal: {
-                result = rightResult;
-                break;
+                return y;
             }
             case Operators::Plus: {
-                result = leftResult + rightResult;
-                break;
+                return x + y;
             }
             case Operators::Minus: {
-                result = leftResult - rightResult;
-                break;
+                return x - y;
             }
             case Operators::Multiplication: {
-                result = leftResult * rightResult;
-                break;
+                return x * y;
             }
             case Operators::Division: {                
                 // If we are too close to zero we are set result as NaN
-                if (glm::abs(rightResult) < std::numeric_limits<double>::min()) {  
-                    result = std::numeric_limits<double>::quiet_NaN();
-                    break;
+                if (glm::abs(y) < std::numeric_limits<double>::min()) {  
+                    return std::numeric_limits<double>::quiet_NaN();
                 }
                 
-                result = leftResult / rightResult;
-                break;
+                return x / y;
             }
             case Operators::Module: {
-                result = glm::mod(leftResult, rightResult);
-                break;
+                return glm::mod(x, y);
             }                        
             case Operators::Power: {
-                result = glm::pow(leftResult, rightResult);
-                break;
+                return glm::pow(x, y);
             }
             default:
                 KUB_ERROR("Unknown type operator: {}", std::string(1, operation));
                 break;
-        }              
+        }     
+
+        return std::numeric_limits<double>::quiet_NaN();         
     }
         
-    inline std::complex<double> NodeTraits<NodeTypes::Root>::calculateComplex(double x, double y) { 
-        if (!child) {
-            return { std::numeric_limits<double>::quiet_NaN(), std::numeric_limits<double>::quiet_NaN() };
-        }
-        
-        return child->calculateComplex(x, y);
+    inline std::complex<double> NodeTraits<NodeTypes::Root>::calculateComplex(double re, double im) { 
+        return { re, im }; // Return complex number by args calculated in ast 
     }
 
-    inline std::complex<double> NodeTraits<NodeTypes::Number>::calculateComplex([[maybe_unused]] double x, [[maybe_unused]] double y) { 
+    inline std::complex<double> NodeTraits<NodeTypes::Number>::calculateComplex([[maybe_unused]] double re, [[maybe_unused]] double im) { 
         return { m_value, 0.0 };
     }
 
-    inline std::complex<double> NodeTraits<NodeTypes::ComplexNumber>::calculateComplex([[maybe_unused]] double x, [[maybe_unused]] double y) { 
+    inline std::complex<double> NodeTraits<NodeTypes::ComplexNumber>::calculateComplex([[maybe_unused]] double x, [[maybe_unused]] double im) { 
         return m_value;
     }
 
-    inline std::complex<double> NodeTraits<NodeTypes::Invalid>::calculateComplex([[maybe_unused]] double x, [[maybe_unused]] double y) { 
+    inline std::complex<double> NodeTraits<NodeTypes::Invalid>::calculateComplex([[maybe_unused]] double re, [[maybe_unused]] double im) { 
         return { std::numeric_limits<double>::quiet_NaN(), std::numeric_limits<double>::quiet_NaN() }; 
     }
 
-    inline std::complex<double> NodeTraits<NodeTypes::Variable>::calculateComplex(double x, double y) { 
+    inline std::complex<double> NodeTraits<NodeTypes::Variable>::calculateComplex(double re, double im) { 
         if (isParameter)
             return { parameter, 0.0 };
             
         switch (m_value) {
             case 'z':
-                return { x, y };
+                return { re, im };
             case 'x':
-                return { x, 0.0 };
+                return { re, 0.0 };
             case 'y':
-                return { y, 0.0 };
+                return { re, 0.0 };
             case 'w':
                 return { 0.0, 0.0 }; // TODO:         
         } 
@@ -136,65 +112,45 @@ namespace kubvc::algorithm {
         return { 0.0, 0.0 };
     }
 
-    inline std::complex<double> NodeTraits<NodeTypes::UnaryOperator>::calculateComplex(double x, double y) { 
-        const auto isChildInvalid = child->getType() == NodeTypes::Invalid;
-
-        if (child == nullptr || isChildInvalid) {
-            return { std::numeric_limits<double>::quiet_NaN(), std::numeric_limits<double>::quiet_NaN() }; 
-        }
-        
-        const auto result = child->calculateComplex(x, y);
-        const auto type = getOperatorTypeByChar(operation);        
-        if (type == Operators::Minus) {
-            return -result;
-        }
-
-        return result;
+    inline std::complex<double> NodeTraits<NodeTypes::UnaryOperator>::calculateComplex(double re, double im) { 
+        const auto type = getOperatorTypeByChar(operation);
+        const auto result = std::complex<double> { re, im };         
+        return type == Operators::Minus ? -result : result;
+    }
+    
+    inline std::complex<double> NodeTraits<NodeTypes::Operator>::calculateComplex([[maybe_unused]] double re, [[maybe_unused]] double im) {
+        KUB_ASSERT(false, "Don't use calculateComplex for operator, use calculateComplexOperator instead!");
+        return { std::numeric_limits<double>::quiet_NaN(), std::numeric_limits<double>::quiet_NaN() }; 
     }
 
-    inline std::complex<double> NodeTraits<NodeTypes::Operator>::calculateComplex(double x, double y) { 
-        if (right == nullptr || left == nullptr) {
-            return std::complex<double>(std::numeric_limits<double>::quiet_NaN(), 
-                std::numeric_limits<double>::quiet_NaN()); 
-        }
-        
-        const auto isRightNodeInvalid = right->getType() == NodeTypes::Invalid;
-        const auto isLeftNodeInvalid = left->getType() == NodeTypes::Invalid; 
-        
-        if (isRightNodeInvalid || isLeftNodeInvalid) {
-            return { std::numeric_limits<double>::quiet_NaN(), std::numeric_limits<double>::quiet_NaN() }; 
-        }
-
-        const auto leftResult = left->calculateComplex(x, y);
-        const auto rightResult = right->calculateComplex(x, y);
-        const auto op = getOperatorTypeByChar(operation);
-        switch(op) {
+    inline std::complex<double> NodeTraits<NodeTypes::Operator>::calculateComplexOperator(std::complex<double> left, std::complex<double> right) { 
+        const auto operatorType = getOperatorTypeByChar(operation);
+        switch(operatorType) {
             case Operators::Equal: {
-                return rightResult;
+                return right;
             }
             case Operators::Plus: {
-                return leftResult + rightResult;
+                return left + right;
             }
             case Operators::Minus: {
-                return leftResult - rightResult;
+                return left - right;
             }
             case Operators::Multiplication: {
-                return leftResult * rightResult;
+                return left * right;
             }
             case Operators::Division: {                
                 // If we are too close to zero we are set result as NaN
-                if (std::abs(rightResult) < std::numeric_limits<double>::min()) {  
-                    return std::complex<double>(std::numeric_limits<double>::quiet_NaN(), 
-                        std::numeric_limits<double>::quiet_NaN()); 
+                if (std::abs(right) < std::numeric_limits<double>::min()) {  
+                    return { std::numeric_limits<double>::quiet_NaN(), std::numeric_limits<double>::quiet_NaN() }; 
                 }
                 
-                return leftResult / rightResult;
+                return left / right;
             }
             case Operators::Module: {
                 return {0.0, 0.0}; // TODO: 
             }                        
             case Operators::Power: {
-                return std::pow(leftResult, rightResult);
+                return std::pow(left, right);
             }
             default: {
                 //KUB_ASSERT(false, "Unknown type operator: {}", std::string(1, operation));
@@ -206,9 +162,9 @@ namespace kubvc::algorithm {
         return { 0.0, 0.0 };
     }
  
-    inline std::complex<double> NodeTraits<NodeTypes::Function>::calculateComplex(double x, double y) { 
+    inline std::complex<double> NodeTraits<NodeTypes::Function>::calculateComplex(double re, double im) { 
         KUB_ASSERT(argument != nullptr, "Argument is null in FunctionNode");
-        const auto argumentResult = argument->calculateComplex(x, y);
+        const auto argumentResult = std::complex<double> { re, im };
         
         // TODO: Actually I need to find what's type of variable we are using
         // If it's Z or W we are invoke something like a computeComplexFunction

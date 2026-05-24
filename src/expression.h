@@ -9,8 +9,11 @@
 #include <shared_mutex>
 
 namespace kubvc::math {
+    class ExpressionController;
     class Expression {
         public:
+            friend ExpressionController;
+
             static constexpr auto MAX_PLOT_BUFFER_SIZE = 1024;
             static constexpr auto COMPLEX_GRID_SIZE = 32;
             static constexpr auto COMPLEX_GRID_LINES_COUNT = 128;
@@ -21,13 +24,11 @@ namespace kubvc::math {
 
             ~Expression();
             
-            // TODO: lock getters, use spans
-
             [[nodiscard]] math::VariableDependenceController& getVDC() { return m_vdc; }
             [[nodiscard]] algorithm::ASTree& getTree() { return m_tree; }
-            [[nodiscard]] const std::vector<std::vector<glm::dvec2>>& getComplexGrid() const { return m_complexGrid; }
-            [[nodiscard]] const std::vector<glm::dvec2>& getPlotBuffer() const { return m_plotBuffer; } 
-            [[nodiscard]] const std::string& getLastErrorMessage() const { return m_lastErrorMessage; }
+            [[nodiscard]] std::shared_ptr<const std::vector<std::vector<glm::dvec2>>> getComplexGrid() const;
+            [[nodiscard]] std::shared_ptr<const std::vector<glm::dvec2>> getPlotBuffer() const;
+            [[nodiscard]] std::string getLastErrorMessage() const;
             [[nodiscard]] bool getRectMode() const;
             [[nodiscard]] bool isValid() const;
             [[nodiscard]] math::primitives::PrimitiveTypes getPrimitiveType() const;
@@ -42,14 +43,15 @@ namespace kubvc::math {
             template <primitives::IsPrimitive T>
             [[nodiscard]] std::shared_ptr<T> getPrimitive() const;
 
+        private:
             // Evaluate current expression 
             void eval(const GraphLimits& limits, std::int32_t maxPointCount = MAX_PLOT_BUFFER_SIZE);
-        private:
+            
             math::VariableDependenceController m_vdc;
             // Abstract syntax tree for expressions 
             algorithm::ASTree m_tree;
             // Calculated points for graph
-            std::vector<glm::dvec2> m_plotBuffer;  
+            std::shared_ptr<std::vector<glm::dvec2>> m_plotBuffer;  
 
             bool m_valid = false;
             std::string m_lastErrorMessage;
@@ -61,7 +63,7 @@ namespace kubvc::math {
             std::shared_ptr<primitives::IPrimitive> m_primitive;
             primitives::PrimitiveTypes m_primitiveType;
             bool m_rectMode;
-            std::vector<std::vector<glm::dvec2>> m_complexGrid;
+            std::shared_ptr<std::vector<std::vector<glm::dvec2>>> m_complexGrid;
             void prepareComplexGrid();
     };
 

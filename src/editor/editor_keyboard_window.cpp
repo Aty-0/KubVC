@@ -16,10 +16,10 @@ namespace kubvc::editor {
     static bool drawPickElementButton(std::string_view text, const ImVec2& size) {
         const auto cText = text.data();
         if (ImGui::Button(cText, size)) {
-            const auto selected = controller->getSelected();
+            const auto& selected = controller->getSelected();
             if (selected != nullptr) {
-                auto& textBuffer = selected->getTextBuffer();
-                textBuffer.insertAtCursor(text);
+                const auto& textBuffer = selected->getTextBuffer();
+                textBuffer->insertAtCursor(text);
                 controller->parseThenEvaluate(selected, math::GraphLimits::GlobalLimits);
             }
     
@@ -109,15 +109,15 @@ namespace kubvc::editor {
         if (ImGui::Button(ICON_FA_DELETE_LEFT, opButtonSize)) {
             const auto selected = controller->getSelected();
             if (selected != nullptr) {
-                auto& textBuffer = selected->getTextBuffer();
-                const auto cursor = textBuffer.getCursor();
+                const auto& textBuffer = selected->getTextBuffer();
+                const auto cursor = textBuffer->getCursor();
 
                 if (cursor > 0) {
                     // Remove character by cursor from text buffer 
-                    auto& buffer = textBuffer.getBuffer();
+                    auto& buffer = textBuffer->getBuffer();
                     const auto& begin = buffer.begin() + cursor;
                     buffer.erase(begin - 1, begin);
-                    textBuffer.setCursor(cursor - 1);
+                    textBuffer->setCursor(cursor - 1);
                     controller->parseThenEvaluate(selected, math::GraphLimits::GlobalLimits);
                 }                
             }

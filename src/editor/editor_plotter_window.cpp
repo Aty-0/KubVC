@@ -62,48 +62,58 @@ namespace kubvc::editor {
                     continue;
                 }
 
-                auto& settings = model->getSettings(); 
-                auto& textBuffer = model->getTextBuffer(); 
-                auto& expression = model->getExpression();
-                if (settings.getVisible() && expression.isValid()) { 
+                const auto& settings = model->getSettings(); 
+                const auto& textBuffer = model->getTextBuffer(); 
+                const auto& expression = model->getExpression();
+
+                if (settings->getVisible() && expression->isValid()) { 
                     if (updateExpressions) {
                         if (appConfig->getMode() == application::MathMode::Real) {
-                            math::GraphLimits::GlobalLimits = ImPlot::GetPlotLimits();                 
-                            expression.eval(math::GraphLimits::GlobalLimits);     
+                            math::GraphLimits::GlobalLimits = ImPlot::GetPlotLimits();   
+                            controller->evalExpression(expression, math::GraphLimits::GlobalLimits);
                         }
                     }
                     
-                    const auto isShaded = settings.getShaded() ? ImPlotLineFlags_::ImPlotLineFlags_Shaded : ImPlotLineFlags_::ImPlotLineFlags_None;
+                    const auto isShaded = settings->getShaded() ? ImPlotLineFlags_::ImPlotLineFlags_Shaded : ImPlotLineFlags_::ImPlotLineFlags_None;
                     const auto flags = ImPlotLineFlags_::ImPlotLineFlags_NoClip | isShaded;
-                    const auto& buffer = expression.getPlotBuffer(); 
-                    
+                    const auto& bufferPtr = expression->getPlotBuffer(); 
+
                     // Apply plot style from expression                                                   
                     ImPlotSpec specs;
-                    specs.LineWeight = settings.getThickness();
-                    specs.LineColor = kubvc::utility::toImVec4(settings.getColor());
+                    specs.LineWeight = settings->getThickness();
+                    specs.LineColor = kubvc::utility::toImVec4(settings->getColor());
                     specs.Flags = flags;
                     specs.Stride = vecStride;
                     
                     switch (appConfig->getMode()) {
                         case application::MathMode::Real: {
-                            if (!buffer.empty()) {
-                                ImPlot::PlotLine(textBuffer.getBuffer().data(), &buffer[0].x, &buffer[0].y, 
-                                    static_cast<std::int32_t>(buffer.size()), specs);      
+                            if (bufferPtr) {
+                                const auto& buffer = *bufferPtr;
+                                if (!buffer.empty()) {
+                                    ImPlot::PlotLine(textBuffer->getBuffer().data(), &buffer[0].x, &buffer[0].y, 
+                                        static_cast<std::int32_t>(buffer.size()), specs);      
+                                }
                             }
                             break;
                         }
                         case application::MathMode::Complex: {
-                            const auto isRectMode = expression.getRectMode();
+                            const auto isRectMode = expression->getRectMode();
                             if (!isRectMode) {
-                                if (!buffer.empty()) {
-                                    ImPlot::PlotLine(textBuffer.getBuffer().data(), &buffer[0].x, &buffer[0].y, 
-                                        static_cast<std::int32_t>(buffer.size()), specs);      
+                                if (bufferPtr) {
+                                    const auto& buffer = *bufferPtr;
+                                    if (!buffer.empty()) {
+                                        ImPlot::PlotLine(textBuffer->getBuffer().data(), &buffer[0].x, &buffer[0].y, 
+                                            static_cast<std::int32_t>(buffer.size()), specs);      
+                                    }
                                 }
                             } else {
-                                const auto& grid = expression.getComplexGrid();
-                                for (const auto& lines : grid) {
-                                    ImPlot::PlotLine(textBuffer.getBuffer().data(), &lines[0].x, &lines[0].y, 
-                                        static_cast<std::int32_t>(lines.size()), specs);      
+                                const auto& gridPtr = expression->getComplexGrid();
+                                if (gridPtr) {
+                                    const auto& grid = *gridPtr;                                
+                                    for (const auto& lines : grid) {
+                                        ImPlot::PlotLine(textBuffer->getBuffer().data(), &lines[0].x, &lines[0].y, 
+                                            static_cast<std::int32_t>(lines.size()), specs);      
+                                    }
                                 }
                             }
                             break;                    
