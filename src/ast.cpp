@@ -137,10 +137,12 @@ namespace kubvc::algorithm {
             stack.pop();
         }
 
+#ifdef KUB_AST_CACHE_PRINT_DEBUG
         KUB_DEBUG("Cache size: {}", newCache->size());
         for (std::size_t i = 0; i < newCache->size(); i++) {
             KUB_DEBUG("[{}] type={}", i, getNodeName((*newCache)[i]->getType()));
         }
+#endif
 
         m_treeCached.store(std::move(newCache), std::memory_order_release);
     }
