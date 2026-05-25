@@ -146,9 +146,7 @@ namespace kubvc::editor {
             ImGui::Dummy(ImVec2(0, 15.0f));
 
             // Style settings block
-            ImGui::TextDisabled("Style");
-            ImGui::Dummy(ImVec2(0, 5.0f));
-            
+            ImGui::SeparatorText("Style");            
             // Visible toggle 
             ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 5.0f);
             drawIcon(gui, ICON_FA_EYE);
@@ -200,6 +198,91 @@ namespace kubvc::editor {
                 THICKNESS_MAX, "%.1f", ImGuiSliderFlags_::ImGuiSliderFlags_ClampOnInput)) {
                 settings->setThickness(thickness);
             }
+
+            static const auto appConfig = application::ApplicationConfig::getInstance();
+            if (appConfig->getMode() == application::MathMode::Complex) {
+                ImGui::SeparatorText("Complex:");
+
+                const auto& expression = selected->getExpression();
+                const auto& idStr = std::to_string(selected->getId());
+
+                constexpr auto DRAG_SPEED = 0.01f; 
+                auto isRectMode = expression->getRectMode();
+                if (ImGui::Checkbox(("Grid Mode" + ("##GridModeCheckBox" + idStr)).c_str(), &isRectMode)) {
+                    expression->setRectMode(isRectMode);
+                    controller->evalExpression(expression, math::GraphLimits::GlobalLimits);
+                }
+
+                if (!isRectMode) {            
+                    const auto primitiveType = expression->getPrimitiveType();
+                    switch (primitiveType) {
+                        case math::primitives::PrimitiveTypes::Circle: {
+                            const auto& primitive = expression->getPrimitive<math::primitives::CirclePrimitive>();
+                            if (ImGui::DragScalar(("Radius" + ("##CircleRadiusDrag" + idStr)).c_str(), ImGuiDataType_Double, &primitive->radius, DRAG_SPEED)) {
+                                primitive->generate(math::Expression::MAX_PLOT_BUFFER_SIZE);
+                                controller->evalExpression(expression, math::GraphLimits::GlobalLimits);
+                            }
+
+                            if (ImGui::DragScalarN(("Center" + ("##CircleCenterDrag" + idStr)).c_str(),  ImGuiDataType_Double, &primitive->center, 2, DRAG_SPEED)) {
+                                primitive->generate(math::Expression::MAX_PLOT_BUFFER_SIZE);
+                                controller->evalExpression(expression, math::GraphLimits::GlobalLimits);
+                            }
+                            break;
+                        }
+                        case math::primitives::PrimitiveTypes::Rectangle: {
+                            const auto& primitive = expression->getPrimitive<math::primitives::RectanglePrimitive>();
+                            auto rect = primitive->rect;
+                            if (ImGui::DragScalarN(("Rect" + ("##RectangleRectDrag" + idStr)).c_str(), ImGuiDataType_Double, &rect, 4, DRAG_SPEED)) {
+                                primitive->rect = rect;
+                                primitive->generate(math::Expression::MAX_PLOT_BUFFER_SIZE);
+                                controller->evalExpression(expression, math::GraphLimits::GlobalLimits);
+                            }
+                            break;            
+                        }
+                    }
+
+
+                    // TODO: Not a great impl and kinda dumb, but it's fine for nown
+                    static const std::vector<std::string> options = { "Circle", "Rectangle" };
+                    auto current = static_cast<std::int32_t>(primitiveType);
+                    if (ImGui::BeginCombo(("Primitive Type" + ("##PrimitiveTypeCombo" + idStr)).c_str(), options[current].c_str())) {
+                        for (std::int32_t i = 0; i < static_cast<std::int32_t>(options.size()); i++) {
+                            if (ImGui::Selectable(options[i].c_str(), current == i)) {
+                                expression->setPrimitiveType(static_cast<math::primitives::PrimitiveTypes>(i));
+
+                                switch (expression->getPrimitiveType()) {
+                                    case math::primitives::PrimitiveTypes::Circle: {
+                                        expression->setNewPrimitive(math::primitives::makeNewPrimitive<math::primitives::CirclePrimitive>(math::Expression::MAX_PLOT_BUFFER_SIZE));
+                                        break;
+                                    }
+                                    case math::primitives::PrimitiveTypes::Rectangle: {
+                                        expression->setNewPrimitive(math::primitives::makeNewPrimitive<math::primitives::RectanglePrimitive>(math::Expression::MAX_PLOT_BUFFER_SIZE));
+                                        break;            
+                                    }
+                                }
+
+                                controller->evalExpression(expression, math::GraphLimits::GlobalLimits);
+                            }
+                        }
+                        ImGui::EndCombo();
+                    }
+                } else {
+                    // FIXME: Bruh
+                    std::array<float, 4> limits = { 
+                        static_cast<float>(math::GraphLimits::GlobalLimits.xMin), 
+                        static_cast<float>(math::GraphLimits::GlobalLimits.xMax), 
+                        static_cast<float>(math::GraphLimits::GlobalLimits.yMin), 
+                        static_cast<float>(math::GraphLimits::GlobalLimits.yMax) 
+                    };
+
+                    if (ImGui::InputFloat4(("Grid Size:" + ("##GridSizeInput" + idStr)).c_str(), limits.data())) {
+                        math::GraphLimits::GlobalLimits = math::GraphLimits { limits[0], limits[1], limits[2], limits[3] };
+                        controller->evalExpression(expression, math::GraphLimits::GlobalLimits);
+                    }
+                }
+
+            }
+
 
 #if defined(KUB_IS_DEBUG) || defined(SHOW_DEBUG_TOOLS_ON_RELEASE)  
             ImGui::Separator();        
