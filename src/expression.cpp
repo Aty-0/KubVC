@@ -23,8 +23,6 @@ namespace kubvc::math {
         m_vdc.reset();
         m_tree.clear();
         
-        m_plotBuffer->clear();
-        m_complexGrid->clear();
         if (m_plotBuffer) {
             m_plotBuffer->clear();
         }
