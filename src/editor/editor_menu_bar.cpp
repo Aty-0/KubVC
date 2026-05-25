@@ -158,6 +158,7 @@ namespace kubvc::editor {
 
                 if (ImGui::MenuItem("Real")) {
                     config->setMode(application::MathMode::Real);
+                    controller->reevaluateAllExpressions(math::GraphLimits::GlobalLimits);
                 }
                 if (config->getMode() == application::MathMode::Complex) {
                     ImGui::PushFont(&iconFont);
@@ -168,6 +169,7 @@ namespace kubvc::editor {
 
                 if (ImGui::MenuItem("Complex")) {                    
                     config->setMode(application::MathMode::Complex);
+                    controller->reevaluateAllExpressions(math::GraphLimits::GlobalLimits);
                 }
 
                 ImGui::EndMenu();
