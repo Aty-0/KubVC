@@ -37,7 +37,7 @@ namespace kubvc::math {
         m_complexGrid = nullptr;
     }
 
-    static constexpr std::uint8_t NEWTON_MAX_ITER = 4; 
+    static constexpr std::uint8_t NEWTON_MAX_ITER = 16; 
     static constexpr auto EPS = 1e-10;
 
     inline static double solveBisection(std::function<double(double)> f, double min, double max) {
@@ -89,8 +89,7 @@ namespace kubvc::math {
 
   
             if (x0 < min || x0 > max) {
-                return std::numeric_limits<double>::quiet_NaN();
-                //return solveBisection(f, min, max); 
+                return solveBisection(f, min, max); 
             }
 
             fx0 = f(x0);

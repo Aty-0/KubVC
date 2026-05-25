@@ -144,6 +144,8 @@ namespace kubvc::algorithm {
 
         m_treeCached.store(std::move(newCache), std::memory_order_release);
     }
+    
+    constexpr std::size_t VALUE_STACK_SIZE = 512;
 
     double ASTree::calculate(double x, double y) {
         if (!isRootExist()) {
@@ -160,54 +162,55 @@ namespace kubvc::algorithm {
                 cached = m_treeCached.load(std::memory_order_relaxed);
             }
         }
+   
+        KUB_ASSERT(cached->size() < VALUE_STACK_SIZE, "ast: cached size > value stack size");
 
-        
         if (!cached || cached->empty()) {
             return std::numeric_limits<double>::quiet_NaN();
         }
-
-        std::vector<double> valueStack;
-        valueStack.reserve(cached->size());
+        
+        thread_local static double valueStack[VALUE_STACK_SIZE];
+        std::size_t top = 0;
         for (const auto& node : (*cached)) {            
             switch (node->getType()) {
                 case kubvc::algorithm::NodeTypes::Operator: {
-                    if (valueStack.size() < 2) {
+                    if (top < 2) {
                         KUB_ERROR("Stack underflow at Operator node");
                         return std::numeric_limits<double>::quiet_NaN();
                     }
 
-                    auto right = valueStack.back(); 
-                    valueStack.pop_back();
-                    auto left = valueStack.back(); 
-                    valueStack.pop_back();
-                    valueStack.push_back(node->calculate(left, right));
+                    auto right = valueStack[--top]; 
+                    auto left = valueStack[--top]; 
+                    valueStack[top++] = node->calculate(left, right);
                     break;    
                 }
                 case kubvc::algorithm::NodeTypes::Root: 
                 case kubvc::algorithm::NodeTypes::Function:
                 case kubvc::algorithm::NodeTypes::UnaryOperator: {
-                    if (valueStack.empty()) {
+                    if (top == 0) {
                         KUB_ERROR("Stack underflow at unary node");
                         return std::numeric_limits<double>::quiet_NaN();
                     }
 
-                    auto operand = valueStack.back(); 
-                    valueStack.pop_back();
-                    valueStack.push_back(node->calculate(operand, 0.0));
+                    auto operand = valueStack[--top]; 
+                    valueStack[top++] = node->calculate(operand, 0.0);
                     break;     
                 }
                 case kubvc::algorithm::NodeTypes::Number:
                 case kubvc::algorithm::NodeTypes::Variable:
                 case kubvc::algorithm::NodeTypes::ComplexNumber:
-                    valueStack.push_back(node->calculate(x, y));
+                    valueStack[top++] = node->calculate(x, y);
                     break;
                 case kubvc::algorithm::NodeTypes::None:
                 case kubvc::algorithm::NodeTypes::Invalid:
-                    break;
+                    break;  
             }
         }
+        
+        if (top == 0) 
+            return std::numeric_limits<double>::quiet_NaN();
 
-        return valueStack.empty() ? std::numeric_limits<double>::quiet_NaN() : valueStack.back();
+        return valueStack[--top]; 
     }            
     
     std::complex<double> ASTree::calculateComplex(double re, double im) {
@@ -226,51 +229,48 @@ namespace kubvc::algorithm {
             }
         }
 
+        KUB_ASSERT(cached->size() < VALUE_STACK_SIZE, "ast: cached size > value stack size");
         
         if (!cached || cached->empty()) {
             return { std::numeric_limits<double>::quiet_NaN(), std::numeric_limits<double>::quiet_NaN() };
         }
 
-        std::vector<std::complex<double>> valueStack;
-        valueStack.reserve(cached->size());
+        thread_local static std::complex<double> valueStack[VALUE_STACK_SIZE];
+        std::size_t top = 0;
         for (auto& node : (*cached)) {  
             switch (node->getType()) {
                 case kubvc::algorithm::NodeTypes::Operator: {       
-                    if (valueStack.size() < 2) {
+                    if (top < 2) {
                         KUB_ERROR("Stack underflow at Operator node");
                         return std::numeric_limits<double>::quiet_NaN();
                     }
 
                     // Get left/right node for operators
-                    auto right = valueStack.back(); 
-                    valueStack.pop_back();
-                    
-                    auto left = valueStack.back(); 
-                    valueStack.pop_back();
+                    auto right = valueStack[--top];                     
+                    auto left = valueStack[--top]; 
 
                     // Calculate operator result 
                     auto operatorNode = castToNodePtr<NodeTypes::Operator>(node); 
-                    valueStack.push_back(operatorNode->calculateComplexOperator(left, right));
+                    valueStack[top++] = operatorNode->calculateComplexOperator(left, right);
                     break;    
                 }
                 case kubvc::algorithm::NodeTypes::UnaryOperator:
                 case kubvc::algorithm::NodeTypes::Root: 
                 case kubvc::algorithm::NodeTypes::Function: {
-                    if (valueStack.empty()) {
+                    if (top == 0) {
                         KUB_ERROR("Stack underflow at unary node");
                         return std::numeric_limits<double>::quiet_NaN();
                     }
 
-                    auto operand = valueStack.back(); 
-                    valueStack.pop_back();
-                    valueStack.push_back(node->calculateComplex(operand.real(), operand.imag()));
+                    auto operand = valueStack[top--]; 
+                    valueStack[top++] = node->calculateComplex(operand.real(), operand.imag());
                     break;     
                 }
                 // This nodes are doesn't have any childrens 
                 case kubvc::algorithm::NodeTypes::Number:
                 case kubvc::algorithm::NodeTypes::Variable:
                 case kubvc::algorithm::NodeTypes::ComplexNumber:
-                    valueStack.push_back(node->calculateComplex(re, im));
+                    valueStack[top++] = node->calculateComplex(re, im);
                     break;
                 case kubvc::algorithm::NodeTypes::Invalid: 
                 case kubvc::algorithm::NodeTypes::None: 
@@ -282,7 +282,11 @@ namespace kubvc::algorithm {
             }        
         } 
 
-        return valueStack.empty() ? std::complex<double>(std::numeric_limits<double>::quiet_NaN(), std::numeric_limits<double>::quiet_NaN()) : valueStack.back();
+        if (top == 0) {
+            return { std::numeric_limits<double>::quiet_NaN(), std::numeric_limits<double>::quiet_NaN() };
+        }
+
+        return valueStack[top--];
     }
 
     TreeCacheView ASTree::getTreeCached() const {
