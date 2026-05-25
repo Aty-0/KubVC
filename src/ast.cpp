@@ -162,6 +162,11 @@ namespace kubvc::algorithm {
             if (!cached) {
                 makeTreeCache();
                 cached = m_treeCached.load(std::memory_order_relaxed);
+                // So, if cache is still empty, return
+                if (!cached) {
+                    return std::numeric_limits<double>::quiet_NaN();
+                }
+
             }
         }
    
@@ -228,6 +233,10 @@ namespace kubvc::algorithm {
             if (!cached) {
                 makeTreeCache();
                 cached = m_treeCached.load(std::memory_order_relaxed);
+                // So, if cache is still empty, return
+                if (!cached) {
+                    return { std::numeric_limits<double>::quiet_NaN(), std::numeric_limits<double>::quiet_NaN() };
+                }
             }
         }
 
