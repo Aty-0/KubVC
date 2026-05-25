@@ -262,7 +262,7 @@ namespace kubvc::algorithm {
                         return std::numeric_limits<double>::quiet_NaN();
                     }
 
-                    auto operand = valueStack[top--]; 
+                    auto operand = valueStack[--top]; 
                     valueStack[top++] = node->calculateComplex(operand.real(), operand.imag());
                     break;     
                 }
@@ -286,7 +286,7 @@ namespace kubvc::algorithm {
             return { std::numeric_limits<double>::quiet_NaN(), std::numeric_limits<double>::quiet_NaN() };
         }
 
-        return valueStack[top--];
+        return valueStack[--top];
     }
 
     TreeCacheView ASTree::getTreeCached() const {
