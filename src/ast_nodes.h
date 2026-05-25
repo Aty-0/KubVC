@@ -99,7 +99,7 @@ namespace kubvc::algorithm {
         [[nodiscard]] virtual NodeTypes getType() const final { return NodeTypes::Operator; }
         [[nodiscard]] virtual double calculate(double x, double y) final;        
         [[nodiscard]] virtual std::complex<double> calculateComplex(double re, double im) final;
-        [[nodiscard]] std::complex<double> calculateComplexOperator(std::complex<double> left, std::complex<double> right);
+        [[nodiscard]] std::complex<double> calculateComplexOperator(std::complex<double> leftNumber, std::complex<double> rightNumber);
 
         char operation;
         std::shared_ptr<INode> right; 

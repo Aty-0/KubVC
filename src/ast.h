@@ -5,6 +5,8 @@
 #include <stack>
 #include <optional>
 #include <atomic>
+#include <span>
+#include <memory>
 
 namespace kubvc::algorithm {
 

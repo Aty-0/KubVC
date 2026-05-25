@@ -123,34 +123,34 @@ namespace kubvc::algorithm {
         return { std::numeric_limits<double>::quiet_NaN(), std::numeric_limits<double>::quiet_NaN() }; 
     }
 
-    inline std::complex<double> NodeTraits<NodeTypes::Operator>::calculateComplexOperator(std::complex<double> left, std::complex<double> right) { 
+    inline std::complex<double> NodeTraits<NodeTypes::Operator>::calculateComplexOperator(std::complex<double> leftNumber, std::complex<double> rightNumber) { 
         const auto operatorType = getOperatorTypeByChar(operation);
         switch(operatorType) {
             case Operators::Equal: {
-                return right;
+                return rightNumber;
             }
             case Operators::Plus: {
-                return left + right;
+                return leftNumber + rightNumber;
             }
             case Operators::Minus: {
-                return left - right;
+                return leftNumber - rightNumber;
             }
             case Operators::Multiplication: {
-                return left * right;
+                return leftNumber * rightNumber;
             }
             case Operators::Division: {                
                 // If we are too close to zero we are set result as NaN
-                if (std::abs(right) < std::numeric_limits<double>::min()) {  
+                if (std::abs(rightNumber) < std::numeric_limits<double>::min()) {  
                     return { std::numeric_limits<double>::quiet_NaN(), std::numeric_limits<double>::quiet_NaN() }; 
                 }
                 
-                return left / right;
+                return leftNumber / rightNumber;
             }
             case Operators::Module: {
                 return {0.0, 0.0}; // TODO: 
             }                        
             case Operators::Power: {
-                return std::pow(left, right);
+                return std::pow(leftNumber, rightNumber);
             }
             default: {
                 //KUB_ASSERT(false, "Unknown type operator: {}", std::string(1, operation));
