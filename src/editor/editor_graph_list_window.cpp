@@ -42,6 +42,8 @@ namespace kubvc::editor {
         if (!model) {
             return;
         }
+
+        constexpr auto DRAG_SPEED = 0.01f; 
         const auto& expression = model->getExpression();
         auto& vdc = expression->getVDC();
         const auto& parameters = vdc.getParameterVariables();
@@ -50,25 +52,25 @@ namespace kubvc::editor {
             for (auto node : parameters) {
                 if (node && node->isParameter) {
                     const auto value = node->getValue();
-                    static bool useTime = false; // FIXME:
                     ImGui::Text("Parameter: %c", value);
                     
                     const auto dragFloatName = std::format("Value##ValueDragParam{}_{}", std::string(1, value), node->getId());
-                    if (useTime) {
+                    if (node->useTimeForParameter) {
                         ImGui::BeginDisabled();
-                        ImGui::DragFloat(dragFloatName.data(), &node->parameter);
                         node->parameter += ImGui::GetIO().DeltaTime;                        
+                        ImGui::DragFloat(dragFloatName.data(), &node->parameter);
                         ImGui::EndDisabled();
+
                         controller->evalExpression(expression, math::GraphLimits::GlobalLimits);
                     } else {
-                        if (ImGui::DragFloat(dragFloatName.data(), &node->parameter)) {
+                        if (ImGui::DragFloat(dragFloatName.data(), &node->parameter, DRAG_SPEED)) {
                             controller->evalExpression(expression, math::GraphLimits::GlobalLimits);
                         }
                     }
 
                     ImGui::SameLine();
                     const auto checkBoxName = std::format("Use time##UseTimeForParam{}_{}", std::string(1, value), node->getId());
-                    ImGui::Checkbox(checkBoxName.data(), &useTime);
+                    ImGui::Checkbox(checkBoxName.data(), &node->useTimeForParameter);
 
                 } else {
                     ImGui::Text("Invalid parameter");

@@ -67,6 +67,7 @@ namespace kubvc::algorithm {
 
         float parameter = 0.0f;
         bool isParameter = false;
+        bool useTimeForParameter = false;
     };
 
     template<>
