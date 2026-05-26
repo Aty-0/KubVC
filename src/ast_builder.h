@@ -207,13 +207,13 @@ namespace kubvc::algorithm {
         const auto hasLeftValue = leftVariable.has_value();
         // TODO: I think we need to sort it by RESERVED_VALUES
         if (variableQueue.size() > 1) {
-            while (hasLeftValue && !variableQueue.empty()) {
+            while (!variableQueue.empty()) {
                 const auto rightVariable = vdc.getVariableAtSide(math::VDC::VariableSide::Right);
                 const auto hasRightValue = rightVariable.has_value();
                 const auto var = variableQueue.front();
                 const auto varValue = var->getValue();
-
-                if (!hasRightValue && (varValue != leftVariable.value().value)) {
+                const auto leftVarIsSameOrEmpty = (!hasLeftValue || (hasLeftValue && (varValue != leftVariable.value().value)));
+                if (!hasRightValue && leftVarIsSameOrEmpty) {
                     KUB_DEBUG("vdc: right variable is {}", std::string(1, varValue));
                     vdc.set(math::VDC::VariableSide::Right, varValue);
                 } 
