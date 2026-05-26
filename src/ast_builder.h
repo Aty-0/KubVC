@@ -212,8 +212,8 @@ namespace kubvc::algorithm {
                 const auto hasRightValue = rightVariable.has_value();
                 const auto var = variableQueue.front();
                 const auto varValue = var->getValue();
-                const auto leftVarIsSameOrEmpty = (!hasLeftValue || (hasLeftValue && (varValue != leftVariable.value().value)));
-                if (!hasRightValue && leftVarIsSameOrEmpty) {
+                const auto leftVarIsNotSameOrEmpty = (!hasLeftValue || (hasLeftValue && (varValue != leftVariable.value().value)));
+                if (!hasRightValue && leftVarIsNotSameOrEmpty) {
                     KUB_DEBUG("vdc: right variable is {}", std::string(1, varValue));
                     vdc.set(math::VDC::VariableSide::Right, varValue);
                 } 
