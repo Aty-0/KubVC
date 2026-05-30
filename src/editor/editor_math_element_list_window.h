@@ -8,5 +8,6 @@ namespace kubvc::editor {
 
         private:
             void addItemToExpression(std::string_view text);       
+            void drawFunctionButton(kubvc::render::GUI& gui, std::string_view name);       
     };
 }

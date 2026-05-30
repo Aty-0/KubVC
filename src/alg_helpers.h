@@ -3,6 +3,7 @@
 #include <cmath>
 #include <algorithm>
 #include <array>
+#include <complex>
 
 #include "math_base.h"
 
@@ -14,10 +15,19 @@ namespace kubvc::algorithm {
             static inline double computeFunction(std::string_view name, double x) { 
                 auto result = utility::container::get(math::containers::Functions, name);
                 if (!result.has_value()) {
-                    return 0;
+                    return std::numeric_limits<double>::quiet_NaN();
                 }
 
                 return result.value()(x);
+            }
+
+            static inline std::complex<double> computeComplexFunction(std::string_view name, const std::complex<double>& z) { 
+                auto result = utility::container::get(math::containers::ComplexFunctions, name);
+                if (!result.has_value()) {
+                    return { std::numeric_limits<double>::quiet_NaN(), std::numeric_limits<double>::quiet_NaN() };
+                }
+
+                return result.value()(z);
             }
 
             static inline constexpr uchar toLower(uchar chr) {

@@ -164,13 +164,8 @@ namespace kubvc::algorithm {
  
     inline std::complex<double> NodeTraits<NodeTypes::Function>::calculateComplex(double re, double im) { 
         KUB_ASSERT(argument != nullptr, "Argument is null in FunctionNode");
-        const auto argumentResult = std::complex<double> { re, im };
-        
-        // TODO: Actually I need to find what's type of variable we are using
-        // If it's Z or W we are invoke something like a computeComplexFunction
-        // If not invoke default computeFunction ?
-
-        return Helpers::computeFunction(name, argumentResult.real()); 
+        const auto argumentResult = std::complex<double> { re, im };        
+        return Helpers::computeComplexFunction(name, argumentResult); 
     }
 
 

@@ -282,6 +282,8 @@ namespace kubvc::algorithm {
             saveLastError("input string is empty: nothing to tokenize");
             return std::nullopt;
         }
+        
+        static const auto appConfig = application::ApplicationConfig::getInstance();
 
         KUB_LEXER_DEBUG("[tokenize] try to tokenize: {}", str);
         std::vector<Token> tokens = { };
@@ -336,7 +338,6 @@ namespace kubvc::algorithm {
                     }
                     // Or it's possible variable or function 
                     if (wordSize == 1) {
-                        static const auto appConfig = application::ApplicationConfig::getInstance();
                         if (word == "i" && appConfig->getMode() == application::MathMode::Complex) {
                             const auto token = Token {
                                 Token::Types::ComplexNumber,
@@ -360,7 +361,12 @@ namespace kubvc::algorithm {
                         // Convert name to lower case to avoid mismatch 
                         const auto lowerCaseName = kubvc::algorithm::Helpers::toLowerCase(word);
                         // First try to find function by name
-                        const auto findResult = utility::container::find(math::containers::Functions, std::string_view { lowerCaseName.data(), lowerCaseName.size() });
+                        bool findResult = false;
+                        if (appConfig->getMode() == application::MathMode::Complex) {
+                            findResult = utility::container::find(math::containers::ComplexFunctions, std::string_view { lowerCaseName.data(), lowerCaseName.size() });
+                        } else {
+                            findResult = utility::container::find(math::containers::Functions, std::string_view { lowerCaseName.data(), lowerCaseName.size() });
+                        }
                         // Then if we are find bracket and it's function we are trying to parse it
                         const auto brecketIsOpened = algorithm::Helpers::isBracketStart(current);
                         if (findResult && brecketIsOpened) { 
