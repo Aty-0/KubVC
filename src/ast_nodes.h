@@ -137,7 +137,13 @@ namespace kubvc::algorithm {
             case kubvc::algorithm::NodeTypes::Function:
                 return "Function";           
             case kubvc::algorithm::NodeTypes::Operator:
-                return "Operator";   
+                return "Operator"; 
+            case kubvc::algorithm::NodeTypes::UnaryOperator:
+                return "UnaryOperator";
+            case kubvc::algorithm::NodeTypes::Invalid:
+                return "Invalid";    
+            case kubvc::algorithm::NodeTypes::ComplexNumber:
+                return "ComplexNumber";  
             default:            
                 return "Unknown";
         }
