@@ -123,7 +123,7 @@ namespace kubvc::algorithm {
         return { std::numeric_limits<double>::quiet_NaN(), std::numeric_limits<double>::quiet_NaN() }; 
     }
 
-    inline std::complex<double> NodeTraits<NodeTypes::Operator>::calculateComplexOperator(std::complex<double> leftNumber, std::complex<double> rightNumber) { 
+    inline std::complex<double> NodeTraits<NodeTypes::Operator>::calculateComplexOperator(const std::complex<double>& leftNumber, const std::complex<double>& rightNumber) { 
         const auto operatorType = getOperatorTypeByChar(operation);
         switch(operatorType) {
             case Operators::Equal: {
