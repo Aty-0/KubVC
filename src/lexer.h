@@ -423,12 +423,13 @@ namespace kubvc::algorithm {
                     isUnary = true;
                 } else {
                     const auto prevToken = tokens.at(size - 1);
-                    // Kinda bad
-                    if (prevToken.type == Token::Types::Operator || 
-                        prevToken.type == Token::Types::UnaryOperator ||
-                        prevToken.type == Token::Types::BracketStart || 
-                        prevToken.type == Token::Types::Comma ||
-                        prevToken.type == Token::Types::Function) {
+                    const bool isExpectedToken = (prevToken.type == Token::Types::Operator || 
+                    prevToken.type == Token::Types::UnaryOperator ||
+                    prevToken.type == Token::Types::BracketStart || 
+                    prevToken.type == Token::Types::Comma ||
+                    prevToken.type == Token::Types::Function);
+                    
+                    if (isExpectedToken) {
                         isUnary = true;
                     }
                 }
@@ -451,6 +452,20 @@ namespace kubvc::algorithm {
                 isOperatorOpen = !isUnary;
             } else if (algorithm::Helpers::isBracketStart(current)) { 
                 KUB_LEXER_DEBUG("[tokenize] is bracket start");
+                const auto size = tokens.size(); 
+                if (size > 0) {
+                    const auto prevToken = tokens.at(size - 1);
+                    const bool isExpectedToken = (
+                        prevToken.type == Token::Types::UnaryOperator ||
+                        prevToken.type == Token::Types::BracketStart || 
+                        prevToken.type == Token::Types::Operator || 
+                        prevToken.type == Token::Types::Function);
+                    if (!isExpectedToken) {
+                        saveLastError("Syntax error at position {}, Expected operator, (, or unary operator, or function for (", pos);
+                        return std::nullopt;
+                    }            
+                }
+
                 isOperatorOpen = false;
                 // Increment a bracket layer 
                 bracketLayer++;
