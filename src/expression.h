@@ -4,6 +4,7 @@
 #include "graph_limits.h"
 #include "variable_dependence.h"
 #include "primitives.h"
+#include "double_buffer.h"
 
 #include <mutex>
 #include <shared_mutex>
@@ -12,6 +13,9 @@ namespace kubvc::math {
     class ExpressionController;
     class Expression {
         public:
+            using GridBuffer = utility::DoubleBuffer<std::shared_ptr<std::vector<std::vector<glm::dvec2>>>>;
+            using PlotBuffer = utility::DoubleBuffer<std::shared_ptr<std::vector<glm::dvec2>>>;
+
             friend ExpressionController;
 
             static constexpr auto MAX_PLOT_BUFFER_SIZE = 1024;
@@ -45,13 +49,13 @@ namespace kubvc::math {
 
         private:
             // Evaluate current expression 
-            void eval(const GraphLimits& limits, std::int32_t maxPointCount = MAX_PLOT_BUFFER_SIZE);
+            void eval(const GraphLimits& limits);
             
             math::VariableDependenceController m_vdc;
             // Abstract syntax tree for expressions 
             algorithm::ASTree m_tree;
             // Calculated points for graph
-            std::shared_ptr<std::vector<glm::dvec2>> m_plotBuffer;  
+            PlotBuffer m_plotBuffer;  
 
             bool m_valid = false;
             std::string m_lastErrorMessage;
@@ -63,8 +67,7 @@ namespace kubvc::math {
             std::shared_ptr<primitives::IPrimitive> m_primitive;
             primitives::PrimitiveTypes m_primitiveType;
             bool m_rectMode;
-            std::shared_ptr<std::vector<std::vector<glm::dvec2>>> m_complexGrid;
-            void prepareComplexGrid();
+            GridBuffer m_complexGrid;
     };
 
     template <primitives::IsPrimitive T>

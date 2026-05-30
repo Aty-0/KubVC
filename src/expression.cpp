@@ -6,13 +6,12 @@
 namespace kubvc::math {
     Expression::Expression()  : 
         m_tree(), 
-        m_plotBuffer(),
+        m_plotBuffer(std::make_shared<std::vector<glm::dvec2>>(MAX_PLOT_BUFFER_SIZE)),
         m_valid(false),
         m_lastErrorMessage(),
         m_primitiveType(primitives::PrimitiveTypes::Circle),
-        m_rectMode(false) {
-            // TODO: Prepare only when we are switch (already) in complex mode
-            prepareComplexGrid();
+        m_rectMode(false),
+        m_complexGrid(std::make_shared<std::vector<std::vector<glm::dvec2>>>(COMPLEX_GRID_SIZE, std::vector<glm::dvec2>(COMPLEX_GRID_LINES_COUNT))) {
             // Set default primitive
             setNewPrimitive(primitives::makeNewPrimitive<primitives::CirclePrimitive>(MAX_PLOT_BUFFER_SIZE));
     }
@@ -22,17 +21,6 @@ namespace kubvc::math {
         m_valid = false;
         m_vdc.reset();
         m_tree.clear();
-        
-        if (m_plotBuffer) {
-            m_plotBuffer->clear();
-        }
-
-        if (m_complexGrid) {
-            m_complexGrid->clear();
-        }
-
-        m_plotBuffer = nullptr;
-        m_complexGrid = nullptr;
     }
 
     static constexpr std::uint8_t NEWTON_MAX_ITER = 16; 
@@ -100,13 +88,8 @@ namespace kubvc::math {
         }
         return std::numeric_limits<double>::quiet_NaN();
     }
-    
-    void Expression::prepareComplexGrid() {
-        m_complexGrid = std::make_shared<std::vector<std::vector<glm::dvec2>>>();
-        m_complexGrid->resize(COMPLEX_GRID_SIZE, std::vector<glm::dvec2>(COMPLEX_GRID_LINES_COUNT));
-    }
 
-    void Expression::eval(const GraphLimits& limits, std::int32_t maxPointCount) {   
+    void Expression::eval(const GraphLimits& limits) {   
         if (!isValid()) {
             return; 
         }
@@ -114,68 +97,57 @@ namespace kubvc::math {
         static const auto appConfig = application::ApplicationConfig::getInstance();        
         switch (appConfig->getMode()) {
             case application::MathMode::Complex: {
-                if (m_rectMode) { 
-                    KUB_ASSERT(m_complexGrid != nullptr, "grid buffer pointer is nullptr");
-                    auto& grid = *m_complexGrid;
-
+                if (m_rectMode) {
+                    const auto& front = m_complexGrid.front();
                     for (std::size_t i = 0; i < COMPLEX_GRID_SIZE; ++i) {
                         const auto x = std::lerp(limits.xMin, limits.xMax, static_cast<double>(i) / (COMPLEX_GRID_SIZE - 1));
                         for (std::size_t j = 0; j < COMPLEX_GRID_LINES_COUNT; ++j) {
                             const auto y = std::lerp(limits.yMin, limits.yMax, static_cast<double>(j) / (COMPLEX_GRID_LINES_COUNT - 1));
-                            const auto w = m_tree.calculateComplex(x, y);
-                            
-                            std::unique_lock lock(m_mutex);
-                            grid[i][j] = { w.real(), w.imag() };
+                            const auto w = m_tree.calculateComplex(x, y);                        
+                            (*front)[i][j] = { w.real(), w.imag() };
                         }
                     }
+                    m_complexGrid.swap();                    
                 } else {                                            
                     if (!m_primitive) {
                         return;
                     }
 
-                    auto buffer = std::make_shared<std::vector<glm::dvec2>>();
-                    buffer->resize(maxPointCount);
-
+                    const auto& front = m_plotBuffer.front();
                     const auto points = m_primitive->getPoints();
                     for (std::size_t i = 0; i < points.size(); ++i) {                            
                         const auto point = points[i];
                         const auto w = m_tree.calculateComplex(point.x, point.y);
                         
-                        (*buffer)[i] = { w.real(), w.imag() };
+                        (*front)[i] = { w.real(), w.imag() };
                     }
 
-                    std::unique_lock lock(m_mutex);
-                    m_plotBuffer = std::move(buffer);
+                    m_plotBuffer.swap();
                 }                    
                 break;        
             }
             case application::MathMode::Real: {
                 const auto left = m_vdc.getVariableAtSide(math::VDC::VariableSide::Left);
                 const bool isYPrefered = !left.has_value() || left.value().value == 'y';
-                
-                auto buffer = std::make_shared<std::vector<glm::dvec2>>();
-                buffer->resize(maxPointCount);
-
-                for (std::int32_t i = 0; i < maxPointCount; ++i) {                              
+                const auto& front = m_plotBuffer.front();
+                for (std::int32_t i = 0; i < MAX_PLOT_BUFFER_SIZE; ++i) {                              
                     if (isYPrefered) {                    
-                        const auto x0 = std::lerp(limits.xMin, limits.xMax, static_cast<double>(i) / (maxPointCount - 1));
+                        const auto x0 = std::lerp(limits.xMin, limits.xMax, static_cast<double>(i) / (MAX_PLOT_BUFFER_SIZE - 1));
                         const auto f = [this, x0](const double y) {
                             return m_tree.calculate(x0, y) - y;
                         };  
                         const auto y0 = solveNewton(f, limits.yMin, limits.yMax);
-                        (*buffer)[i] = { x0, y0 };
+                        (*front)[i] = { x0, y0 };
                     } else {
-                        const auto y0 = std::lerp(limits.yMin, limits.yMax, static_cast<double>(i) / (maxPointCount - 1));
+                        const auto y0 = std::lerp(limits.yMin, limits.yMax, static_cast<double>(i) / (MAX_PLOT_BUFFER_SIZE - 1));
                         const auto f = [this, y0](const double x) {
                             return m_tree.calculate(x, y0) - x;
                         };  
                         const auto x0 = solveNewton(f, limits.xMin, limits.xMax);
-                        (*buffer)[i] = { x0, y0 };
+                        (*front)[i] = { x0, y0 };
                     }
                 } 
-
-                std::unique_lock lock(m_mutex);
-                m_plotBuffer = std::move(buffer);
+                m_plotBuffer.swap();
                 break;        
             }
         }
@@ -215,13 +187,11 @@ namespace kubvc::math {
     }
 
     std::shared_ptr<const std::vector<std::vector<glm::dvec2>>> Expression::getComplexGrid() const {
-        std::shared_lock lock(m_mutex);        
-        return m_complexGrid;
+        return m_complexGrid.front();
     }
 
     std::shared_ptr<const std::vector<glm::dvec2>> Expression::getPlotBuffer() const {
-        std::shared_lock lock(m_mutex);        
-        return m_plotBuffer;
+        return m_plotBuffer.front();
     }
 
     std::string Expression::getLastErrorMessage() const {
