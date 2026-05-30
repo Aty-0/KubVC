@@ -7,9 +7,7 @@
 namespace kubvc::utility {
     template <std::movable T> 
     class DoubleBuffer {
-        public:
-            using Value = T;
-            
+        public:            
             DoubleBuffer();
             DoubleBuffer(const DoubleBuffer&) = delete;
             DoubleBuffer(DoubleBuffer&&) = delete;
@@ -17,10 +15,10 @@ namespace kubvc::utility {
             auto operator=(DoubleBuffer&&) = delete;
 
             // Copy default value for both sides
-            explicit DoubleBuffer(Value defaultValue);        
+            explicit DoubleBuffer(T defaultValue);        
             
             // Move default data 
-            explicit DoubleBuffer(Value front, Value back);
+            explicit DoubleBuffer(T front, T back);
 
             ~DoubleBuffer() = default;
 
@@ -75,7 +73,7 @@ namespace kubvc::utility {
     
     template <std::movable T> 
     inline const T& DoubleBuffer<T>::back() const {
-        return m_buffer.at(m_front.load(std::memory_order::relaxed) ^ 1);
+        return m_buffer.at(m_front.load(std::memory_order::acquire) ^ 1);
     }
     
     template <std::movable T> 
