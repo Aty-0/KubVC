@@ -3,14 +3,19 @@
 #include <memory>
 #include <string>
 #include <cstdint>
+#include <complex>
 
 namespace kubvc::algorithm {
     template<NodeTypes NodeType> 
     struct NodeTraits { };
 
     struct INode {
-        virtual void calculate(double x, double y, double& result) = 0;
+        // Calcualate in real mode
+        [[nodiscard]] virtual double calculate(double x, double y) = 0;
         
+        // Calcualate in complex mode
+        [[nodiscard]] virtual std::complex<double> calculateComplex(double re, double im) = 0;
+
         [[nodiscard]] virtual NodeTypes getType() const = 0;
         [[nodiscard]] std::int32_t getId() const { return m_id; }
         void setId(std::uint32_t id) { if (m_id == DEFAULT_NODE_ID) { m_id = id; } }        
@@ -25,11 +30,15 @@ namespace kubvc::algorithm {
 
 
     template <NodeTypes Type>
-    inline static std::shared_ptr<INode> castToINodePtr(NodePtr<Type> ptr) { return std::static_pointer_cast<INode>(ptr); }
+    inline static std::shared_ptr<INode> castToINodePtr(const NodePtr<Type>& ptr) { 
+        return std::static_pointer_cast<INode>(ptr); 
+    }
 
 
     template <NodeTypes Type>
-    inline static NodePtr<Type> castToNodePtr(std::shared_ptr<INode> ptr) { return std::dynamic_pointer_cast<NodeTraits<Type>>(ptr); }
+    inline static NodePtr<Type> castToNodePtr(const std::shared_ptr<INode>& ptr) { 
+        return std::static_pointer_cast<NodeTraits<Type>>(ptr); 
+    }
 
 
     template <typename ValueType>
@@ -44,7 +53,8 @@ namespace kubvc::algorithm {
     template<>
     struct NodeTraits<NodeTypes::Root> : INode {
         [[nodiscard]] virtual NodeTypes getType() const final { return NodeTypes::Root; }
-        virtual void calculate(double x, double y, double& result) final;
+        [[nodiscard]] virtual double calculate(double x, double y) final;
+        [[nodiscard]] virtual std::complex<double> calculateComplex(double re, double im) final;
 
         std::shared_ptr<INode> child;
     };
@@ -52,30 +62,34 @@ namespace kubvc::algorithm {
     template<>
     struct NodeTraits<NodeTypes::Variable> : INode, NodeValue<char> { 
         [[nodiscard]] virtual NodeTypes getType() const final { return NodeTypes::Variable; }
-        virtual void calculate(double x, double y, double& result) final;
+        [[nodiscard]] virtual double calculate(double x, double y) final;
+        [[nodiscard]] virtual std::complex<double> calculateComplex(double re, double im) final;
 
         float parameter = 0.0f;
         bool isParameter = false;
+        bool useTimeForParameter = false;
     };
 
     template<>
     struct NodeTraits<NodeTypes::Number> : INode, NodeValue<double> {
         [[nodiscard]] virtual NodeTypes getType() const final { return NodeTypes::Number; }
-        virtual void calculate([[maybe_unused]] double x, [[maybe_unused]] double y, double& result) final { result = m_value; }
+        [[nodiscard]] virtual double calculate(double x, double y) final;
+        [[nodiscard]] virtual std::complex<double> calculateComplex(double re, double im) final;
     };
 
     template<>
     struct NodeTraits<NodeTypes::Invalid> : INode {
         [[nodiscard]] virtual NodeTypes getType() const final { return NodeTypes::Invalid; }
-        virtual void calculate([[maybe_unused]] double x, [[maybe_unused]] double y, [[maybe_unused]] double& result) final { } // Do nothing
-
+        [[nodiscard]] virtual double calculate(double x, double y) final;
+        [[nodiscard]] virtual std::complex<double> calculateComplex(double re, double im) final;
         std::string name;
     };
 
     template<>
     struct NodeTraits<NodeTypes::UnaryOperator> : INode {        
         [[nodiscard]] virtual NodeTypes getType() const final { return NodeTypes::UnaryOperator; }
-        virtual void calculate(double x, double y, double& result) final;
+        [[nodiscard]] virtual double calculate(double x, double y) final;
+        [[nodiscard]] virtual std::complex<double> calculateComplex(double re, double im) final;
         
         char operation;
         std::shared_ptr<INode> child; 
@@ -84,23 +98,33 @@ namespace kubvc::algorithm {
     template<>
     struct NodeTraits<NodeTypes::Operator> : INode {
         [[nodiscard]] virtual NodeTypes getType() const final { return NodeTypes::Operator; }
-        virtual void calculate(double x, double y, double& result) final;        
-        
+        [[nodiscard]] virtual double calculate(double x, double y) final;        
+        [[nodiscard]] virtual std::complex<double> calculateComplex(double re, double im) final;
+        [[nodiscard]] std::complex<double> calculateComplexOperator(const std::complex<double>& leftNumber, const std::complex<double>& rightNumber);
+
         char operation;
         std::shared_ptr<INode> right; 
         std::shared_ptr<INode> left;
     };
 
     template<>
+    struct NodeTraits<NodeTypes::ComplexNumber> : INode, NodeValue<std::complex<double>> {
+        [[nodiscard]] virtual NodeTypes getType() const final { return NodeTypes::ComplexNumber; }
+        [[nodiscard]] virtual double calculate(double x, double y) final;     
+        [[nodiscard]] virtual std::complex<double> calculateComplex(double re, double im) final;
+    };
+
+    template<>
     struct NodeTraits<NodeTypes::Function> : INode {
         [[nodiscard]] virtual NodeTypes getType() const final { return NodeTypes::Function; }
-        virtual void calculate(double x, double y, double& result) final;
+        [[nodiscard]] virtual double calculate(double x, double y) final;
+        [[nodiscard]] virtual std::complex<double> calculateComplex(double re, double im) final;
         
         std::string name;
         std::shared_ptr<INode> argument;
     };
 
-    inline static constexpr std::string_view getNodeName(kubvc::algorithm::NodeTypes type) {
+    [[nodiscard]] inline static constexpr std::string_view getNodeName(kubvc::algorithm::NodeTypes type) {
         switch (type) {
             case kubvc::algorithm::NodeTypes::None:
                 return "None";           
@@ -113,7 +137,13 @@ namespace kubvc::algorithm {
             case kubvc::algorithm::NodeTypes::Function:
                 return "Function";           
             case kubvc::algorithm::NodeTypes::Operator:
-                return "Operator";   
+                return "Operator"; 
+            case kubvc::algorithm::NodeTypes::UnaryOperator:
+                return "UnaryOperator";
+            case kubvc::algorithm::NodeTypes::Invalid:
+                return "Invalid";    
+            case kubvc::algorithm::NodeTypes::ComplexNumber:
+                return "ComplexNumber";  
             default:            
                 return "Unknown";
         }

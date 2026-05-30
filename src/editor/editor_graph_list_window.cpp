@@ -1,5 +1,7 @@
 #include "editor_graph_list_window.h"
 #include "expression_controller.h"
+#include "application_config.h"
+#include "primitives.h"
 
 namespace kubvc::editor {
     static const auto controller = kubvc::math::ExpressionController::getInstance();
@@ -35,6 +37,48 @@ namespace kubvc::editor {
         
         return 0;
     }
+    
+    void EditorGraphListWindow::drawParameterList(std::shared_ptr<math::ExpressionModel> model) {
+        if (!model) {
+            return;
+        }
+
+        constexpr auto DRAG_SPEED = 0.01f; 
+        const auto& expression = model->getExpression();
+        auto& vdc = expression->getVDC();
+        const auto& parameters = vdc.getParameterVariables();
+        if (!parameters.empty() && expression->isValid()) {
+            ImGui::Separator();
+            for (auto node : parameters) {
+                if (node && node->isParameter) {
+                    const auto value = node->getValue();
+                    ImGui::Text("Parameter: %c", value);
+                    
+                    const auto dragFloatName = std::format("Value##ValueDragParam{}_{}", std::string(1, value), node->getId());
+                    if (node->useTimeForParameter) {
+                        ImGui::BeginDisabled();
+                        node->parameter += ImGui::GetIO().DeltaTime;                        
+                        ImGui::DragFloat(dragFloatName.data(), &node->parameter);
+                        ImGui::EndDisabled();
+
+                        controller->evalExpression(expression, math::GraphLimits::GlobalLimits);
+                    } else {
+                        if (ImGui::DragFloat(dragFloatName.data(), &node->parameter, DRAG_SPEED)) {
+                            controller->evalExpression(expression, math::GraphLimits::GlobalLimits);
+                        }
+                    }
+
+                    ImGui::SameLine();
+                    const auto checkBoxName = std::format("Use time##UseTimeForParam{}_{}", std::string(1, value), node->getId());
+                    ImGui::Checkbox(checkBoxName.data(), &node->useTimeForParameter);
+
+                } else {
+                    ImGui::Text("Invalid parameter");
+                }
+                ImGui::Separator();
+            }
+        }
+    }
 
     void EditorGraphListWindow::drawGraphList(kubvc::render::GUI& gui) {
         ImGuiListClipper clipper{ };
@@ -45,6 +89,7 @@ namespace kubvc::editor {
             for (std::int32_t i = clipper.DisplayStart; i < clipper.DisplayEnd; ++i) {
                 const auto model = expressions[i];
                 drawGraphPanel(gui, model, i);
+                drawParameterList(model);
             }
         }
     }
@@ -55,12 +100,12 @@ namespace kubvc::editor {
             return;
         }
         
-        auto& currentExpression = model->getExpression();
-        auto& currentSettings = model->getSettings();
+        const auto& currentExpression = model->getExpression();
+        const auto& currentSettings = model->getSettings();
         
         const auto selectedModel = controller->getSelected();
         // Is text box expanded
-        const auto expandTextBox = currentSettings.getExpandTextBox();
+        const auto expandTextBox = currentSettings->getExpandTextBox();
 
         // id stuff
         const auto currentModelId = model->getId();
@@ -123,7 +168,7 @@ namespace kubvc::editor {
                 {
                     ImGui::PushID(("##" + idStr + "ExpandTextBoxButton").c_str());                        
                     if (ImGui::Button(!expandTextBox ? ICON_FA_EXPAND : ICON_FA_COMPRESS)) {
-                        currentSettings.setExpandTextBox(!expandTextBox);
+                        currentSettings->setExpandTextBox(!expandTextBox);
                     }
                     ImGui::PopID();
 
@@ -137,12 +182,12 @@ namespace kubvc::editor {
                 // Draw visibility icon  
                 {
                     ImGui::PushID(("##" + idStr + "_ExprRadioButton").c_str());    
-                    const auto visible = currentSettings.getVisible();
+                    const auto visible = currentSettings->getVisible();
                     ImGui::PushStyleColor(ImGuiCol_Text, visible ? 
                         ImVec4(0.4f, 0.8f, 0.4f, 1.0f) : ImVec4(0.6f, 0.6f, 0.6f, 0.7f));
                     
                     if (ImGui::Button(!visible ? ICON_FA_EYE_SLASH : ICON_FA_EYE)) {
-                        currentSettings.setVisible(!visible);
+                        currentSettings->setVisible(!visible);
                     }
                     ImGui::PopStyleColor();
                     ImGui::PopID();
@@ -190,8 +235,8 @@ namespace kubvc::editor {
                 }
                 // Draw error hint 
                 {
-                    const auto lastErrorMessage = currentExpression.getLastErrorMessage();
-                    if (!currentExpression.isValid() && !lastErrorMessage.empty()) {
+                    const auto& lastErrorMessage = currentExpression->getLastErrorMessage();
+                    if (!currentExpression->isValid() && !lastErrorMessage.empty()) {
                         ImGui::SameLine();
                         ImGui::Dummy(ImVec2(2.0f, 0.0f)); 
                         ImGui::SameLine();
@@ -219,15 +264,15 @@ namespace kubvc::editor {
         {
             ImGui::PushFont(&gui.getMathFont());
             // FIXME: for some reason not work
-            if (!currentExpression.isValid())
+            if (!currentExpression->isValid())
                 ImGui::PushStyleColor(ImGuiCol_Border, INVALID_COLOR);
             else if (currentExpressionIsSelected)
                 ImGui::PushStyleColor(ImGuiCol_Border, SELECTED_COLOR);
                     
             
             const auto textBoxWidth = ImGui::GetContentRegionAvail().x - 8 * scale;
-            auto& currentExpressionTextBuffer = model->getTextBuffer(); 
-            auto& textBuffer = currentExpressionTextBuffer.getBuffer();
+            const auto& currentExpressionTextBuffer = model->getTextBuffer(); 
+            auto& textBuffer = currentExpressionTextBuffer->getBuffer();
             bool textChanged = false;
             
             if (expandTextBox) {
@@ -243,7 +288,7 @@ namespace kubvc::editor {
                     ImVec2(textBoxWidth, frameHeight * 2),
                     textBoxMultilineFlags,
                     EditorGraphListWindow::handleTextBoxMultilineInput,
-                    &currentExpressionTextBuffer
+                    currentExpressionTextBuffer.get()
                 );
             } else {
                 ImGui::SetNextItemWidth(textBoxWidth);
@@ -253,18 +298,20 @@ namespace kubvc::editor {
                     textBuffer.size(), 
                     ImGuiInputTextFlags_::ImGuiInputTextFlags_CallbackAlways, 
                     EditorGraphListWindow::handleExpressionCursorPosCallback, 
-                    &currentExpressionTextBuffer);                
+                    currentExpressionTextBuffer.get());                
             }
 
             if (textChanged) {
-                controller->parseThenEvaluate(model, math::GraphLimits::GlobalLimits);
+                controller->parseThenEvaluate(model, math::GraphLimits::GlobalLimits);                
             }
 
             ImGui::PopFont();
 
             // Revert color changes
-            const auto popColor = static_cast<std::int32_t>(currentExpressionIsSelected || !currentExpression.isValid());
-            ImGui::PopStyleColor(popColor);
+            const auto popColor = currentExpressionIsSelected || !currentExpression->isValid();
+            if (popColor) {
+                ImGui::PopStyleColor();
+            }
 
             // Set current expression by clicking on textbox 
             if (ImGui::IsItemActive() && ImGui::IsItemClicked()) {
@@ -281,6 +328,7 @@ namespace kubvc::editor {
         if (ImGui::IsItemClicked() && !ImGui::IsAnyItemActive()) {
             controller->setSelected(model);
         }
+        
 
         ImGui::Spacing();
     }
@@ -310,8 +358,8 @@ namespace kubvc::editor {
     }
 
     void EditorGraphListWindow::onRender(kubvc::render::GUI& gui) {
-        const auto childFlags = ImGuiChildFlags_::ImGuiChildFlags_Borders;
-        const auto childWindowFlags = ImGuiWindowFlags_::ImGuiWindowFlags_HorizontalScrollbar /* |  ImGuiWindowFlags_::ImGuiWindowFlags_AlwaysUseWindowPadding */;
+        constexpr auto childFlags = ImGuiChildFlags_::ImGuiChildFlags_Borders;
+        constexpr auto childWindowFlags = ImGuiWindowFlags_::ImGuiWindowFlags_HorizontalScrollbar /* |  ImGuiWindowFlags_::ImGuiWindowFlags_AlwaysUseWindowPadding */;
 
         auto windowSize = ImGui::GetWindowSize();
         if (ImGui::BeginChild("GraphListHeader", ImVec2(windowSize.x, 42.0f), childFlags)) {

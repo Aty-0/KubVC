@@ -13,25 +13,23 @@
 namespace kubvc::math {
     class ExpressionModel {
         public:
-            ExpressionModel(std::int32_t id) : 
-                m_id(id),
-                m_textBuffer(std::make_unique<ExpressionTextBuffer>()), 
-                m_expression(std::make_unique<Expression>()), 
-                m_settings(std::make_unique<ExpressionVisualSettings>())
-            {
+            ExpressionModel(std::int32_t id) : m_id(id),
+                m_textBuffer(std::make_shared<ExpressionTextBuffer>()), 
+                m_expression(std::make_shared<Expression>()), 
+                m_settings(std::make_shared<ExpressionVisualSettings>()) {
                     m_settings->setRandomColor();
             }
 
-            [[nodiscard]] ExpressionTextBuffer& getTextBuffer() const { return *m_textBuffer; }
-            [[nodiscard]] Expression& getExpression() const { return *m_expression; }
-            [[nodiscard]] ExpressionVisualSettings& getSettings() const { return *m_settings; }            
+            [[nodiscard]] std::shared_ptr<ExpressionTextBuffer> getTextBuffer() const { return m_textBuffer; }
+            [[nodiscard]] std::shared_ptr<Expression> getExpression() const { return m_expression; }
+            [[nodiscard]] std::shared_ptr<ExpressionVisualSettings> getSettings() const { return m_settings; }            
             [[nodiscard]] std::int32_t getId() const { return m_id; }
                 
         private:
             std::int32_t m_id; 
 
-            std::unique_ptr<ExpressionTextBuffer> m_textBuffer;
-            std::unique_ptr<Expression> m_expression;
-            std::unique_ptr<ExpressionVisualSettings> m_settings;
+            std::shared_ptr<ExpressionTextBuffer> m_textBuffer;
+            std::shared_ptr<Expression> m_expression;
+            std::shared_ptr<ExpressionVisualSettings> m_settings;
     };
 }

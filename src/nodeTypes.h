@@ -4,10 +4,11 @@ namespace kubvc::algorithm {
         None,
         Root,
         Number, 
+        ComplexNumber,      
         Variable,
         Function,
         Operator,           
-        UnaryOperator,           
+        UnaryOperator,     
         Invalid,           
     };
 }

@@ -17,106 +17,89 @@ namespace kubvc::editor {
     }
 
 #if defined(KUB_IS_DEBUG) || defined(SHOW_DEBUG_TOOLS_ON_RELEASE) 
-    static void showTreeList(const std::shared_ptr<kubvc::algorithm::INode> start) {
+    static void showTreeList(const algorithm::ASTree& tree) {
         static constexpr auto TREE_NODE_FLAGS = ImGuiTreeNodeFlags_DefaultOpen;
 
         // We are reached the end of tree 
-        if (start == nullptr) {
+        auto cached = tree.getTreeCached();
+        if (cached.empty()) {
+            ImGui::Text("Tree are empty");
             return;
         }
 
-        const auto type = start->getType();
-        const auto nodeName = algorithm::getNodeName(start->getType());
-        switch (type) {
-            case algorithm::NodeTypes::Root: {
-                const auto node = castToNodePtr<algorithm::NodeTypes::Root>(start);
-                if (ImGui::TreeNodeEx(nodeName.data(), TREE_NODE_FLAGS)) {
-                    if (!node->child) {
-                        ImGui::Text("Child is empty");
-                    } else {
-                        showTreeList(node->child);
+        for (const auto& node : cached) {
+            const auto type = node->getType();
+            const auto nodeName = std::format("{} {}", algorithm::getNodeName(type), node->getId());
+
+            if (ImGui::TreeNodeEx(nodeName.data(), TREE_NODE_FLAGS)) {
+                switch (type) {
+                    case algorithm::NodeTypes::Operator: {
+                        const auto operatorNode = algorithm::castToNodePtr<algorithm::NodeTypes::Operator>(node);   
+                        if (ImGui::TreeNodeEx(nodeName.data(), TREE_NODE_FLAGS)) {
+                            ImGui::Text("operation: %c", operatorNode->operation);
+                            ImGui::TreePop();  
+                        }  
+                        break;    
                     }
-                    ImGui::TreePop();  
-                }  
-                break;
-            }
-            case algorithm::NodeTypes::Operator: {
-                const auto node = castToNodePtr<algorithm::NodeTypes::Operator>(start);  
-                if (ImGui::TreeNodeEx(nodeName.data(), TREE_NODE_FLAGS)) {
-                    ImGui::Text("Left");
-                    // Recursively clear left and right subtrees
-                    if (node->left != nullptr) {
-                        showTreeList(node->left);
+                    case algorithm::NodeTypes::UnaryOperator: {
+                        const auto unaryNode = algorithm::castToNodePtr<algorithm::NodeTypes::UnaryOperator>(node);   
+
+                        if (ImGui::TreeNodeEx(nodeName.data(), TREE_NODE_FLAGS)) {
+                            ImGui::Text("operation: %c", unaryNode->operation);
+                            ImGui::TreePop();  
+                        } 
+
+                        break;     
                     }
+                    case algorithm::NodeTypes::Function: {
+                        const auto functionNode = algorithm::castToNodePtr<algorithm::NodeTypes::Function>(node);    
+                        
+                        if (ImGui::TreeNodeEx(nodeName.data(), TREE_NODE_FLAGS)) {
+                            ImGui::Text("%s", functionNode->name.c_str());
+                            ImGui::TreePop();  
+                        } 
 
-                    ImGui::Text("Right");
-                    if (node->right != nullptr) {
-                        showTreeList(node->right);
+                        break;
                     }
-                    ImGui::TreePop();  
-                }  
-
-
-                break;    
-            }
-            case algorithm::NodeTypes::UnaryOperator: {
-                const auto node = castToNodePtr<algorithm::NodeTypes::UnaryOperator>(start);   
-
-                if (ImGui::TreeNodeEx(nodeName.data(), TREE_NODE_FLAGS)) {
-                    if (node->child != nullptr) {
-                        showTreeList(node->child);
+                    case algorithm::NodeTypes::Number: {
+                        const auto numberNode = algorithm::castToNodePtr<algorithm::NodeTypes::Number>(node);    
+                        ImGui::Text("%f", numberNode->getValue());
+                        break;
                     }
-                    ImGui::TreePop();  
-                } 
-
-                break;     
-            }
-            case algorithm::NodeTypes::Function: {
-                const auto node = castToNodePtr<algorithm::NodeTypes::Function>(start);    
-                
-                ImGui::Text("%s", node->name.c_str());
-                if (ImGui::TreeNodeEx(nodeName.data(), TREE_NODE_FLAGS)) {
-                    if (node->argument != nullptr) {
-                        showTreeList(node->argument);
+                    case algorithm::NodeTypes::Variable: {
+                        const auto variableNode = algorithm::castToNodePtr<algorithm::NodeTypes::Variable>(node);    
+                        ImGui::Text("%c", variableNode->getValue());
+                        ImGui::SameLine();
+                        ImGui::Text("isParameter: %i", variableNode->isParameter);
+                        ImGui::Text("value: %f", variableNode->parameter);
+                        break;
                     }
-                    ImGui::TreePop();  
-                } 
-
-                break;
-            }
-            case algorithm::NodeTypes::Number: {
-                const auto node = castToNodePtr<algorithm::NodeTypes::Number>(start);    
-                ImGui::Text("%f", node->getValue());
-                break;
-            }
-            case algorithm::NodeTypes::Variable: {
-                const auto node = castToNodePtr<algorithm::NodeTypes::Variable>(start);    
-                ImGui::Text("%c", node->getValue());
-                ImGui::SameLine();
-                ImGui::Text("isParameter: %i", node->isParameter);
-                ImGui::Text("value: %f", node->parameter);
-                break;
-            }
-            case algorithm::NodeTypes::Invalid: {
-                ImGui::Text("invalid, id:%d", start->getId());
-                break;
-            }
-            default:
-                KUB_ASSERT(true, "Unknown type");
-                break;
+                    case algorithm::NodeTypes::ComplexNumber: {
+                        ImGui::Text("complex number, id:%d", node->getId());
+                        break;
+                    }
+                    case algorithm::NodeTypes::Invalid: {
+                        ImGui::Text("invalid, id:%d", node->getId());
+                        break;
+                    }
+                    default:
+                        KUB_ASSERT(true, "Unknown type");
+                        break;
+                }
+                ImGui::TreePop();  
+            }            
         }
-
     }
 
     static void drawDebugAST() {
         if (ImGui::CollapsingHeader("AST")) {
             const auto selected = controller->getSelected();
             if (selected != nullptr) {
-                ImGui::Text("Current tree is %s", selected->getTextBuffer().getBuffer().data());   
+                ImGui::Text("Current tree is %s", selected->getTextBuffer()->getBuffer().data());   
 
-                auto& expression = selected->getExpression();
-                auto& tree = expression.getTree();
-                showTreeList(tree.getRoot());
+                const auto& expression = selected->getExpression();
+                auto& tree = expression->getTree();
+                showTreeList(tree);
             }
             else {
                 ImGui::Text("No currently selected tree");
@@ -132,11 +115,12 @@ namespace kubvc::editor {
 
     void EditorEditGraphWindow::drawLineColorPicker() {
         const auto selected = controller->getSelected();
-        if (selected != nullptr && selected->getSettings().getChangeColor()) {
-            auto& settings = selected->getSettings();
-            auto color = settings.getColor();
+        const auto& settings = selected->getSettings();
+        const auto isColorPickerOpenned = settings->getChangeColor();
+        if (selected && isColorPickerOpenned) {
+            auto color = settings->getColor();
             if (ImGui::ColorPicker4("##_CurrentExprColorPicker", &color.x, ImGuiColorEditFlags_::ImGuiColorEditFlags_NoLabel)) {
-                settings.setColor(color);
+                settings->setColor(color);
             }
         }
     }
@@ -156,13 +140,13 @@ namespace kubvc::editor {
             ImGui::Dummy(ImVec2(0, 5.0f));
             drawIcon(gui, ICON_FA_WAVE_SQUARE);
             ImGui::SameLine(0, 10.0f);
-            ImGui::TextDisabled("Graph: %s", selected->getTextBuffer().getBuffer().data());
+            ImGui::PushFont(&gui.getDefaultFontMathSize());
+            ImGui::TextDisabled("Graph: %s", selected->getTextBuffer()->getBuffer().data());
+            ImGui::PopFont();
             ImGui::Dummy(ImVec2(0, 15.0f));
 
             // Style settings block
-            ImGui::TextDisabled("Style");
-            ImGui::Dummy(ImVec2(0, 5.0f));
-            
+            ImGui::SeparatorText("Style");            
             // Visible toggle 
             ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 5.0f);
             drawIcon(gui, ICON_FA_EYE);
@@ -170,10 +154,10 @@ namespace kubvc::editor {
             ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 1.0f);
             
 
-            auto& settings = selected->getSettings();
-            auto visible = settings.getVisible();
+            const auto& settings = selected->getSettings();
+            auto visible = settings->getVisible();
             if (ImGui::Checkbox("Visible##OptionsGraphVisibleCheckBox", &visible)) {
-                settings.setVisible(visible);
+                settings->setVisible(visible);
             }
             
             // Shaded toggle
@@ -182,9 +166,9 @@ namespace kubvc::editor {
             ImGui::SameLine(0, 10.0f);
             ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 1.0f);
 
-            auto shaded = settings.getShaded();
+            auto shaded = settings->getShaded();
             if (ImGui::Checkbox("Shaded##OptionsGraphShadedCheckBox", &shaded)) {
-                settings.setShaded(shaded);   
+                settings->setShaded(shaded);   
             }
             
             // Color picker
@@ -192,9 +176,9 @@ namespace kubvc::editor {
             drawIcon(gui, ICON_FA_PALETTE);
             ImGui::SameLine(0, 10.0f);
             ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 1.0f);
-            auto color = kubvc::utility::toImVec4(settings.getColor());
+            const auto color = kubvc::utility::toImVec4(settings->getColor());
             if (ImGui::ColorButton("##OptionsGraphColorPicker", color, ImGuiColorEditFlags_NoBorder, ImVec2(25, 25))) {
-                settings.setChangeColor(!settings.getChangeColor());
+                settings->setChangeColor(!settings->getChangeColor());
             }
             ImGui::SameLine();
             ImGui::Text("Color");
@@ -209,11 +193,96 @@ namespace kubvc::editor {
             ImGui::SameLine(0, 10.0f);
             ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 3.0f);
             ImGui::SetNextItemWidth(ImGui::GetWindowWidth() - 70.0f);
-            auto thickness = settings.getThickness();
+            auto thickness = settings->getThickness();
             if (ImGui::SliderFloat("##OptionsGraphThicknessDrag", &thickness, THICKNESS_MIN, 
                 THICKNESS_MAX, "%.1f", ImGuiSliderFlags_::ImGuiSliderFlags_ClampOnInput)) {
-                settings.setThickness(thickness);
+                settings->setThickness(thickness);
             }
+
+            static const auto appConfig = application::ApplicationConfig::getInstance();
+            if (appConfig->getMode() == application::MathMode::Complex) {
+                ImGui::SeparatorText("Complex:");
+
+                const auto& expression = selected->getExpression();
+                const auto& idStr = std::to_string(selected->getId());
+
+                constexpr auto DRAG_SPEED = 0.01f; 
+                auto isRectMode = expression->getRectMode();
+                if (ImGui::Checkbox(("Grid Mode" + ("##GridModeCheckBox" + idStr)).c_str(), &isRectMode)) {
+                    expression->setRectMode(isRectMode);
+                    controller->evalExpression(expression, math::GraphLimits::GlobalLimits);
+                }
+
+                if (!isRectMode) {            
+                    const auto primitiveType = expression->getPrimitiveType();
+                    switch (primitiveType) {
+                        case math::primitives::PrimitiveTypes::Circle: {
+                            const auto& primitive = expression->getPrimitive<math::primitives::CirclePrimitive>();
+                            if (ImGui::DragScalar(("Radius" + ("##CircleRadiusDrag" + idStr)).c_str(), ImGuiDataType_Double, &primitive->radius, DRAG_SPEED)) {
+                                primitive->generate(math::Expression::MAX_PLOT_BUFFER_SIZE);
+                                controller->evalExpression(expression, math::GraphLimits::GlobalLimits);
+                            }
+
+                            if (ImGui::DragScalarN(("Center" + ("##CircleCenterDrag" + idStr)).c_str(),  ImGuiDataType_Double, &primitive->center, 2, DRAG_SPEED)) {
+                                primitive->generate(math::Expression::MAX_PLOT_BUFFER_SIZE);
+                                controller->evalExpression(expression, math::GraphLimits::GlobalLimits);
+                            }
+                            break;
+                        }
+                        case math::primitives::PrimitiveTypes::Rectangle: {
+                            const auto& primitive = expression->getPrimitive<math::primitives::RectanglePrimitive>();
+                            auto rect = primitive->rect;
+                            if (ImGui::DragScalarN(("Rect" + ("##RectangleRectDrag" + idStr)).c_str(), ImGuiDataType_Double, &rect, 4, DRAG_SPEED)) {
+                                primitive->rect = rect;
+                                primitive->generate(math::Expression::MAX_PLOT_BUFFER_SIZE);
+                                controller->evalExpression(expression, math::GraphLimits::GlobalLimits);
+                            }
+                            break;            
+                        }
+                    }
+
+
+                    // TODO: Not a great impl and kinda dumb, but it's fine for nown
+                    static const std::vector<std::string> options = { "Circle", "Rectangle" };
+                    auto current = static_cast<std::int32_t>(primitiveType);
+                    if (ImGui::BeginCombo(("Primitive Type" + ("##PrimitiveTypeCombo" + idStr)).c_str(), options[current].c_str())) {
+                        for (std::int32_t i = 0; i < static_cast<std::int32_t>(options.size()); i++) {
+                            if (ImGui::Selectable(options[i].c_str(), current == i)) {
+                                expression->setPrimitiveType(static_cast<math::primitives::PrimitiveTypes>(i));
+
+                                switch (expression->getPrimitiveType()) {
+                                    case math::primitives::PrimitiveTypes::Circle: {
+                                        expression->setNewPrimitive(math::primitives::makeNewPrimitive<math::primitives::CirclePrimitive>(math::Expression::MAX_PLOT_BUFFER_SIZE));
+                                        break;
+                                    }
+                                    case math::primitives::PrimitiveTypes::Rectangle: {
+                                        expression->setNewPrimitive(math::primitives::makeNewPrimitive<math::primitives::RectanglePrimitive>(math::Expression::MAX_PLOT_BUFFER_SIZE));
+                                        break;            
+                                    }
+                                }
+
+                                controller->evalExpression(expression, math::GraphLimits::GlobalLimits);
+                            }
+                        }
+                        ImGui::EndCombo();
+                    }
+                } else {
+                    // FIXME: Bruh
+                    std::array<float, 4> limits = { 
+                        static_cast<float>(math::GraphLimits::GlobalLimits.xMin), 
+                        static_cast<float>(math::GraphLimits::GlobalLimits.xMax), 
+                        static_cast<float>(math::GraphLimits::GlobalLimits.yMin), 
+                        static_cast<float>(math::GraphLimits::GlobalLimits.yMax) 
+                    };
+
+                    if (ImGui::InputFloat4(("Grid Size:" + ("##GridSizeInput" + idStr)).c_str(), limits.data())) {
+                        math::GraphLimits::GlobalLimits = math::GraphLimits { limits[0], limits[1], limits[2], limits[3] };
+                        controller->evalExpression(expression, math::GraphLimits::GlobalLimits);
+                    }
+                }
+
+            }
+
 
 #if defined(KUB_IS_DEBUG) || defined(SHOW_DEBUG_TOOLS_ON_RELEASE)  
             ImGui::Separator();        
@@ -221,15 +290,18 @@ namespace kubvc::editor {
             ImGui::SameLine();        
             ImGui::TextDisabled("Debug");
             drawDebugAST();
-            const auto points = selected->getExpression().getPlotBuffer();
-            ImGui::Text("Count: %zu", points.size());
-            if (ImGui::CollapsingHeader("Points")) {
-                for (auto point : selected->getExpression().getPlotBuffer()) {
-                    if (glm::isnan(point.x) || glm::isnan(point.y)) {
-                        ImGui::TextColored(ImVec4(1,0,0,1), "x:%f y:%f", point.x, point.y);
-                    }
-                    else {
-                        ImGui::TextDisabled("x:%f y:%f", point.x, point.y);
+            const auto& plotBufferPtr = selected->getExpression()->getPlotBuffer();
+            if (plotBufferPtr) {
+                const auto points = *plotBufferPtr;
+                ImGui::Text("Count: %zu", points.size());
+                if (ImGui::CollapsingHeader("Points")) {
+                    for (const auto& point : points) {
+                        if (glm::isnan(point.x) || glm::isnan(point.y)) {
+                            ImGui::TextColored(ImVec4(1,0,0,1), "x:%f y:%f", point.x, point.y);
+                        }
+                        else {
+                            ImGui::TextDisabled("x:%f y:%f", point.x, point.y);
+                        }
                     }
                 }
             }

@@ -18,6 +18,7 @@ namespace kubvc::algorithm {
             [[nodiscard]] NodePtr<NodeTypes::Root> createRoot(std::shared_ptr<INode> child) const;
             [[nodiscard]] NodePtr<NodeTypes::Variable> createVariableNode(char value) const;
             [[nodiscard]] NodePtr<NodeTypes::Number> createNumberNode(double value) const;
+            [[nodiscard]] NodePtr<NodeTypes::ComplexNumber> createComplexNumber() const;
             [[nodiscard]] NodePtr<NodeTypes::Operator> createOperatorNode(std::shared_ptr<INode> x,  std::shared_ptr<INode> y, char op) const;
             [[nodiscard]] NodePtr<NodeTypes::UnaryOperator> createUnaryOperatorNode(std::shared_ptr<INode> x, char op) const;
             [[nodiscard]] NodePtr<NodeTypes::Invalid> createInvalidNode(std::string_view name) const;
@@ -40,6 +41,12 @@ namespace kubvc::algorithm {
     inline NodePtr<NodeTypes::Root> ASTBuilder::createRoot(std::shared_ptr<INode> child) const {
         const auto node = createNode<NodeTypes::Root>();
         node->child = child;
+        return node;
+    }
+
+    inline NodePtr<NodeTypes::ComplexNumber> ASTBuilder::createComplexNumber() const {
+        const auto node = createNode<NodeTypes::ComplexNumber>();
+        node->setValue(std::complex<double>(0.0, 1.0));
         return node;
     }
 
@@ -82,13 +89,15 @@ namespace kubvc::algorithm {
         node->name = name;
         return node;
     }
+    
+    static constexpr std::initializer_list<char> RESERVED_VALUES = { 'x', 'y', 'z', 'w' };
 
     inline bool ASTBuilder::build(ASTree& tree, math::VariableDependenceController& vdc, const std::vector<Token>& tokens) {
         tree.clear();
         vdc.reset();
 
         std::stack<std::shared_ptr<algorithm::INode>> nodeStack { };
-        std::queue<NodePtr<algorithm::NodeTypes::Variable>> variableStack { };
+        std::queue<NodePtr<algorithm::NodeTypes::Variable>> variableQueue { };
         for (const auto& token : tokens) {
             if (token.value.empty()) {
                 KUB_ERROR("token with type {} has empty value, skip", static_cast<std::int32_t>(token.type));
@@ -105,13 +114,19 @@ namespace kubvc::algorithm {
                     nodeStack.push(node);
                     break;
                 }
+                case Token::Types::ComplexNumber: {
+                    const auto node = createComplexNumber();
+                    nodeStack.push(node);                    
+                    break;
+                }
                 case Token::Types::Variable: {
                     const auto value = token.value;
                     const auto node = createVariableNode(value.at(0));
                     nodeStack.push(node);
-
+                    
                     const auto varNode = castToNodePtr<NodeTypes::Variable>(node);
-                    variableStack.push(varNode);
+                    variableQueue.push(varNode);
+                    
                     break;
                 }
                 case Token::Types::Operator: {
@@ -127,7 +142,7 @@ namespace kubvc::algorithm {
                     const auto arg1 = nodeStack.top();
                     nodeStack.pop();
 
-                    const auto arg2 = nodeStack.top();
+                    auto arg2 = nodeStack.top();
                     nodeStack.pop();
 
                     const auto value = token.value;
@@ -137,7 +152,7 @@ namespace kubvc::algorithm {
                     const auto hasLeftValue = vdc.getVariableAtSide(math::VDC::VariableSide::Left).has_value();
                     if (!hasLeftValue && node->operation == '=') {
                         if (arg2 && arg2->getType() == NodeTypes::Variable) {
-                            const auto varNode = castToNodePtr<NodeTypes::Variable>(arg2);
+                            const auto varNode = castToNodePtr<NodeTypes::Variable>(std::move(arg2));
                             if (varNode) {
                                 KUB_DEBUG("vdc: left variable {}", std::string(1, varNode->getValue()));
                                 vdc.set(math::VDC::VariableSide::Left, varNode->getValue());
@@ -190,36 +205,27 @@ namespace kubvc::algorithm {
 
         const auto leftVariable = vdc.getVariableAtSide(math::VDC::VariableSide::Left);
         const auto hasLeftValue = leftVariable.has_value();
-        if (!variableStack.empty()) {
-            while (hasLeftValue && !variableStack.empty()) {
+        // TODO: I think we need to sort it by RESERVED_VALUES
+        if (variableQueue.size() > 1) {
+            while (!variableQueue.empty()) {
                 const auto rightVariable = vdc.getVariableAtSide(math::VDC::VariableSide::Right);
                 const auto hasRightValue = rightVariable.has_value();
-
-                const auto var = variableStack.back();
-                /*if (hasRightValue && (leftVariable.value().value != var->getValue() 
-                    && rightVariable.value().value == var->getValue())) {
-                    KUB_DEBUG("vdc: {} isSecond", std::string(1, var->getValue()));
-                    var->isSecond = true;
-                }*/
-                 
-                if (!hasRightValue) {
-                    KUB_DEBUG("vdc: right variable is {}", std::string(1, var->getValue()));
-                    vdc.set(math::VDC::VariableSide::Right, var->getValue());
+                const auto var = variableQueue.front();
+                const auto varValue = var->getValue();
+                const auto leftVarIsNotSameOrEmpty = (!hasLeftValue || (hasLeftValue && (varValue != leftVariable.value().value)));
+                if (!hasRightValue && leftVarIsNotSameOrEmpty) {
+                    KUB_DEBUG("vdc: right variable is {}", std::string(1, varValue));
+                    vdc.set(math::VDC::VariableSide::Right, varValue);
                 } 
-                else if (hasRightValue && rightVariable.value().value != var->getValue()) {
-                    KUB_DEBUG("vdc: {} is a parameter", std::string(1, var->getValue()));
-                    var->isParameter = true;
+                else if (hasRightValue && rightVariable.value().value != varValue) {            
+                    if (std::ranges::find(RESERVED_VALUES, varValue) == RESERVED_VALUES.end()) {
+                        KUB_DEBUG("vdc: {} is a parameter", std::string(1, varValue));
+                        var->isParameter = true;
+                        vdc.saveNodeAsParameter(var);
+                    }
                 }
-                variableStack.pop();
+                variableQueue.pop();
             }
-        }
-        
-        const auto rightVariable = vdc.getVariableAtSide(math::VDC::VariableSide::Right);
-        const auto hasRightValue = rightVariable.has_value();
-
-        if ((hasRightValue && hasLeftValue) && (rightVariable.value().value == leftVariable.value().value)) {
-            KUB_ERROR("vdc: identical axis used in both left and right operands");
-            return false;
         }
 
         const auto rootChildNode = nodeStack.top();
