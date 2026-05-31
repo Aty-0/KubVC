@@ -93,11 +93,39 @@ namespace kubvc::algorithm {
             }
 
             static inline constexpr bool isBracketStart(uchar chr) {
-                return chr == '(';
+                return chr == '(' || chr == '{' || chr == '[';
             }
 
             static inline constexpr bool isBracketEnd(uchar chr) {
+                return chr == ')' || chr == '}' || chr == ']';
+            }
+
+            static inline constexpr bool isOpenParenBracket(uchar chr) {
+                return chr == '(';
+            }
+
+            static inline constexpr bool isOpenBraceBracket(uchar chr) {
+                return chr == '{';
+            }
+
+            static inline constexpr bool isOpenSquareBracket(uchar chr) {
+                return chr == '[';
+            }
+
+            static inline constexpr bool isCloseParenBracket(uchar chr) {
                 return chr == ')';
+            }
+
+            static inline constexpr bool isCloseBraceBracket(uchar chr) {
+                return chr == '}';
+            }
+
+            static inline constexpr bool isCloseSquareBracket(uchar chr) {
+                return chr == ']';
+            }
+
+            static inline constexpr bool isColon(uchar chr) {
+                return chr == ':';
             }
 
             static inline constexpr bool isComma(uchar chr) {

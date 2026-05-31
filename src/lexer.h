@@ -34,7 +34,10 @@ namespace kubvc::algorithm {
             UnaryOperator, 
             Comma, 
             BracketStart,
-            BracketEnd
+            BracketEnd,
+            IntervalBracketStart,
+            IntervalRangeColon,
+            IntervalBracketEnd
         };
 
         Types type;
@@ -191,7 +194,7 @@ namespace kubvc::algorithm {
                 }
 
                 default:
-                    KUB_FATAL("Unknown token type");
+                    //KUB_FATAL("Unknown token type");
                     break;
             }
         }
@@ -290,6 +293,9 @@ namespace kubvc::algorithm {
         bool isOperatorOpen = false;
         std::int32_t bracketLayer = 0;    
         std::size_t pos = startFromPos;
+        bool isIntervalOpen = false;
+        bool isIntervalRangeOpen = false;
+
         while (pos < str.size()) {
             auto current = peek(pos, str);
             const auto currentCharStr = std::string(1, current);
@@ -335,7 +341,13 @@ namespace kubvc::algorithm {
                         tokens.push_back(token);
                         pos += wordSize;
                         continue;                                                                                     
+                    } else {
+                        if (isIntervalRangeOpen) {
+                            saveLastError("unknown identifier '{}' (not a constant)", word);
+                            return std::nullopt;
+                        }
                     }
+
                     // Or it's possible variable or function 
                     if (wordSize == 1) {
                         if (word == "i" && appConfig->getMode() == application::MathMode::Complex) {
@@ -402,7 +414,7 @@ namespace kubvc::algorithm {
             } else if (algorithm::Helpers::isComma(current)) {
                 KUB_LEXER_DEBUG("[tokenize] is comma");
                 // TODO: Protection of double comma -> ,,1,
-                if (bracketLayer == 0) {
+                if (bracketLayer == 0 && !isIntervalRangeOpen) {
                     saveLastError("comma can only be used inside function argument list (outside brackets layer 0)");
                     return std::nullopt;
                 }
@@ -413,8 +425,13 @@ namespace kubvc::algorithm {
                 };
                 tokens.push_back(token);  
                 pos++;                                     
-            } else if (algorithm::Helpers::isOperator(current)) {
+            } else if (algorithm::Helpers::isOperator(current)) {                
                 KUB_LEXER_DEBUG("[tokenize] is operator");
+                if (isIntervalRangeOpen) {
+                    saveLastError("operator can't be placed in range");
+                    return std::nullopt;
+                }
+
                 bool isUnary = false;
                 const auto size = tokens.size(); 
 
@@ -452,53 +469,118 @@ namespace kubvc::algorithm {
                 isOperatorOpen = !isUnary;
             } else if (algorithm::Helpers::isBracketStart(current)) { 
                 KUB_LEXER_DEBUG("[tokenize] is bracket start");
-                const auto size = tokens.size(); 
-                if (size > 0) {
-                    const auto prevToken = tokens.at(size - 1);
-                    const bool isExpectedToken = (
-                        prevToken.type == Token::Types::UnaryOperator ||
-                        prevToken.type == Token::Types::BracketStart || 
-                        prevToken.type == Token::Types::Operator || 
-                        prevToken.type == Token::Types::Function);
-                    if (!isExpectedToken) {
-                        saveLastError("Syntax error at position {}, Expected operator, (, or unary operator, or function for (", pos);
+                if (algorithm::Helpers::isOpenParenBracket(current)) {
+                    if (!isIntervalRangeOpen) {
+                        const auto size = tokens.size(); 
+                        if (size > 0) {
+                            const auto prevToken = tokens.at(size - 1);
+                            const bool isExpectedToken = (
+                                prevToken.type == Token::Types::UnaryOperator ||
+                                prevToken.type == Token::Types::BracketStart || 
+                                prevToken.type == Token::Types::Operator || 
+                                prevToken.type == Token::Types::Function);
+                            if (!isExpectedToken) {
+                                saveLastError("Syntax error at position {}, Expected operator, (, or unary operator, or function for (", pos);
+                                return std::nullopt;
+                            }            
+                        }
+
+                        isOperatorOpen = false;
+                        // Increment a bracket layer 
+                        bracketLayer++;
+                    }
+
+                    const auto token = Token {
+                        Token::Types::BracketStart,
+                        currentCharStr,
+                    };
+                    tokens.push_back(token);  
+                } else if (algorithm::Helpers::isOpenBraceBracket(current)) {
+                    if (isIntervalOpen) {
+                        saveLastError("interval is already openned, remove");
                         return std::nullopt;
-                    }            
+                    }
+
+                    isIntervalOpen = true;
+                    const auto token = Token {
+                        Token::Types::IntervalBracketStart,
+                        currentCharStr,
+                    };
+                    tokens.push_back(token);
                 }
 
-                isOperatorOpen = false;
-                // Increment a bracket layer 
-                bracketLayer++;
-
-                const auto token = Token {
-                    Token::Types::BracketStart,
-                    currentCharStr,
-                };
-                tokens.push_back(token);  
                 pos++;             
             } else if (algorithm::Helpers::isBracketEnd(current)) {
                 KUB_LEXER_DEBUG("[tokenize] is bracket end");
-                if (bracketLayer == 0) {
-                    saveLastError("closing bracket ')' without matching opening bracket '('");
-                    return std::nullopt;
+                if (algorithm::Helpers::isCloseParenBracket(current)) {
+                    if (!isIntervalOpen && !isIntervalRangeOpen) {
+                        if (bracketLayer == 0) {
+                            saveLastError("closing bracket ')' without matching opening bracket '('");
+                            return std::nullopt;
+                        }
+                        bracketLayer--;
+                    } else {
+                        if (!isIntervalRangeOpen) {
+                            saveLastError("missing colon");
+                            return std::nullopt;
+                        }
+
+                        isIntervalRangeOpen = false;
+                    }                    
+                    
+                    const auto token = Token {
+                        Token::Types::BracketEnd,
+                        currentCharStr,
+                    };
+                    tokens.push_back(token);  
+                } else if (algorithm::Helpers::isCloseBraceBracket(current)) {
+                    if (!isIntervalOpen) {
+                        saveLastError("missing interval start");
+                        return std::nullopt;
+                    }
+
+                    isIntervalOpen = false;
+                    const auto token = Token {
+                        Token::Types::IntervalBracketEnd,
+                        currentCharStr,
+                    };
+                    tokens.push_back(token);
                 }
 
+                pos++;             
+            } else if (algorithm::Helpers::isColon(current)) {
+                if (!isIntervalOpen) {
+                    saveLastError("missing interval start to make range");
+                    return std::nullopt;
+                } 
+                
+                // TODO: Check prev token is not a IntervalRangeStart
+
+                isIntervalRangeOpen = true;
                 const auto token = Token {
-                    Token::Types::BracketEnd,
+                    Token::Types::IntervalRangeColon,
                     currentCharStr,
                 };
-                pos++;             
-                tokens.push_back(token);  
-
-                bracketLayer--;
+                tokens.push_back(token);
+                pos++;
             } else {
                 saveLastError("unexpected character '{}' (not a digit, letter, operator, bracket, or comma)", currentCharStr);
                 return std::nullopt;                                
             }
         }
         
+        if (isIntervalRangeOpen) {
+            saveLastError("incomplete expression: isIntervalRangeOpen");
+            return std::nullopt;       
+        }
+        
+        if (isIntervalOpen) {
+            saveLastError("incomplete expression: isIntervalOpen");
+            return std::nullopt;       
+        }
+
         // If operator is not closed on parse end
-        if (isOperatorOpen == true) {
+        if (isOperatorOpen) {
             saveLastError("incomplete expression: operator has no right operand");
             return std::nullopt;                
         }
