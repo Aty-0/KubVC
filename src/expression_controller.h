@@ -58,27 +58,28 @@ namespace kubvc::math {
             const auto& textBuffer = model->getTextBuffer();            
             const auto result = lexer->tokenize(textBuffer->getBuffer().data());
             
-            std::unique_lock lock(m_mutex);
 
             if (result.has_value()) {
                 lexer->print(result.value());
                 const auto buildResult = builder->build(expression->getTree(), expression->getVDC(), result.value());
                 expression->setValid(buildResult, !buildResult ? "failed to build ast" : ""); // TODO: Reasons
                 evalExpression(expression, limits);
+                
+                std::unique_lock lock(m_mutex);
                 m_validExpressions.push_back(model);
             } else {
                 // Remove model from list 
-                std::erase(m_validExpressions, model);
+                {
+                    std::unique_lock lock(m_mutex);
+                    std::erase(m_validExpressions, model);
+                }
                 const auto lastError = lexer->getLastError();
-                expression->setValid(false, lastError);
-                
-                lock.unlock();
+                expression->setValid(false, lastError);       
             }         
         });
     }
     
     inline ExpressionController::~ExpressionController() {
-        resetSelected();
         clear();
     }
 
@@ -119,9 +120,9 @@ namespace kubvc::math {
             m_expressions.clear();
             m_expressions.shrink_to_fit();
             m_validExpressions.clear();
-
-            resetSelected();
         }
+        
+        resetSelected();
     }
     
     inline void ExpressionController::resetSelected() {
