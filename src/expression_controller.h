@@ -119,12 +119,13 @@ namespace kubvc::math {
             m_expressions.clear();
             m_expressions.shrink_to_fit();
             m_validExpressions.clear();
+
+            resetSelected();
         }
     }
     
     inline void ExpressionController::resetSelected() {
         std::unique_lock lock(m_mutex);
-        m_selected.reset();
         m_selected = nullptr;
     }
 
