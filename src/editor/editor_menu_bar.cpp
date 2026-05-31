@@ -7,6 +7,7 @@
 #include "../logger.h"
 #include "../expression_io.h"
 #include "../application_config.h"
+#include "../window.h"
 
 #include "ImGuiFileDialog.h"
 
@@ -34,11 +35,11 @@ namespace kubvc::editor {
 
         static FileDialogMode fileDialogMode = FileDialogMode::Unknown;
         if (showImGuiDemoWindow) {
-            ImGui::ShowDemoWindow();
+            ImGui::ShowDemoWindow(&showImGuiDemoWindow);
         }
 
         if (showImPlotDemoWindow) {
-            ImPlot::ShowDemoWindow();
+            ImPlot::ShowDemoWindow(&showImPlotDemoWindow);
         } 
 
         if (fileDialogInstance->Display("EditorMenuBarFileDialog")) {
@@ -170,6 +171,17 @@ namespace kubvc::editor {
                 if (ImGui::MenuItem("Complex")) {                    
                     config->setMode(application::MathMode::Complex);
                     controller->reevaluateAllExpressions(math::GraphLimits::GlobalLimits);
+                }
+
+                ImGui::EndMenu();
+            }
+
+            if (ImGui::BeginMenu("Other")) {
+                static const auto window = application::Window::getInstance();
+                const auto vsync = window->getVsync();
+
+                if (ImGui::MenuItem(vsync ? "Disable Vsync" : "Enable Vsync")) {                    
+                    window->setVsync(!vsync);    
                 }
 
                 ImGui::EndMenu();
