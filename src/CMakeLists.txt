@@ -1,6 +1,17 @@
 file(GLOB_RECURSE SOURCES *.cpp)
 
-add_executable(KubVcApp ${SOURCES})
+set(IS_DEBUG FALSE)
+
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(IS_DEBUG TRUE)
+endif()
+
+if (WIN32 AND NOT IS_DEBUG)
+    add_executable(KubVcApp WIN32 ${SOURCES})
+else()
+    add_executable(KubVcApp ${SOURCES})
+endif()
+
 target_include_directories(KubVcApp
     PUBLIC ${KUBVC_SOURCES_DIR}
     PUBLIC ${glew_SOURCE_DIR}/include
@@ -20,7 +31,7 @@ target_link_libraries(KubVcApp
     ImGuiFileDialog
 )
 
-if (CMAKE_BUILD_TYPE STREQUAL "Debug") 
+if (IS_DEBUG) 
     target_compile_definitions(KubVcApp PRIVATE 
         GLEW_STATIC
         USE_STD_FILESYSTEM
@@ -29,7 +40,7 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
         KUB_ENABLE_LEXER_DEBUG_LOG
         #KUB_USE_ANSI_COLORS
         )
-    else()
+else()
     target_compile_definitions(KubVcApp PRIVATE 
         GLEW_STATIC
         USE_STD_FILESYSTEM
