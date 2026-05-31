@@ -16,7 +16,7 @@ int main() {
 #endif 
     try {
         const auto window = kubvc::application::Window::getInstance();
-        window->createWindow(1920, 1080, 0, 0, windowName);
+        window->createWindow(windowName);
         
         const auto render = kubvc::render::Renderer::getInstance();
         render->init();
