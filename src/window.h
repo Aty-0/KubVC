@@ -9,15 +9,18 @@
 namespace kubvc::application {
     class Window : public utility::Singleton<Window> {
         public:
-            Window() = default;
+            Window();
             ~Window() = default;
 
             void createWindow(std::string_view name);
             
             void destroy();
             void swapAndPool();
+            void setVsync(bool vsync);
             [[nodiscard]] bool shouldClose() const;
             [[nodiscard]] GLFWwindow& getHandle() const { return *m_windowHandle; }
+            [[nodiscard]] bool getVsync() const { return m_vsync; }
+
         private:
             void createWindow(std::uint32_t w, std::uint32_t h, 
                 std::uint32_t x, std::uint32_t y, std::string_view name);
