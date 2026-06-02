@@ -6,8 +6,13 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(IS_DEBUG TRUE)
 endif()
 
-if (WIN32 AND NOT IS_DEBUG)
+if (NOT IS_DEBUG)
     add_executable(KubVcApp WIN32 ${SOURCES})
+    if (MSVC) 
+        target_link_options(KubVcApp PRIVATE /ENTRY:mainCRTStartup)
+    elseif(MINGW)
+        target_link_options(KubVcApp PRIVATE -mwindows)  
+    endif()
 else()
     add_executable(KubVcApp ${SOURCES})
 endif()
@@ -64,5 +69,7 @@ set(SOURCES_RESOURCES_FONTS_DIR "${PROJECT_SOURCE_DIR}/src/resources/fonts")
 add_custom_target(CopyFonts ALL
     COMMAND ${CMAKE_COMMAND} -E make_directory "${BUILD_FONTS_DIR}"
     COMMAND ${CMAKE_COMMAND} -E copy_directory "${SOURCES_RESOURCES_FONTS_DIR}" "${BUILD_FONTS_DIR}"
-    COMMENT "Copying TTF files..."
+    COMMENT "Copying TTF files... to ${BUILD_FONTS_DIR}"
 )
+
+add_dependencies(KubVcApp CopyFonts)

@@ -1,0 +1,103 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 20,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "base-gcc",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "20",
+        "CMAKE_CXX_STANDARD_REQUIRED": "TRUE",
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_CXX_COMPILER": "g++",
+        "GLFW_BUILD_DOCS": "OFF",
+        "GLFW_BUILD_TESTS": "OFF",
+        "GLFW_BUILD_EXAMPLES": "OFF"
+      }
+    },
+    {
+      "name": "debug-gcc",
+      "displayName": "Debug (GCC)",
+      "description": "Debug build with logging and diagnostics enabled",
+      "inherits": "base-gcc",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "release-gcc",
+      "displayName": "Release (GCC)",
+      "description": "Optimised release build",
+      "inherits": "base-gcc",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "base-msvc",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "20",
+        "CMAKE_CXX_STANDARD_REQUIRED": "TRUE",
+        "CMAKE_C_COMPILER": "cl.exe",
+        "CMAKE_CXX_COMPILER": "cl.exe",
+        "GLFW_BUILD_DOCS": "OFF",
+        "GLFW_BUILD_TESTS": "OFF",
+        "GLFW_BUILD_EXAMPLES": "OFF"
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      }
+    },
+    {
+      "name": "debug-msvc",
+      "displayName": "Debug (MSVC)",
+      "description": "Debug build using MSVC",
+      "inherits": "base-msvc",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "release-msvc",
+      "displayName": "Release (MSVC)",
+      "description": "Release build using MSVC",
+      "inherits": "base-msvc",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "debug-gcc",
+      "displayName": "Build Debug (GCC)",
+      "configurePreset": "debug-gcc"
+    },
+    {
+      "name": "release-gcc",
+      "displayName": "Build Release (GCC)",
+      "configurePreset": "release-gcc"
+    },
+    {
+      "name": "debug-msvc",
+      "displayName": "Build Debug (MSVC)",
+      "configurePreset": "debug-msvc"
+    },
+    {
+      "name": "release-msvc",
+      "displayName": "Build Release (MSVC)",
+      "configurePreset": "release-msvc"
+    }
+  ]
+}
