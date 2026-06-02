@@ -33,3 +33,5 @@
 
 [Bb]uild/
 .cmake/
+
+.vscode/
