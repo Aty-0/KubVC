@@ -3,7 +3,7 @@
 #include "imgui.h"
 #include "implot.h"
 
-#include "IconsFontAwesome6.h"
+#include <IconsFontAwesome6.h>
 
 namespace kubvc::render {
     class GUI : public utility::Singleton<GUI> {

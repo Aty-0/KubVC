@@ -28,12 +28,14 @@ target_include_directories(KubVcApp
 
 target_compile_features(KubVcApp PRIVATE cxx_std_20)
 target_link_libraries(KubVcApp
-    glm::glm
-    glfw
-    libglew_static
-    imgui
-    implot
-    ImGuiFileDialog
+    PRIVATE
+        glm::glm
+        glfw
+        libglew_static
+        imgui
+        implot
+        ImGuiFileDialog
+        IconFontHeaders
 )
 
 if (IS_DEBUG) 

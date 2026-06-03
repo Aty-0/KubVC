@@ -146,7 +146,19 @@ FetchContent_MakeAvailable(ImGuiFileDialog)
 if(TARGET ImGuiFileDialog)
     target_link_libraries(ImGuiFileDialog PUBLIC imgui)
 endif()
-    
+
+
+FetchContent_Declare(
+	IconFontCppHeaders
+	GIT_REPOSITORY	https://github.com/juliettef/IconFontCppHeaders
+	GIT_TAG origin/main
+)
+
+FetchContent_MakeAvailable(IconFontCppHeaders)
+
+add_library(IconFontHeaders INTERFACE ${iconfontcppheaders_SOURCE_DIR}/IconsFontAwesome6.h)
+target_include_directories(IconFontHeaders INTERFACE ${iconfontcppheaders_SOURCE_DIR})
+
 #################################################################################
 # Add sources 
 #################################################################################
