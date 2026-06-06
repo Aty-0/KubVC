@@ -15,6 +15,7 @@ namespace kubvc::editor {
     EditorFpsCounterWindow::EditorFpsCounterWindow() {    
         setName("##EditorFpsCounterWindow");
         setWindowFlags(fpsCounterWindowFlags);
+        setIconName(ICON_FA_GAUGE_HIGH);
     }
     
     void EditorFpsCounterWindow::onRender(kubvc::render::GUI& gui) {

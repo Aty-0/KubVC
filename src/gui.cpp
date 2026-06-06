@@ -53,7 +53,7 @@ namespace kubvc::render {
 		applyDefaultKubDarkTheme();
     }
 
-	void GUI::beginDockspace() {
+	void GUI::beginDockspaceWindow() {
 		const auto viewport = ImGui::GetMainViewport();
 		
 		ImGui::SetNextWindowPos(viewport->Pos);
@@ -65,12 +65,14 @@ namespace kubvc::render {
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
 	
 		ImGui::Begin("##dockspace_wnd", nullptr, DOCKSPACE_WINDOW_FLAGS);
-
+	}
+	
+	void GUI::dockspace() {
 		const auto dockId = ImGui::GetID("dockspace");
 		ImGui::DockSpace(dockId, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_PassthruCentralNode);
 	}
 
-	void GUI::endDockspace() {
+	void GUI::endDockspaceWindow() {
 		ImGui::PopStyleVar(3);
 		ImGui::End();
 	}

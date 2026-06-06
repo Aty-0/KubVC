@@ -6,6 +6,7 @@
 #include "logger.h"
 
 #include "editor/editor.h"
+#include "editor/editor_menu_bar.h"
 
 int main() {
     // Initialize main application components
@@ -25,17 +26,21 @@ int main() {
         gui->init();
         
         const auto editor = kubvc::editor::Editor::getInstance();
-
+        auto menuBar = kubvc::editor::EditorMenuBar { };
         // Run main loop 
         while (!window->shouldClose()) {
             render->clear();
             gui->begin();
-            gui->beginDockspace(); 
+            gui->beginDockspaceWindow();
             {
-                editor->render(*gui);
+                menuBar.render(*gui);
+                gui->dockspace(); 
+                {
+                    editor->render(*gui);
+                }
             }
             
-            gui->endDockspace();
+            gui->endDockspaceWindow();
             gui->end();
             window->swapAndPool();
         }

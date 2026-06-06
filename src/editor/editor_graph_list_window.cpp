@@ -8,6 +8,7 @@ namespace kubvc::editor {
     
     EditorGraphListWindow::EditorGraphListWindow() {
         setName("Graph List##EditorGraphListWindow");
+        setIconName(ICON_FA_CHART_LINE);
     }
 
     std::int32_t EditorGraphListWindow::handleTextBoxMultilineInput(ImGuiInputTextCallbackData* data) {

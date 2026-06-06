@@ -11,6 +11,7 @@ namespace kubvc::editor {
         setName("Keyboard##EditorKeyboardWindow");
         m_disableVisibleToggle = true;
         setVisible(false);
+        setIconName(ICON_FA_KEYBOARD);
     }
 
     static bool drawPickElementButton(std::string_view text, const ImVec2& size) {

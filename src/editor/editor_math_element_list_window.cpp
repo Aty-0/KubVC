@@ -10,6 +10,7 @@ namespace kubvc::editor {
 
     EditorMathElementListWindow::EditorMathElementListWindow() {
         setName("Elements##EditorMathElementListWindow");
+        setIconName(ICON_FA_CALCULATOR);
     }
 
     void EditorMathElementListWindow::addItemToExpression(std::string_view text) {

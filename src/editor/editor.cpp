@@ -11,7 +11,6 @@
 
 namespace kubvc::editor {
     Editor::Editor() : m_windows({ 
-            std::make_shared<EditorMenuBar>(), 
             std::make_shared<EditorEditGraphWindow>(), 
             std::make_shared<EditorGraphListWindow>(), 
             std::make_shared<EditorFpsCounterWindow>(), 
@@ -27,6 +26,13 @@ namespace kubvc::editor {
         m_windows.clear();
     }
             
+    void Editor::renderMenuBarButtons(kubvc::render::GUI& gui) {
+        for (auto window : m_windows) {
+            window->renderMenuBarButton(gui);
+            ImGui::SameLine();
+        }    
+    }
+    
     void Editor::render(kubvc::render::GUI& gui) {
         for (auto window : m_windows) {
             window->render(gui);
