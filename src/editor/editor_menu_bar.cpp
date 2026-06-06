@@ -7,6 +7,7 @@
 #include "../logger.h"
 #include "../expression_io.h"
 #include "../application_config.h"
+#include "../macro_controller.h"
 #include "../window.h"
 
 #include "ImGuiFileDialog.h"
@@ -15,13 +16,16 @@ namespace kubvc::editor {
     enum class FileDialogMode {
         SaveGraphs,
         SaveGraphsPoints,
+        SaveMacros,
         LoadGraphs,
+        LoadMacros,
         Unknown
     };
 
     void EditorMenuBar::render(kubvc::render::GUI& gui) {
         static bool showImGuiDemoWindow = false;
         static bool showImPlotDemoWindow = false;
+        static const auto macroController = algorithm::MacroController::getInstance();
         static const auto controller = math::ExpressionController::getInstance();
         static const auto exprIo = io::ExpressionIO::getInstance();
         static const auto fileDialogInstance = ImGuiFileDialog::Instance();
@@ -47,6 +51,14 @@ namespace kubvc::editor {
             if (fileDialogInstance->IsOk()) {
                 switch (fileDialogMode)
                 {
+                    case FileDialogMode::LoadMacros: {
+                        macroController->load(filePathName);
+                        break;
+                    }
+                    case FileDialogMode::SaveMacros: {
+                        macroController->save(filePathName);
+                        break;
+                    }
                     case FileDialogMode::LoadGraphs: {
                         exprIo->loadGraphs(filePathName);
                         break;
@@ -73,6 +85,19 @@ namespace kubvc::editor {
 
         if (ImGui::BeginMainMenuBar()) {
             if (ImGui::BeginMenu("File")) {
+                if (ImGui::MenuItem("New project")) {
+                    // TODO: 
+                }
+
+                if (ImGui::MenuItem("Open project")) {
+                    // TODO: 
+                }
+
+                if (ImGui::MenuItem("Save project")) {
+                    // TODO: 
+                }
+
+                ImGui::Separator();
                 if (ImGui::MenuItem("Open Graphs(.txt)")) {
                     fileDialogInstance->OpenDialog("EditorMenuBarFileDialog", "Open graph list", ".txt", defaultFileDialogConfig);
                     fileDialogMode = FileDialogMode::LoadGraphs;
@@ -83,15 +108,28 @@ namespace kubvc::editor {
                     fileDialogMode = FileDialogMode::SaveGraphs;
                 }
                 
+                
+                ImGui::Separator();
+                if (ImGui::MenuItem("Load macros (.macro)")) {
+                    fileDialogInstance->OpenDialog("EditorMenuBarFileDialog", "Load macros", ".macro", defaultFileDialogConfig);
+                    fileDialogMode = FileDialogMode::LoadMacros;
+                }
+
+                if (ImGui::MenuItem("Save macros (.macro)")) {
+                    fileDialogInstance->OpenDialog("EditorMenuBarFileDialog", "Save macros", ".macro", defaultFileDialogConfig);
+                    fileDialogMode = FileDialogMode::SaveMacros;
+                }
+
+                ImGui::Separator();
                 if (ImGui::MenuItem("Save graph points (.txt)")) {
                     fileDialogInstance->OpenDialog("EditorMenuBarFileDialog", "Save graph points", ".txt", defaultFileDialogConfig);
                     fileDialogMode = FileDialogMode::SaveGraphsPoints;
                 }
-                
+
                 if (ImGui::MenuItem("Make graph screenshot")) {
                     // TODO: 
                 }
-                
+
                 ImGui::Separator();
                 if (ImGui::MenuItem("Save Log file")) {
                     kubvc::utility::log->save("kub.log");
@@ -102,6 +140,7 @@ namespace kubvc::editor {
                 }
                 ImGui::EndMenu();
             }
+
             if (ImGui::BeginMenu("View")) {
                 static const auto editor = Editor::getInstance();
 
