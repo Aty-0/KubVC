@@ -2,6 +2,7 @@
 #include "singleton.h"
 #include "expression_model.h"
 #include "logger.h"
+#include "macro_controller.h"
 
 #include <unordered_set>
 #include <shared_mutex>
@@ -54,11 +55,16 @@ namespace kubvc::math {
 
         m_taskManager.add([this, model, limits] {
             static const auto lexer = kubvc::algorithm::Lexer::getInstance();
-            const auto& expression = model->getExpression();
-            const auto& textBuffer = model->getTextBuffer();            
-            const auto result = lexer->tokenize(textBuffer->getBuffer().data());
+            static const auto macroController = algorithm::MacroController::getInstance();
             
-
+            const auto& expression = model->getExpression();
+            const auto& textBuffer = model->getTextBuffer();
+            auto text = std::string(textBuffer->getBuffer().data());
+            // Replace all macro keywords
+            macroController->appendMacrosToText(text);
+            // Then we can tokenize
+            const auto result = lexer->tokenize(text);
+            
             if (result.has_value()) {
                 lexer->print(result.value());
                 const auto buildResult = builder->build(expression->getTree(), expression->getVDC(), result.value());
