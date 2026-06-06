@@ -15,11 +15,11 @@ namespace kubvc::io {
 
     };
 
-    FileSaver::FileSaver(std::string_view path, const std::vector<char>& buffer) {
+    inline FileSaver::FileSaver(std::string_view path, const std::vector<char>& buffer) {
         KUB_ASSERT(save(path, buffer), "Can't save file from contructor, see logs");
     } 
     
-    bool FileSaver::save(std::string_view path, const std::vector<char>& buffer) {
+    inline bool FileSaver::save(std::string_view path, const std::vector<char>& buffer) {
         if (path.empty()) {
             KUB_ERROR("Can't save file because path is empty");
             return false;
