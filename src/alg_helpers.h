@@ -109,10 +109,8 @@ namespace kubvc::algorithm {
             }
 
             static inline constexpr bool isWhiteSpace(uchar chr) {
-                constexpr std::array<uchar, 6> cases = { ' ', '\f', '\n', '\r', '\t', '\v' };
-                return std::any_of(cases.begin(), cases.end(), [chr](uchar c) { 
-                    return chr == c;
-                });
+                constexpr std::array<uchar, 6> WHITE_SPACE_CASES = { ' ', '\f', '\n', '\r', '\t', '\v' };
+                return std::ranges::any_of(WHITE_SPACE_CASES, [chr](uchar c) { return chr == c; });
             }
     };
 }
