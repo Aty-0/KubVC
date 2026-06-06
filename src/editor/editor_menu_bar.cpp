@@ -29,6 +29,8 @@ namespace kubvc::editor {
         static const auto controller = math::ExpressionController::getInstance();
         static const auto exprIo = io::ExpressionIO::getInstance();
         static const auto fileDialogInstance = ImGuiFileDialog::Instance();
+        static const auto editor = Editor::getInstance();
+
         static const IGFD::FileDialogConfig defaultFileDialogConfig = { 
             .path = ".",
             .fileName = "", 
@@ -83,7 +85,7 @@ namespace kubvc::editor {
             fileDialogInstance->Close();
         }
 
-        if (ImGui::BeginMainMenuBar()) {
+        if (ImGui::BeginMenuBar()) {
             if (ImGui::BeginMenu("File")) {
                 if (ImGui::MenuItem("New project")) {
                     // TODO: 
@@ -142,20 +144,6 @@ namespace kubvc::editor {
             }
 
             if (ImGui::BeginMenu("View")) {
-                static const auto editor = Editor::getInstance();
-
-                if (ImGui::MenuItem("Keyboard")) {
-                    static const auto window = editor->get<EditorKeyboardWindow>();
-                    KUB_ASSERT(window != nullptr, "Couldn't get keyboard window");
-                    window->setVisible(!window->isVisible());
-                }
-
-                if (ImGui::MenuItem("FPS Counter")) {
-                    static const auto window = editor->get<EditorFpsCounterWindow>();
-                    KUB_ASSERT(window != nullptr, "Couldn't get fps counter window");
-                    window->setVisible(!window->isVisible());
-                }
-
                 if (ImGui::BeginMenu("Themes")) {
                     if (ImGui::MenuItem("Kub Dark Theme"))        
                         gui.applyDefaultKubDarkTheme();
@@ -225,7 +213,20 @@ namespace kubvc::editor {
 
                 ImGui::EndMenu();
             }
+            ImGui::EndMenuBar();
         }
-        ImGui::EndMainMenuBar();
+
+        ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 0.0f);
+        ImGui::PushStyleColor(ImGuiCol_ChildBg, ImGui::GetStyleColorVec4(ImGuiCol_MenuBarBg));
+        if (ImGui::BeginChild("##Toolbar", ImVec2(0, ImGui::GetFrameHeight()), false,
+            ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse)) {
+            ImGui::Dummy({ 5.0f, 0.0f });
+            ImGui::SameLine();
+            editor->renderMenuBarButtons(gui);
+        }
+        ImGui::EndChild();
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() - ImGui::GetStyle().ItemSpacing.y);
+        ImGui::PopStyleColor();
+        ImGui::PopStyleVar();
     }
 }

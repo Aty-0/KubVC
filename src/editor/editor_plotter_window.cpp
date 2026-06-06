@@ -8,6 +8,7 @@ namespace kubvc::editor {
 
     EditorPlotterWindow::EditorPlotterWindow() {
         setName("Viewer##EditorPlotterWindow");
+        setIconName(ICON_FA_TABLE);
     }
 
     void EditorPlotterWindow::onRender([[maybe_unused]] kubvc::render::GUI& gui) {

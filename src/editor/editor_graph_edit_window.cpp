@@ -14,6 +14,7 @@ namespace kubvc::editor {
 
     EditorEditGraphWindow::EditorEditGraphWindow() {
         setName("Edit Graph##EditorEditGraphWindow");
+        setIconName(ICON_FA_PEN_TO_SQUARE);
     }
 
 #if defined(KUB_IS_DEBUG) || defined(SHOW_DEBUG_TOOLS_ON_RELEASE) 

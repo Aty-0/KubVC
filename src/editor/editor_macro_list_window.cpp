@@ -5,13 +5,12 @@ namespace kubvc::editor {
     static constexpr std::size_t TEXT_BUFFER_SIZE = 128;
     static const auto macroController = algorithm::MacroController::getInstance();
 
-
     EditorMacroListWindow::EditorMacroListWindow() : 
         m_nameTextBuffer(TEXT_BUFFER_SIZE),
         m_valueTextBuffer(TEXT_BUFFER_SIZE),
         m_selectedId(std::nullopt) {
-
         setName("Macros##EditorMacroListWindow");
+        setIconName(ICON_FA_CODE);
     }
 
     void EditorMacroListWindow::drawMacroButton(kubvc::render::GUI& gui, const algorithm::Macro& macro) {
