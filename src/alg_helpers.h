@@ -69,9 +69,7 @@ namespace kubvc::algorithm {
             }
 
             static inline constexpr bool isNumber(std::string_view text)  {
-                return !text.empty() && std::all_of(text.begin(), text.end(), [](uchar c) {
-                    return isDigit(c) || isDot(c);
-                });
+                return !text.empty() && std::ranges::all_of(text, [](uchar c) { return isDigit(c) || isDot(c); });
             }
             
             static inline constexpr bool isUnaryOperator(uchar chr) {
