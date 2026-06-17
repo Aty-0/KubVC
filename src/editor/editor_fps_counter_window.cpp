@@ -24,7 +24,7 @@ namespace kubvc::editor {
 
         const auto io = ImGui::GetIO();
         const auto size = io.DisplaySize;
-        ImGui::SetWindowPos({0, size.y - 40.0f});
+        ImGui::SetWindowPos({0, size.y - 50.0f});
         ImGui::PushFont(&gui.getDefaultFont());
         ImGui::Text("Fps:%.1f\nExpr Tasks Count:%zu", io.Framerate, taskManager.size());
         ImGui::PopFont();

@@ -27,14 +27,14 @@ namespace kubvc::editor {
     }
             
     void Editor::renderMenuBarButtons(kubvc::render::GUI& gui) {
-        for (auto window : m_windows) {
+        for (const auto& window : m_windows) {
             window->renderMenuBarButton(gui);
             ImGui::SameLine();
         }    
     }
     
     void Editor::render(kubvc::render::GUI& gui) {
-        for (auto window : m_windows) {
+        for (const auto& window : m_windows) {
             window->render(gui);
         }
     }

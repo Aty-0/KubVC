@@ -24,6 +24,8 @@ target_include_directories(KubVcApp
     PUBLIC ${imgui_SOURCE_DIR}/backends
     PUBLIC ${implot_SOURCE_DIR}
     PUBLIC ${ImGuiFileDialog_SOURCE_DIR}
+    PUBLIC ${magic_enum_SOURCE_DIR}/include
+    PUBLIC ${korobok_SOURCE_DIR}/include
 )
 
 target_compile_features(KubVcApp PRIVATE cxx_std_20)
@@ -36,6 +38,8 @@ target_link_libraries(KubVcApp
         implot
         ImGuiFileDialog
         IconFontHeaders
+        magic_enum::magic_enum
+        #korobok
 )
 
 if (IS_DEBUG) 
@@ -44,7 +48,7 @@ if (IS_DEBUG)
         USE_STD_FILESYSTEM
         DEBUG
         #KUB_LEXER_DEBUG_ENABLE_TOKEN_PRINT
-        KUB_ENABLE_LEXER_DEBUG_LOG
+        #KUB_ENABLE_LEXER_DEBUG_LOG
         #KUB_USE_ANSI_COLORS
         )
 else()

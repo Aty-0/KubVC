@@ -16,7 +16,7 @@ namespace kubvc::editor {
 
             void drawGraphPanel(kubvc::render::GUI& gui, std::shared_ptr<math::ExpressionModel> model, std::int32_t index);
             void drawGraphList(kubvc::render::GUI& gui);            
-            void drawParameterList(std::shared_ptr<math::ExpressionModel> model);
+            void drawParameterList(kubvc::render::GUI& gui, std::shared_ptr<math::ExpressionModel> model);
             void drawGraphListHeader();     
 
     };

@@ -159,6 +159,26 @@ FetchContent_MakeAvailable(IconFontCppHeaders)
 add_library(IconFontHeaders INTERFACE ${iconfontcppheaders_SOURCE_DIR}/IconsFontAwesome6.h)
 target_include_directories(IconFontHeaders INTERFACE ${iconfontcppheaders_SOURCE_DIR})
 
+
+FetchContent_Declare(
+	magic_enum
+	GIT_REPOSITORY	https://github.com/Neargye/magic_enum
+	GIT_TAG v0.9.8
+    GIT_SHALLOW TRUE
+)
+
+FetchContent_MakeAvailable(magic_enum)
+
+
+FetchContent_Declare(
+	korobok
+	GIT_REPOSITORY	https://github.com/Aty-0/korobok
+	GIT_TAG v0.0.4
+    GIT_SHALLOW TRUE
+)
+
+FetchContent_MakeAvailable(korobok)
+
 #################################################################################
 # Add sources 
 #################################################################################
