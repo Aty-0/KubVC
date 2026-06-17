@@ -25,12 +25,9 @@ namespace kubvc::render {
             // Default font but with math font size 
             inline ImFont& getDefaultFontMathSize() const { return *m_defaultFontMathSize; }
 
-            void applyDefaultKubDarkTheme();
-            void applyImGuiWhiteTheme();
-            void applyImGuiClassicTheme();
-            void applyImGuiDarkTheme();
-
         private:
+            void setupThemeController();
+            
             ImFont* m_mathFont;
             ImFont* m_iconFont;
             ImFont* m_defaultFont;

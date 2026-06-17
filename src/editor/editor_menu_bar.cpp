@@ -9,6 +9,7 @@
 #include "../application_config.h"
 #include "../macro_controller.h"
 #include "../window.h"
+#include "../theme_controller.h"
 
 #include "ImGuiFileDialog.h"
 
@@ -17,6 +18,7 @@ namespace kubvc::editor {
         SaveGraphs,
         SaveGraphsPoints,
         SaveMacros,
+        SaveTheme,
         LoadGraphs,
         LoadMacros,
         Unknown
@@ -30,6 +32,7 @@ namespace kubvc::editor {
         static const auto exprIo = io::ExpressionIO::getInstance();
         static const auto fileDialogInstance = ImGuiFileDialog::Instance();
         static const auto editor = Editor::getInstance();
+        static const auto themeController = render::themes::ThemeController::getInstance();
 
         static const IGFD::FileDialogConfig defaultFileDialogConfig = { 
             .path = ".",
@@ -67,6 +70,10 @@ namespace kubvc::editor {
                     }
                     case FileDialogMode::SaveGraphs: {
                         exprIo->saveGraphs(filePathName);
+                        break;
+                    }
+                    case FileDialogMode::SaveTheme: {
+                        themeController->save(filePathName, fileDialogInstance->GetCurrentFileName());
                         break;
                     }
                     case FileDialogMode::SaveGraphsPoints: {
@@ -145,17 +152,19 @@ namespace kubvc::editor {
 
             if (ImGui::BeginMenu("View")) {
                 if (ImGui::BeginMenu("Themes")) {
-                    if (ImGui::MenuItem("Kub Dark Theme"))        
-                        gui.applyDefaultKubDarkTheme();
+                    if (ImGui::MenuItem("Save current theme (.krb)")) {
+                        fileDialogInstance->OpenDialog("EditorMenuBarFileDialog", "Save theme", ".krb", defaultFileDialogConfig);
+                        fileDialogMode = FileDialogMode::SaveTheme;
+                    }
 
-                    if (ImGui::MenuItem("ImGui Dark Theme"))        
-                        gui.applyImGuiDarkTheme();
-
-                    if (ImGui::MenuItem("ImGui White Theme"))        
-                        gui.applyImGuiWhiteTheme();
-
-                    if (ImGui::MenuItem("ImGui Classic Theme"))        
-                        gui.applyImGuiClassicTheme();
+                    ImGui::Separator();
+                    const auto& themes = themeController->getThemes();
+                    for (const auto& theme : themes) {
+                        const auto name = theme->name.data(); 
+                        if (ImGui::MenuItem(name)) {
+                            themeController->setTheme(theme->name);
+                        }        
+                    }
 
                     ImGui::EndMenu();
                 }

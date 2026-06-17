@@ -39,22 +39,53 @@ namespace kubvc::editor {
         return 0;
     }
     
-    void EditorGraphListWindow::drawParameterList(std::shared_ptr<math::ExpressionModel> model) {
+    void EditorGraphListWindow::drawParameterList(kubvc::render::GUI& gui, std::shared_ptr<math::ExpressionModel> model) {
         if (!model) {
             return;
         }
-
-        constexpr auto DRAG_SPEED = 0.01f; 
+        static constexpr auto DRAG_SPEED = 0.01f; 
         const auto& expression = model->getExpression();
         auto& vdc = expression->getVDC();
         const auto& parameters = vdc.getParameterVariables();
-        if (!parameters.empty() && expression->isValid()) {
-            ImGui::Separator();
-            for (auto node : parameters) {
+        if (!parameters.empty() && expression->isValid()) {            
+            ImGui::BeginGroup();
+
+            std::size_t parameterIndex = 0; 
+            for (const auto& node : parameters) {
+                const auto str = std::format("##EditorGraphListWindowParameterChild_{}_{}", model->getId(), parameterIndex);
+                const auto& id = ImGui::GetID(str.data());
+                
+                const auto scale = ImGui::GetIO().DisplayFramebufferScale.x;
+        
+                ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(12 * scale, 7 * scale));
+                ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8 * scale, 8 * scale));
+
+                const auto& style = ImGui::GetStyle();
+                const auto innerHeight = ImGui::GetFrameHeight() * 2.0f + style.ItemSpacing.y;
+                const auto totalHeight = innerHeight + style.FramePadding.y * 2.0f;
+
+                ImGui::PushStyleColor(ImGuiCol_ChildBg, ImGui::GetStyleColorVec4(ImGuiCol_WindowBg)); 
+                ImGui::BeginChild(id, {0, totalHeight}, ImGuiChildFlags_::ImGuiChildFlags_Borders);
                 if (node && node->isParameter) {
                     const auto value = node->getValue();
                     ImGui::Text("Parameter: %c", value);
                     
+                    const auto checkBoxName = std::format("{}##UseTimeForParam{}_{}", ICON_FA_CLOCK, std::string(1, value), node->getId());
+                    
+                    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
+                    ImGui::PushStyleColor(ImGuiCol_Text, node->useTimeForParameter ? ImVec4(0.4f, 0.8f, 0.4f, 1.0f) : ImVec4(0.6f, 0.6f, 0.6f, 0.7f));
+                    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.3f, 0.3f, 0.3f, 0.3f));
+
+                    ImGui::PushFont(&gui.getIconFont());
+                    if (ImGui::Button(checkBoxName.data())) {
+                        node->useTimeForParameter = !node->useTimeForParameter;
+                    }
+                    ImGui::PopFont();
+                    ImGui::PopStyleColor(3);
+                    
+                    // TODO: Desc
+                    ImGui::SameLine();
+
                     const auto dragFloatName = std::format("Value##ValueDragParam{}_{}", std::string(1, value), node->getId());
                     if (node->useTimeForParameter) {
                         ImGui::BeginDisabled();
@@ -68,31 +99,38 @@ namespace kubvc::editor {
                             controller->evalExpression(expression, math::GraphLimits::GlobalLimits);
                         }
                     }
-
-                    ImGui::SameLine();
-                    const auto checkBoxName = std::format("Use time##UseTimeForParam{}_{}", std::string(1, value), node->getId());
-                    ImGui::Checkbox(checkBoxName.data(), &node->useTimeForParameter);
-
                 } else {
                     ImGui::Text("Invalid parameter");
                 }
-                ImGui::Separator();
+                ImGui::EndChild();
+                ImGui::PopStyleColor();
+                ImGui::PopStyleVar(2);
+
+                ++parameterIndex;
             }
+
+            ImGui::EndGroup();
         }
     }
 
     void EditorGraphListWindow::drawGraphList(kubvc::render::GUI& gui) {
-        ImGuiListClipper clipper{ };
-        const auto expressions = controller->getExpressions();
-        clipper.Begin(static_cast<std::int32_t>(expressions.size()), 
-            ImGui::GetTextLineHeightWithSpacing());
-        while (clipper.Step()) {
-            for (std::int32_t i = clipper.DisplayStart; i < clipper.DisplayEnd; ++i) {
-                const auto model = expressions[i];
-                drawGraphPanel(gui, model, i);
-                drawParameterList(model);
-            }
+        const auto& expressions = controller->getExpressions();        
+        for (std::size_t i = 0; i < expressions.size(); ++i) {
+            const auto& model = expressions[i];
+            drawGraphPanel(gui, model, static_cast<std::int32_t>(i));
+            drawParameterList(gui, model);
         }
+
+        //ImGuiListClipper clipper{ };
+        //clipper.Begin(static_cast<std::int32_t>(expressions.size()), 
+        //    ImGui::GetTextLineHeightWithSpacing());
+        //while (clipper.Step()) {
+        //    for (std::int32_t i = clipper.DisplayStart; i < clipper.DisplayEnd; ++i) {
+        //        const auto model = expressions[i];
+        //        drawGraphPanel(gui, model, i);
+        //        drawParameterList(model);
+        //    }
+        //}
     }
 
     void EditorGraphListWindow::drawGraphPanel(kubvc::render::GUI& gui, std::shared_ptr<math::ExpressionModel> model, std::int32_t index) {
@@ -104,7 +142,7 @@ namespace kubvc::editor {
         const auto& currentExpression = model->getExpression();
         const auto& currentSettings = model->getSettings();
         
-        const auto selectedModel = controller->getSelected();
+        const auto& selectedModel = controller->getSelected();
         // Is text box expanded
         const auto expandTextBox = currentSettings->getExpandTextBox();
 
@@ -122,16 +160,17 @@ namespace kubvc::editor {
         ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(12 * scale, 7 * scale));
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8 * scale, 8 * scale));
 
-        const auto height = expandTextBox ? frameHeight * 3.5f : frameHeight * 2.5f;
-        const auto padding = style.FramePadding.y * 2 + style.ItemSpacing.y;
-        const auto totalHeight = height + padding;
-        
+        const auto iconsRowHeight = ImGui::GetFrameHeightWithSpacing();
+        const auto textBoxHeight = expandTextBox ? frameHeight * 2.0f : ImGui::GetFrameHeightWithSpacing();
+        const auto innerHeight = iconsRowHeight + textBoxHeight + style.ItemSpacing.y;
+        const auto totalHeight = innerHeight + style.FramePadding.y * 2.0f;
+
         ImGui::PushStyleColor(ImGuiCol_ChildBg, ImGui::GetStyleColorVec4(ImGuiCol_WindowBg)); 
-        ImGui::BeginChild(("##graphPanel" + idStr).c_str(), ImVec2(0, totalHeight), ImGuiChildFlags_::ImGuiChildFlags_Borders);
+        ImGui::BeginChild(("##graphPanel" + idStr).c_str(), ImVec2(0, totalHeight * 1.15f), ImGuiChildFlags_::ImGuiChildFlags_Borders);
         
         ImGui::PushStyleColor(ImGuiCol_ChildBg, ImGui::GetStyleColorVec4(ImGuiCol_Border));
-        ImGui::BeginChild(("##gripArea" + idStr).c_str(), ImVec2(24 * scale, 0));
-        
+        ImGui::BeginChild(("##gripArea" + idStr).c_str(), ImVec2(24 * scale, totalHeight - style.FramePadding.y * 2.0f));
+
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.18f, 0.18f, 0.20f, 0.95f));
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.28f, 0.28f, 0.31f, 0.95f));
         ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.35f, 0.35f, 0.38f, 0.95f));
@@ -336,7 +375,8 @@ namespace kubvc::editor {
 
     void EditorGraphListWindow::drawGraphListHeader() {
         const auto region = ImGui::GetContentRegionAvail();
-        const auto buttonSize = ImVec2(0, region.y);
+        const auto buttonSize = ImVec2 { 0.0f, region.y };
+        
         if (ImGui::Button("Add", buttonSize)) {
             controller->create();
         }
@@ -344,11 +384,14 @@ namespace kubvc::editor {
         if (ImGui::IsItemHovered(ImGuiHoveredFlags_::ImGuiHoveredFlags_AllowWhenDisabled)) {
             ImGui::SetTooltip("A button which you can add new graph.");
         }
+        
+        static constexpr auto CLEAR_ALL_BUTTON_TEXT = "Clear All";
 
-        ImGui::SameLine(region.x - 69.0f);
-        ImGui::SetNextItemWidth(region.x - 55.0f);
+        const auto& style = ImGui::GetStyle();
+        const auto clearAllButtonWidth = ImGui::CalcTextSize(CLEAR_ALL_BUTTON_TEXT).x + style.FramePadding.x;
+        ImGui::SameLine(region.x - clearAllButtonWidth);
 
-        if (ImGui::Button("Clear All", buttonSize)) {
+        if (ImGui::Button(CLEAR_ALL_BUTTON_TEXT, buttonSize)) {
             controller->clear();
         }
 
@@ -359,16 +402,16 @@ namespace kubvc::editor {
     }
 
     void EditorGraphListWindow::onRender(kubvc::render::GUI& gui) {
-        constexpr auto childFlags = ImGuiChildFlags_::ImGuiChildFlags_Borders;
-        constexpr auto childWindowFlags = ImGuiWindowFlags_::ImGuiWindowFlags_HorizontalScrollbar /* |  ImGuiWindowFlags_::ImGuiWindowFlags_AlwaysUseWindowPadding */;
+        static constexpr auto CHILD_FLAGS = ImGuiChildFlags_::ImGuiChildFlags_Borders;
+        static constexpr auto CHILD_WINDOW_FLAGS = ImGuiWindowFlags_::ImGuiWindowFlags_HorizontalScrollbar /* |  ImGuiWindowFlags_::ImGuiWindowFlags_AlwaysUseWindowPadding */;
+        static constexpr auto GRAPH_LIST_HEADER_HEIGHT = 54.0f;
 
-        auto windowSize = ImGui::GetWindowSize();
-        if (ImGui::BeginChild("GraphListHeader", ImVec2(windowSize.x, 42.0f), childFlags)) {
+        if (ImGui::BeginChild("GraphListHeader", { 0, GRAPH_LIST_HEADER_HEIGHT }, CHILD_FLAGS)) {
             drawGraphListHeader();
         }
         ImGui::EndChild();
         
-        if (ImGui::BeginChild("GraphListChild", ImVec2(windowSize.x, 0), childFlags, childWindowFlags)) { 
+        if (ImGui::BeginChild("GraphListChild", { 0, 0 }, CHILD_FLAGS, CHILD_WINDOW_FLAGS)) { 
             drawGraphList(gui);
         }
         ImGui::EndChild();
