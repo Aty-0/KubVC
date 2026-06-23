@@ -38,11 +38,12 @@ namespace kubvc::render::themes {
     
 
     struct Theme {
-        Theme() = default;
-        explicit Theme(std::string_view name) : name(name) { }
+        Theme() : name { "Untitled" }, data { }, index { 0 } { }
+        explicit Theme(std::string_view name, std::size_t index) : name { name }, data { }, index { index } { }
 
         std::string name;
         korobok::krb data;
+        std::size_t index;
     };
 
     class ThemeController : public utility::Singleton<ThemeController> {
@@ -61,7 +62,7 @@ namespace kubvc::render::themes {
             void cacheMiscImGuiEntries(ImGuiStyle& style);
             void cacheMiscImPlotEntries(ImPlotStyle& style);
             
-            [[nodiscard]] std::vector<std::shared_ptr<Theme>> getThemes() const;
+            [[nodiscard]] std::span<const std::unique_ptr<Theme>> getThemes() const;
             
         private:
             void applyCurrentTheme();
@@ -81,9 +82,8 @@ namespace kubvc::render::themes {
             ImStyleMiscEntries m_imguiMiscEntries;
             ImStyleMiscEntries m_implotMiscEntries;
 
-            std::vector<std::shared_ptr<Theme>> m_themes;
-
-            std::shared_ptr<Theme> m_currentTheme;
+            std::vector<std::unique_ptr<Theme>> m_themes;
+            std::size_t m_currentThemeIndex;
     };
 
     static constexpr std::string_view IMGUI_DEFAULT_DARK_THEME = "ImGui Dark Theme"; 
@@ -93,17 +93,17 @@ namespace kubvc::render::themes {
     inline ThemeController::ThemeController() : 
         m_imguiMiscEntries { }, 
         m_implotMiscEntries { }, 
-        m_themes { 
-            std::make_shared<Theme>(IMGUI_DEFAULT_DARK_THEME),
-            std::make_shared<Theme>(IMGUI_DEFAULT_WHITE_THEME),
-            std::make_shared<Theme>(IMGUI_DEFAULT_CLASSIC_THEME)
-        },
-        m_currentTheme { nullptr } {
+        m_themes { },
+        m_currentThemeIndex { 0 } {
+            // Add default imgui themes
+            m_themes.push_back(std::move(std::make_unique<Theme>(IMGUI_DEFAULT_DARK_THEME, 0)));
+            m_themes.push_back(std::move(std::make_unique<Theme>(IMGUI_DEFAULT_WHITE_THEME, 1)));
+            m_themes.push_back(std::move(std::make_unique<Theme>(IMGUI_DEFAULT_CLASSIC_THEME, 2))); 
+
             loadThemes();
     }
     
-    inline std::vector<std::shared_ptr<Theme>> ThemeController::getThemes() const {
-        // TODO: lock
+    inline std::span<const std::unique_ptr<Theme>> ThemeController::getThemes() const {
         return m_themes;
     }
 
@@ -133,12 +133,12 @@ namespace kubvc::render::themes {
         }
 
         const auto& findTheme = *it;
-        if (findTheme == m_currentTheme) {
+        if (findTheme->index == m_currentThemeIndex) {
             return;
         }
-        
-        m_currentTheme = findTheme;
 
+        m_currentThemeIndex = findTheme->index;
+        
         if (name == IMGUI_DEFAULT_CLASSIC_THEME) {
             applyImGuiClassicTheme();
         } else if (name == IMGUI_DEFAULT_DARK_THEME) {
@@ -208,19 +208,21 @@ namespace kubvc::render::themes {
     }
     
     inline void ThemeController::applyCurrentTheme() {
-        if (!m_currentTheme) {
-            KUB_ERROR("can't apply current theme because current theme is nullptr");
+        if (m_currentThemeIndex > m_themes.size()) {
+            KUB_ERROR("can't apply current theme because current theme index > themes table size");
             return;
         }
 
+        const auto& currentTheme = m_themes[m_currentThemeIndex];
+
         auto& imguiStyle = ImGui::GetStyle();
-        loadColorScheme(m_currentTheme->data, imguiStyle, IMGUI_ENTRIES_SCHEME);
+        loadColorScheme(currentTheme->data, imguiStyle, IMGUI_ENTRIES_SCHEME);
 
         auto& implotStyle = ImPlot::GetStyle();
-        loadColorScheme(m_currentTheme->data, implotStyle, IMPLOT_ENTRIES_SCHEME);
+        loadColorScheme(currentTheme->data, implotStyle, IMPLOT_ENTRIES_SCHEME);
 
-        loadMiscEntries(m_currentTheme->data, m_imguiMiscEntries);
-        loadMiscEntries(m_currentTheme->data, m_implotMiscEntries);  
+        loadMiscEntries(currentTheme->data, m_imguiMiscEntries);
+        loadMiscEntries(currentTheme->data, m_implotMiscEntries);  
     }
 
     inline void ThemeController::load(std::string_view path) {
@@ -233,7 +235,8 @@ namespace kubvc::render::themes {
             return;
         }
 
-        auto theme = std::make_shared<Theme>();
+        auto theme = std::make_unique<Theme>();
+        theme->index = m_themes.size();
         if (!theme->data.from(result.value()).has_value()) {
             KUB_ERROR("failed to parse theme file data");
             return;
@@ -241,8 +244,7 @@ namespace kubvc::render::themes {
         try {
             theme->name = theme->data.at("ThemeName");      
         } catch (const std::invalid_argument& ex) {
-            KUB_ERROR("Failed to get theme name. Set name as untitled!");
-            theme->name = "Untitled";
+            KUB_ERROR("failed to get theme name.");
         }
 
         m_themes.push_back(std::move(theme));
@@ -281,13 +283,13 @@ namespace kubvc::render::themes {
     }
 
     inline void ThemeController::save(std::string_view path, std::string_view themeName) {
-        if (!m_currentTheme) {
-            KUB_ERROR("can't save current theme because current theme is nullptr");
+        if (m_currentThemeIndex > m_themes.size()) {
+            KUB_ERROR("can't apply current theme because current theme index > themes table size");
             return;
         }
 
-        auto& data = m_currentTheme->data;
-
+        const auto& currentTheme = m_themes[m_currentThemeIndex];
+        auto& data = currentTheme->data;
         static constexpr std::string_view THEME_NAME_TOKEN = "ThemeName";
         const auto& it = std::ranges::find_if(data.tokens(), [](const auto& token) { return token.name() == THEME_NAME_TOKEN; });
         if (it == data.tokens().end()) {
