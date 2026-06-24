@@ -15,6 +15,8 @@
 
 namespace kubvc::algorithm {
     struct Macro {
+        explicit Macro(std::string_view name, std::string_view value, std::int32_t id) : name { name }, value { value }, m_id { id } { }
+
         std::string name;
         std::string value;
 
@@ -70,7 +72,9 @@ namespace kubvc::algorithm {
         if (m_macros.empty()) {            
             return;
         }
-
+        
+        std::unique_lock lock { m_mutex };
+        
         io::FileSaver saver;
         std::vector<char> buffer;        
         for (const auto& macro : m_macros) {
@@ -79,7 +83,7 @@ namespace kubvc::algorithm {
                 continue;
             }
 
-            const auto fmt = std::format("{}:{}\n", macro.name, macro.value);
+            const auto fmt = std::format("{}:\"{}\"\n", macro.name, macro.value);
             buffer.insert(buffer.end(), fmt.begin(), fmt.end());
         }
 
@@ -89,50 +93,32 @@ namespace kubvc::algorithm {
     }
 
     inline void MacroController::load(std::string_view path) {
+        std::unique_lock lock { m_mutex };
+
         io::FileLoader loader;
         const auto& result = loader.load(path);
         if (result.has_value()) {
-            const auto& value = result.value();
-           
-            auto parseLine = [this](const auto& range) -> std::optional<Macro> {
-                auto splitValues = range | std::views::split(':') | std::views::transform([](const auto& sub) { 
-                    return std::string(sub.begin(), sub.end());
-                });
-                
-                std::vector<std::string> values { };
-                for (const auto& sub : splitValues) {
-                    values.emplace_back(sub.begin(), sub.end());
+            korobok::krb data { };
+            const auto& tokens = data.from(result.value());
+            if (!tokens.has_value()) {
+                KUB_ERROR("failed to parse macros file");
+                return;
+            }
+
+            for (const auto& token : tokens.value()) {
+                const auto& value = token.value<std::string>();
+                if (!value.has_value()) {
+                    KUB_ERROR("failed to get value in {} token, possible wrong type of token", token.name());
+                    continue;
                 }
 
-                if (values.size() != 2) {
-                    KUB_ERROR("macro load: wrong size of split, size:{}", values.size());
-                    return std::nullopt;
-                }
-
-                if (values[0].empty() || values[1].empty()) {
-                    KUB_ERROR("macro load: value 0 or 1 is empty!");
-                    return std::nullopt;
-                }
-
-                auto macro = Macro { };
-                macro.name = values[0];
-                macro.value = values[1];
-                macro.m_id = (++m_globalId);
-                return macro;
-            };
-            
-            auto parsed = value 
-                | std::views::split('\n') // Split line by /n 
-                | std::views::filter([](const auto& line) { 
-                    return std::ranges::any_of(line, [](char c) { 
-                        return algorithm::Helpers::isWhiteSpace(static_cast<algorithm::Helpers::uchar>(c)); 
-                    });
-                }) // Remove all whitespaces or special symbols 
-                | std::views::transform(parseLine)  // Parse lines and create macros
-                | std::views::filter([](const auto& result) { return result.has_value(); }) // Remove invalid lines
-                | std::views::transform([](const auto& result) { return result.value(); }); // Make range with macros 
-            // Save macros 
-            m_macros = std::move(std::vector<Macro>(parsed.begin(), parsed.end()));         
+                m_macros.push_back(std::move(Macro { 
+                    token.name(),
+                    value.value().get(),
+                    (++m_globalId)
+                }));    
+            }
+     
         } else {
             KUB_ERROR("failed to open macros list file");
         }

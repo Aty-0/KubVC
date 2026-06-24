@@ -63,9 +63,7 @@ namespace kubvc::editor {
         ImGui::SeparatorText("Edit:");
 
         if (ImGui::Button("Add##EditorMacroListWindowAddButton")) {
-            auto macro = algorithm::Macro { };
-            macro.name = std::string(m_nameTextBuffer.data());
-            macro.value = std::string(m_valueTextBuffer.data());
+            auto macro = algorithm::Macro { std::string(m_nameTextBuffer.data()), std::string(m_valueTextBuffer.data()), -1 };
             addMacroFailed = !macroController->add(std::move(macro));
         }
 
