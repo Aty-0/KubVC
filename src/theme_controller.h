@@ -12,13 +12,6 @@
 
 #include <magic_enum/magic_enum.hpp>
 
-#define KRB_ENABLE_LOGS
-#define KRB_USE_EXTERNAL_LOG_FUNCS
-#define KRB_EXTERNAL_DEBUG KUB_DEBUG 
-#define KRB_EXTERNAL_WARN KUB_WARN
-#define KRB_EXTERNAL_ERROR KUB_ERROR
-#include <krb.h>
-
 namespace kubvc::render::themes {
     using ImGuiColorScheme = ImGuiCol_;
     using ImPlotColorScheme = ImPlotCol_;
