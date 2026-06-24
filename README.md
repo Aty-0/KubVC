@@ -68,7 +68,7 @@ Macros are a simple tool that can replace a codeword with some expression.
 
 ## Themes
 
-KubVC supports custom themes. It uses the korobok format for opening and saving themes.
+KubVC supports custom themes. It uses the [korobok](https://github.com/Aty-0/korobok) format for opening and saving themes.
 
 - Change theme
 
