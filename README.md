@@ -1,42 +1,89 @@
 # KubVC
-This is a graphing calculator, which can draw generic or custom functions.
+KubVC is a graphing calculator built in modern C++. It combines real and complex evaluation modes, both capable of real-time evaluation. It also supports macros, themes, parameters and projects.
 
-This application is currently in an alpha state. 
+![demo1](./media/demo1.png)
 
-# Building KubVC
+## Table of Contents
+
+- [Build & Run](#build-&-run)
+- [Features](#features)
+- [Project status](#project-status)
+
+# Build & Run
 
 ## Prerequisites
+
 - CMake 3.20+
-- C++ 20 MSVC/GCC
+- C++ 20 MSVC or GCC
 - OpenGL
 - Wayland
 - X11
 
-# Build & Run
-
 ## Windows
+
 ```cmd
 mkdir build
 cd build
 cmake ..
-cmake --build . --config Release
+cmake --build --preset debug-gcc
 bin\Release\KubVcApp.exe
 ```
 
 ## Linux
+
 ```bash
 mkdir build && cd build
 cmake ..
-make
+cmake --build --preset debug-gcc
 cd bin && ./KubVcApp
 ```
 
-# Screenshots:
-the hleb (toast)
-<img width="1922" height="1107" alt="image" src="https://github.com/user-attachments/assets/72547ca2-b178-4071-8ecc-10f7c311ae86" />
-<img width="1922" height="1107" alt="image" src="https://github.com/user-attachments/assets/2fddfedc-2aa3-45c9-8d94-3a7c8ef986bf" />
+# Features
 
-old:
-face
-![image](https://github.com/user-attachments/assets/68414ede-360a-4d12-b4cd-8c9db10bd0f4)
+## Real and Complex modes
+## Example 1
 
+Real mode handles everything from basic functions to advanced implicit equations, such as `y = sin(x + y)`.
+
+![demo2](./media/demo2.png)
+
+## Example 2
+
+Complex mode is designed for evaluating conformal maps. It can map onto a circle, rectangle, or rect — for example, the Joukowsky transform.
+
+- Circle
+
+![demo3](./media/demo3.png)
+
+- Grid
+
+![demo4](./media/demo4.png)
+
+
+## Macros
+
+Macros are a simple tool that can replace a codeword with some expression.
+
+![demo5](./media/demo5.png)
+
+## Themes
+
+KubVC supports custom themes. It uses the korobok format for opening and saving themes.
+
+- Change theme
+
+![demo6](./media/demo6.png)
+
+- Theme file structure
+
+![demo7](./media/demo7.png)
+
+You can also use the default ImGui themes, edit them via the ImGui demo window, and then save them. 
+
+## Parameters
+
+todo
+
+# Project status
+
+KubVC is currently in alpha, so expect bugs, unfinished features, and performance issues.
