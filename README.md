@@ -1,3 +1,5 @@
+
+
 # KubVC
 This is a graphing calculator, which can draw generic or custom functions.
 
@@ -27,7 +29,7 @@ bin\Release\KubVcApp.exe
 ```bash
 mkdir build && cd build
 cmake ..
-make
+cmake --build .
 cd bin && ./KubVcApp
 ```
 
@@ -39,4 +41,3 @@ the hleb (toast)
 old:
 face
 ![image](https://github.com/user-attachments/assets/68414ede-360a-4d12-b4cd-8c9db10bd0f4)
-
