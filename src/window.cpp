@@ -2,7 +2,7 @@
 #include "logger.h"
 
 namespace kubvc::application {
-    inline static void errorCallback(int code, const char * text) {
+    inline static void errorCallback(std::int32_t code, const char * text) {
         KUB_ERROR("glfw error: {} {}", code, text);
     } 
 
@@ -25,14 +25,20 @@ namespace kubvc::application {
     }
     
     void Window::createWindow(std::string_view name) {
+        // Initialize glfw and check on window exist  
         KUB_ASSERT(m_windowHandle == nullptr, "Window already exists!");
         KUB_ASSERT(initializeGLFW(), "GLFW initialization is failed");
+
+        // Add error callbacks
         glfwSetErrorCallback(*errorCallback);
         
+        // Make overage resoulution   
         const auto monitorRes = getMonitorResolution();
         const auto windowRes = glm::uvec2 { static_cast<std::uint32_t>(monitorRes.x / 1.5f), 
             static_cast<std::uint32_t>(monitorRes.y / 1.5f)};
         const auto windowPos = glm::uvec2 { (monitorRes.x - windowRes.x) / 2, (monitorRes.y - windowRes.y) / 2 };
+
+        // Create window by overage resolution and position
         createWindow(windowRes.x, windowRes.y, windowPos.x, windowPos.y, name);
     }
 

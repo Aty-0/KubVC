@@ -2,7 +2,7 @@
 #include <stdexcept>
 
 namespace kubvc::utility {       
-    static inline std::string_view levelToStr(Logger::LogLevel level) {
+    static inline std::string levelToStr(Logger::LogLevel level) {
         switch (level) {
             case Logger::LogLevel::Debug:
                 return "debug";
@@ -17,7 +17,7 @@ namespace kubvc::utility {
     }
 
 #ifdef KUB_USE_ANSI_COLORS
-    static inline std::string_view levelToColorStr(Logger::LogLevel level) {
+    static inline std::string levelToColorStr(Logger::LogLevel level) {
         switch (level) {
             case Logger::LogLevel::Debug:
                 return "37";
