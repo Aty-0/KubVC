@@ -3,7 +3,7 @@
 
 #include <glm/glm.hpp>
 
-#include "singleton.h"
+#include "../utility/singleton.h"
 
 namespace kubvc::render {
     class Renderer : public utility::Singleton<Renderer> {

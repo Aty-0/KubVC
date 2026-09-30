@@ -1,6 +1,6 @@
 #pragma once 
-#include "ast_nodes.h"
-#include "logger.h"
+#include "../algorithm/ast_nodes.h"
+#include "../utility/logger.h"
 
 #include <optional>
 #include <set>

@@ -1,5 +1,5 @@
 #pragma once
-#include "implot.h"
+#include <implot.h>
 
 namespace kubvc::math {
     struct GraphLimits {

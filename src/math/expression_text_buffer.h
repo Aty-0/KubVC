@@ -1,7 +1,7 @@
 #pragma once 
 #include <vector>
 #include <string>
-#include "logger.h"
+#include "../utility/logger.h"
 
 namespace kubvc::math {
     class ExpressionTextBuffer {

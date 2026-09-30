@@ -1,9 +1,10 @@
 #pragma once 
 #include "ast.h"
-#include "singleton.h"
 #include "lexer.h"
-#include "logger.h"
-#include "variable_dependence.h"
+
+#include "../math/variable_dependence.h"
+#include "../utility/singleton.h"
+#include "../utility/logger.h"
 
 #include <stack>
 #include <queue>

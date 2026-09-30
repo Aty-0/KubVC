@@ -1,12 +1,13 @@
 #pragma once 
-#include "singleton.h"
-#include "expression_model.h"
-#include "logger.h"
-#include "macro_controller.h"
-
 #include <unordered_set>
 #include <shared_mutex>
 #include <span>
+
+#include "expression_model.h"
+#include "../algorithm/macro_controller.h"
+#include "../utility/singleton.h"
+#include "../utility/logger.h"
+
 
 namespace kubvc::math {
     class ExpressionController : public utility::Singleton<ExpressionController> {

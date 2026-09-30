@@ -1,9 +1,10 @@
 #pragma once 
-#include "gui.h"
-#include "singleton.h"
 #include <set>
 #include <algorithm>
 #include <string>
+
+#include "../render/gui.h"
+#include "../utility/singleton.h"
 
 namespace kubvc::editor {
     struct EditorDrawable {

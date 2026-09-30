@@ -1,7 +1,8 @@
 #include "editor_graph_edit_window.h"
-#include "vec_convert.h"
-#include "expression_controller.h"
-#include "logger.h"
+#include "../math/expression_controller.h"
+#include "../utility/vec_convert.h"
+#include "../utility/logger.h"
+
 #include <fstream>
 
 //#define SHOW_DEBUG_TOOLS_ON_RELEASE

@@ -1,6 +1,6 @@
 #pragma once 
 #include "editor/editor.h"
-#include "expression_model.h"
+#include "../math/expression_model.h"
 
 namespace kubvc::editor {
     struct EditorGraphListWindow : public EditorWindow {

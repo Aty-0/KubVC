@@ -1,7 +1,7 @@
 #include "editor_graph_list_window.h"
-#include "expression_controller.h"
-#include "application_config.h"
-#include "primitives.h"
+#include "../application/application_config.h"
+#include "../math/expression_controller.h"
+#include "../math/primitives.h"
 
 namespace kubvc::editor {
     static const auto controller = kubvc::math::ExpressionController::getInstance();

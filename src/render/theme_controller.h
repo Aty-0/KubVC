@@ -1,9 +1,9 @@
 #pragma once 
-#include "singleton.h"
-#include "container.h"
-#include "gui.h"
-#include "io.h"
-#include "logger.h"
+#include "../render/gui.h"
+#include "../io/io.h"
+#include "../utility/singleton.h"
+#include "../utility/container.h"
+#include "../utility/logger.h"
 
 #include <utility>
 #include <variant>

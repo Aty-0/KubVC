@@ -4,7 +4,7 @@
 #include <string>
 #include <glm/glm.hpp>
 
-#include "singleton.h"
+#include "../utility/singleton.h"
 
 namespace kubvc::application {
     class Window : public utility::Singleton<Window> {
