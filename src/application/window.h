@@ -27,6 +27,8 @@ namespace kubvc::application {
 
             [[nodiscard]] glm::ivec2 getMonitorResolution(); 
             [[nodiscard]] bool initializeGLFW() const; 
+            void applyWindowHints() const;
+            void setWindowIcon();
 
             GLFWwindow* m_windowHandle;
             bool m_vsync;

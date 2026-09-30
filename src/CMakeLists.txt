@@ -6,15 +6,48 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(IS_DEBUG TRUE)
 endif()
 
-if (NOT IS_DEBUG)
-    add_executable(KubVcApp WIN32 ${SOURCES})
-    if (MSVC) 
-        target_link_options(KubVcApp PRIVATE /ENTRY:mainCRTStartup)
-    elseif(MINGW)
-        target_link_options(KubVcApp PRIVATE -mwindows)  
+
+
+if (WIN32)
+    set(RESOURCES_RC_PATH "${PROJECT_SOURCE_DIR}/src/resources/app.rc")
+    
+    # setup executable for win32
+    add_executable(KubVcApp WIN32 
+        ${SOURCES}
+        ${RESOURCES_RC_PATH}
+    )
+
+    # disable console 
+    if (NOT IS_DEBUG)
+        if (MSVC) 
+            target_link_options(KubVcApp PRIVATE /ENTRY:mainCRTStartup)
+        elseif(MINGW)
+            target_link_options(KubVcApp PRIVATE -mwindows)  
+        endif()
     endif()
 else()
+    # Window icon is embedded in the code (application/window.cpp),
+    # desktop/menu icon is installed via install() rules at the end of this file
     add_executable(KubVcApp ${SOURCES})
+
+    # Generate embedded icon data (resources/app_icon_data.h) from app.ico if it's missing.
+    # To regenerate after changing app.ico, just delete the header.
+    set(ICON_DATA_HEADER "${PROJECT_SOURCE_DIR}/src/resources/app_icon_data.h")
+    if (NOT EXISTS "${ICON_DATA_HEADER}")
+        find_package(Python3 REQUIRED COMPONENTS Interpreter)
+        message(STATUS "Generating ${ICON_DATA_HEADER}")
+        execute_process(
+            COMMAND "${Python3_EXECUTABLE}"
+                    "${PROJECT_SOURCE_DIR}/src/resources/gen_icon_data.py"
+                    "${PROJECT_SOURCE_DIR}/src/resources/app.ico"
+                    "${ICON_DATA_HEADER}"
+            RESULT_VARIABLE ICON_GEN_RESULT
+            ERROR_VARIABLE ICON_GEN_ERROR
+        )
+        if (NOT ICON_GEN_RESULT EQUAL 0)
+            message(FATAL_ERROR "Failed to generate app_icon_data.h: ${ICON_GEN_ERROR}")
+        endif()
+    endif()
 endif()
 
 target_include_directories(KubVcApp
@@ -79,3 +112,14 @@ add_custom_target(CopyFonts ALL
 )
 
 add_dependencies(KubVcApp CopyFonts)
+
+
+if (UNIX AND NOT APPLE)
+    include(GNUInstallDirs)
+    set(LINUX_RES_DIR "${PROJECT_SOURCE_DIR}/src/resources/linux")
+
+    install(FILES "${LINUX_RES_DIR}/kubvc.desktop"
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/applications")
+    install(DIRECTORY "${LINUX_RES_DIR}/icons/hicolor"
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/icons")
+endif()
