@@ -3,7 +3,7 @@
 #include <optional>
 #include <vector>
 
-#include "logger.h"
+#include "../utility/logger.h"
 
 #define KRB_ENABLE_LOGS
 #define KRB_USE_EXTERNAL_LOG_FUNCS

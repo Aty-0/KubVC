@@ -1,7 +1,8 @@
 #include "expression.h"
-#include "logger.h"
 #include "expression_controller.h"
-#include "application_config.h"
+
+#include "../application/application_config.h"
+#include "../utility/logger.h"
 
 namespace kubvc::math {
     Expression::Expression()  : 

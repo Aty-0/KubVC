@@ -1,13 +1,14 @@
 #pragma once 
+#include <mutex>
+#include <shared_mutex>
 #include <glm/glm.hpp>
-#include "ast.h"
+
+#include "../utility/double_buffer.h"
+#include "../algorithm/ast.h"
+
 #include "graph_limits.h"
 #include "variable_dependence.h"
 #include "primitives.h"
-#include "double_buffer.h"
-
-#include <mutex>
-#include <shared_mutex>
 
 namespace kubvc::math {
     class ExpressionController;

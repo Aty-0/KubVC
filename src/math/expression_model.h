@@ -4,11 +4,11 @@
 #include "expression.h"
 #include "expression_visual_settings.h"
 #include "expression_text_buffer.h"
-
-#include "task_manager.h"
-#include "lexer.h"
-#include "ast_builder.h"
 #include "graph_limits.h"
+
+#include "../algorithm/lexer.h"
+#include "../algorithm/ast_builder.h"
+#include "../utility/task_manager.h"
 
 namespace kubvc::math {
     class ExpressionModel {

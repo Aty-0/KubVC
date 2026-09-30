@@ -1,8 +1,8 @@
 #include "editor_math_element_list_window.h" 
-#include "expression_controller.h"
 
-#include "../application_config.h"
-#include "../math_base.h"
+#include "../application/application_config.h"
+#include "../math/expression_controller.h"
+#include "../math/math_base.h"
 
 namespace kubvc::editor {
     static const auto controller = math::ExpressionController::getInstance();

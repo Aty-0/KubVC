@@ -1,5 +1,5 @@
 #include "editor_macro_list_window.h"
-#include "../macro_controller.h"
+#include "../algorithm/macro_controller.h"
 
 namespace kubvc::editor {
     static constexpr std::size_t TEXT_BUFFER_SIZE = 128;

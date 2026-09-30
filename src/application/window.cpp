@@ -1,5 +1,5 @@
 #include "window.h"
-#include "logger.h"
+#include "../utility/logger.h"
 
 namespace kubvc::application {
     inline static void errorCallback(std::int32_t code, const char * text) {

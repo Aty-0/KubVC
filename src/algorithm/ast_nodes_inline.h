@@ -1,11 +1,11 @@
 #pragma once 
 #include "ast_nodes.h"
-
 #include "alg_helpers.h"
 #include "operators.h"
-#include "logger.h"
 
 #include <glm/glm.hpp>
+
+#include "../utility/logger.h"
 
 namespace kubvc::algorithm {
     inline double NodeTraits<NodeTypes::Invalid>::calculate([[maybe_unused]] double x, [[maybe_unused]] double y) {

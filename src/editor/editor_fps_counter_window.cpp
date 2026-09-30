@@ -1,5 +1,5 @@
 #include "editor_fps_counter_window.h"
-#include "expression_controller.h"
+#include "../math/expression_controller.h"
 
 namespace kubvc::editor {
     static const auto fpsCounterWindowFlags = ImGuiWindowFlags_::ImGuiWindowFlags_NoBackground 

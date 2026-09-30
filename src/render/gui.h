@@ -1,9 +1,9 @@
 #pragma once
-#include "singleton.h"
-#include "imgui.h"
-#include "implot.h"
-
+#include <imgui.h>
+#include <implot.h>
 #include <IconsFontAwesome6.h>
+
+#include "../utility/singleton.h"
 
 namespace kubvc::render {
     class GUI : public utility::Singleton<GUI> {

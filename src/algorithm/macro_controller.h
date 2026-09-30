@@ -1,8 +1,4 @@
 #pragma once 
-#include "singleton.h"
-#include "io.h"
-#include "alg_helpers.h"
-
 #include <atomic>
 #include <vector>
 #include <string>
@@ -12,6 +8,11 @@
 #include <ranges>
 #include <regex>
 #include <optional>
+
+#include "../utility/singleton.h"
+#include "../io/io.h"
+
+#include "alg_helpers.h"
 
 namespace kubvc::algorithm {
     struct Macro {

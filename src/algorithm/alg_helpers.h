@@ -5,7 +5,7 @@
 #include <array>
 #include <complex>
 
-#include "math_base.h"
+#include "../math/math_base.h"
 
 namespace kubvc::algorithm {
     class Helpers {

@@ -7,9 +7,9 @@
 
 #include <glm/glm.hpp>
 
-#include "container.h"
-#include "window.h"
-#include "function_handler.h"
+#include "../application/window.h"
+#include "../utility/function_handler.h"
+#include "../utility/container.h"
 
 namespace kubvc::math {
     namespace functions {

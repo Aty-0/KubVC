@@ -1,6 +1,7 @@
 #include "editor_keyboard_window.h"
-#include "expression_controller.h"
-#include "alg_helpers.h"
+
+#include "../math/expression_controller.h"
+#include "../algorithm/alg_helpers.h"
 
 #include <string>
 

@@ -1,7 +1,7 @@
 #include "editor_plotter_window.h"
-#include "expression_controller.h"
-#include "vec_convert.h"
-#include "application_config.h"
+#include "../math/expression_controller.h"
+#include "../application/application_config.h"
+#include "../utility/vec_convert.h"
 
 namespace kubvc::editor {
     static const auto controller = math::ExpressionController::getInstance();

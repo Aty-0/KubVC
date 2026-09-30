@@ -1,20 +1,20 @@
 #pragma once
-#include "singleton.h"
-#include "nodeTypes.h"
-#include "alg_helpers.h"
-#include "logger.h"
-
-#include "container.h"
-
-// TODO:
-//#include "function_handler.h"
-#include "application_config.h"
 #include <functional>
-
 #include <string>
 #include <algorithm>
 #include <optional>
 #include <stack>
+
+// TODO:
+//#include "function_handler.h"
+#include "../application/application_config.h"
+#include "../utility/singleton.h"
+#include "../utility/logger.h"
+#include "../utility/container.h"
+
+#include "nodeTypes.h"
+#include "alg_helpers.h"
+
 
 #ifdef KUB_ENABLE_LEXER_DEBUG_LOG
     #define KUB_LEXER_DEBUG(fmt, ...) KUB_DEBUG(fmt, ##__VA_ARGS__)

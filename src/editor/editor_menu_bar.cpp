@@ -4,12 +4,12 @@
 #include "editor_keyboard_window.h"
 #include "editor_fps_counter_window.h"
 
-#include "../logger.h"
-#include "../expression_io.h"
-#include "../application_config.h"
-#include "../macro_controller.h"
-#include "../window.h"
-#include "../theme_controller.h"
+#include "../utility/logger.h"
+#include "../math/expression_io.h"
+#include "../application/window.h"
+#include "../application/application_config.h"
+#include "../algorithm/macro_controller.h"
+#include "../render/theme_controller.h"
 
 #include "ImGuiFileDialog.h"
 

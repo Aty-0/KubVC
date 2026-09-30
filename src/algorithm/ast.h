@@ -1,12 +1,12 @@
 #pragma once
-#include "ast_nodes.h"
-
 #include <shared_mutex>
 #include <stack>
 #include <optional>
 #include <atomic>
 #include <span>
 #include <memory>
+
+#include "ast_nodes.h"
 
 namespace kubvc::algorithm {
 
