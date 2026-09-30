@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=KubVC
+GenericName=Graphing Calculator
+Comment=Graphing calculator
+Exec=KubVcApp
+Icon=kubvc
+Terminal=false
+Categories=Education;Science;Math;
+StartupWMClass=kubvc
