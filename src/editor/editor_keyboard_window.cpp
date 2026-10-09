@@ -67,8 +67,8 @@ namespace kubvc::editor {
                 drawKeys(gui);
             }
             ImGui::EndChild();
+            ImGui::EndTable();        
         }
-        ImGui::EndTable();        
     }    
 
     void EditorKeyboardWindow::drawOperators() {

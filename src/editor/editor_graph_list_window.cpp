@@ -140,6 +140,8 @@ namespace kubvc::editor {
         }
         
         const auto& currentExpression = model->getExpression();
+        const auto currentExpressionIsValid = currentExpression->isValid(); 
+
         const auto& currentSettings = model->getSettings();
         
         const auto& selectedModel = controller->getSelected();
@@ -276,7 +278,7 @@ namespace kubvc::editor {
                 // Draw error hint 
                 {
                     const auto& lastErrorMessage = currentExpression->getLastErrorMessage();
-                    if (!currentExpression->isValid() && !lastErrorMessage.empty()) {
+                    if (!currentExpressionIsSelected&& !lastErrorMessage.empty()) {
                         ImGui::SameLine();
                         ImGui::Dummy(ImVec2(2.0f, 0.0f)); 
                         ImGui::SameLine();
@@ -302,9 +304,11 @@ namespace kubvc::editor {
 
         // Draw textbox 
         {
+            static constexpr auto FRAME_BORDER_SIZE = 1.5f;
             ImGui::PushFont(&gui.getMathFont());
-            // FIXME: for some reason not work
-            if (!currentExpression->isValid())
+            ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, FRAME_BORDER_SIZE);
+
+            if (!currentExpressionIsValid)
                 ImGui::PushStyleColor(ImGuiCol_Border, INVALID_COLOR);
             else if (currentExpressionIsSelected)
                 ImGui::PushStyleColor(ImGuiCol_Border, SELECTED_COLOR);
@@ -316,7 +320,7 @@ namespace kubvc::editor {
             bool textChanged = false;
             
             if (expandTextBox) {
-                constexpr auto textBoxMultilineFlags = ImGuiInputTextFlags_::ImGuiInputTextFlags_WordWrap 
+                static constexpr auto textBoxMultilineFlags = ImGuiInputTextFlags_::ImGuiInputTextFlags_WordWrap 
                     | ImGuiInputTextFlags_::ImGuiInputTextFlags_CharsNoBlank 
                     | ImGuiInputTextFlags_::ImGuiInputTextFlags_CallbackAlways 
                     | ImGuiInputTextFlags_::ImGuiInputTextFlags_CallbackCharFilter;
@@ -348,10 +352,11 @@ namespace kubvc::editor {
             ImGui::PopFont();
 
             // Revert color changes
-            const auto popColor = currentExpressionIsSelected || !currentExpression->isValid();
+            const auto popColor = currentExpressionIsSelected || !currentExpressionIsValid;
             if (popColor) {
                 ImGui::PopStyleColor();
             }
+            ImGui::PopStyleVar();
 
             // Set current expression by clicking on textbox 
             if (ImGui::IsItemActive() && ImGui::IsItemClicked()) {
