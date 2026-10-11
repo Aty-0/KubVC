@@ -7,7 +7,6 @@
 namespace kubvc::math {
     Expression::Expression()  : 
         m_tree(), 
-        m_plotBuffer(std::make_shared<std::vector<glm::dvec2>>(MAX_PLOT_BUFFER_SIZE)),
         m_plotBuffer(
             std::make_shared<std::vector<glm::dvec2>>(MAX_PLOT_BUFFER_SIZE),
             std::make_shared<std::vector<glm::dvec2>>(MAX_PLOT_BUFFER_SIZE)),
