@@ -48,6 +48,7 @@ namespace kubvc::math {
             template <primitives::IsPrimitive T>
             [[nodiscard]] std::shared_ptr<T> getPrimitive() const;
 
+            void resetBuffers();
         private:
             // Evaluate current expression 
             void eval(const GraphLimits& limits);

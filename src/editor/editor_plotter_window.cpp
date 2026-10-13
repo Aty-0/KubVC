@@ -6,19 +6,22 @@
 namespace kubvc::editor {
     static const auto controller = math::ExpressionController::getInstance();
 
-    EditorPlotterWindow::EditorPlotterWindow() {
+    EditorPlotterWindow::EditorPlotterWindow() : m_redrawGraphs { false } {
         setName("Viewer##EditorPlotterWindow");
         setIconName(ICON_FA_TABLE);
     }
 
+    void EditorPlotterWindow::redrawGraphs() {
+        m_redrawGraphs = true;
+    }
+
     void EditorPlotterWindow::onRender([[maybe_unused]] kubvc::render::GUI& gui) {
-        static constexpr auto vecStride = 2 * sizeof(double);
-        static constexpr auto plotFlags = ImPlotFlags_::ImPlotFlags_NoTitle | ImPlotFlags_::ImPlotFlags_Crosshairs;
+        static constexpr auto VEC_STRIDE = 2 * sizeof(double);
+        static constexpr auto PLOT_FLAGS = ImPlotFlags_::ImPlotFlags_NoTitle | ImPlotFlags_::ImPlotFlags_Crosshairs;
         const auto size = ImGui::GetContentRegionAvail();
         static bool saveLimitsFirstTime = false; 
         
-        if (ImPlot::BeginPlot("##PlotViewer", size, plotFlags)) {
-
+        if (ImPlot::BeginPlot("##PlotViewer", size, PLOT_FLAGS)) {
             // Draw axis notes 
             static const auto appConfig = application::ApplicationConfig::getInstance();
             
@@ -38,13 +41,11 @@ namespace kubvc::editor {
                 }
             }
             
-            static bool updateExpressions = false;
             if (ImPlot::IsPlotHovered()) {
                 static auto prevPos = ImPlotPoint(0, 0);
-
                 const auto pos = ImPlot::GetPlotLimits().Min(); 
                 if (prevPos.x != pos.x || prevPos.y != pos.y) {
-                    updateExpressions = true; 
+                    m_redrawGraphs = true; 
                 }
                 
                 prevPos = pos;
@@ -68,7 +69,7 @@ namespace kubvc::editor {
                 const auto& expression = model->getExpression();
 
                 if (settings->getVisible() && expression->isValid()) { 
-                    if (updateExpressions) {
+                    if (m_redrawGraphs) {
                         if (appConfig->getMode() == application::MathMode::Real) {
                             math::GraphLimits::GlobalLimits = ImPlot::GetPlotLimits();   
                             controller->evalExpression(expression, math::GraphLimits::GlobalLimits);
@@ -80,11 +81,11 @@ namespace kubvc::editor {
                     const auto& bufferPtr = expression->getPlotBuffer(); 
 
                     // Apply plot style from expression                                                   
-                    ImPlotSpec specs;
+                    auto specs = ImPlotSpec { };
                     specs.LineWeight = settings->getThickness();
                     specs.LineColor = kubvc::utility::toImVec4(settings->getColor());
                     specs.Flags = flags;
-                    specs.Stride = vecStride;
+                    specs.Stride = VEC_STRIDE;
                     
                     switch (appConfig->getMode()) {
                         case application::MathMode::Real: {
@@ -124,7 +125,7 @@ namespace kubvc::editor {
                 }                    
             }                
             
-            updateExpressions = false;
+            m_redrawGraphs = false;
             ImPlot::EndPlot();
 
         }

@@ -27,6 +27,25 @@ namespace kubvc::math {
         m_vdc.reset();
         m_tree.clear();
     }
+    
+    void Expression::resetBuffers() {
+        const glm::dvec2 zero { 0.0, 0.0 };
+
+        for (const auto* buffer : { &m_plotBuffer.front(), &m_plotBuffer.back() }) {
+            if (*buffer) {
+                std::ranges::fill(**buffer, zero);
+            }
+        }
+
+        for (const auto* grid : { &m_complexGrid.front(), &m_complexGrid.back() }) {
+            if (!*grid) {
+                continue;
+            }
+            for (auto& line : **grid) {
+                std::ranges::fill(line, zero);
+            }
+        }
+    }
 
     static constexpr std::uint8_t NEWTON_MAX_ITER = 16; 
     static constexpr auto EPS = 1e-10;
