@@ -277,8 +277,7 @@ namespace kubvc::editor {
                 }
                 // Draw error hint 
                 {
-                    const auto& lastErrorMessage = currentExpression->getLastErrorMessage();
-                    if (!currentExpressionIsSelected&& !lastErrorMessage.empty()) {
+                    if (!currentExpressionIsValid) {                        
                         ImGui::SameLine();
                         ImGui::Dummy(ImVec2(2.0f, 0.0f)); 
                         ImGui::SameLine();
@@ -292,7 +291,12 @@ namespace kubvc::editor {
 
                         ImGui::PushFont(&gui.getDefaultFont());
                         if (ImGui::IsItemHovered()) {
-                            ImGui::SetTooltip(lastErrorMessage.c_str());
+                            const auto& lastErrorMessage = currentExpression->getLastErrorMessage();
+                            if (!lastErrorMessage.empty()) {
+                                ImGui::SetTooltip(lastErrorMessage.c_str());
+                            } else {
+                                ImGui::SetTooltip("current expression is invalid, but error message is empty, check logs for details");
+                            }
                         }
                         ImGui::PopFont();
                     }

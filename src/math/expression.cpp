@@ -6,17 +6,17 @@
 
 namespace kubvc::math {
     Expression::Expression()  : 
-        m_tree(), 
-        m_plotBuffer(
+        m_tree { }, 
+        m_plotBuffer {
             std::make_shared<std::vector<glm::dvec2>>(MAX_PLOT_BUFFER_SIZE),
-            std::make_shared<std::vector<glm::dvec2>>(MAX_PLOT_BUFFER_SIZE)),
-        m_valid(false),
-        m_lastErrorMessage(),
-        m_primitiveType(primitives::PrimitiveTypes::Circle),
-        m_rectMode(false),
-        m_complexGrid(
+            std::make_shared<std::vector<glm::dvec2>>(MAX_PLOT_BUFFER_SIZE) },
+        m_valid { false },
+        m_lastErrorMessage { "empty" },
+        m_primitiveType { primitives::PrimitiveTypes::Circle },
+        m_rectMode { false },
+        m_complexGrid {
             std::make_shared<std::vector<std::vector<glm::dvec2>>>(COMPLEX_GRID_SIZE, std::vector<glm::dvec2>(COMPLEX_GRID_LINES_COUNT)),
-            std::make_shared<std::vector<std::vector<glm::dvec2>>>(COMPLEX_GRID_SIZE, std::vector<glm::dvec2>(COMPLEX_GRID_LINES_COUNT))) {
+            std::make_shared<std::vector<std::vector<glm::dvec2>>>(COMPLEX_GRID_SIZE, std::vector<glm::dvec2>(COMPLEX_GRID_LINES_COUNT)) } {
             // Set default primitive
             setNewPrimitive(primitives::makeNewPrimitive<primitives::CirclePrimitive>(MAX_PLOT_BUFFER_SIZE));
     }

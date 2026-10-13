@@ -58,7 +58,7 @@ namespace kubvc::math {
             // Calculated points for graph
             PlotBuffer m_plotBuffer;  
 
-            bool m_valid = false;
+            bool m_valid;
             std::string m_lastErrorMessage;
 
             mutable std::shared_mutex m_mutex;
